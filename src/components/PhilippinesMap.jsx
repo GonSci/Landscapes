@@ -6,7 +6,19 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
+  const routingControlRef = useRef(null);
+  const startMarkerRef = useRef(null);
+  const endMarkerRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [routingMode, setRoutingMode] = useState(false);
+  const [startLocation, setStartLocation] = useState(null);
+  const [endLocation, setEndLocation] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [useCurrentLocation, setUseCurrentLocation] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [startAddress, setStartAddress] = useState('');
+  const [endAddress, setEndAddress] = useState('');
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   useEffect(() => {
     // Load Leaflet CSS
@@ -17,6 +29,12 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
     leafletCSS.crossOrigin = '';
     document.head.appendChild(leafletCSS);
 
+    // Load Leaflet Routing Machine CSS
+    const routingCSS = document.createElement('link');
+    routingCSS.rel = 'stylesheet';
+    routingCSS.href = 'https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css';
+    document.head.appendChild(routingCSS);
+
     // Load Leaflet JS
     const leafletJS = document.createElement('script');
     leafletJS.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -24,7 +42,13 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
     leafletJS.crossOrigin = '';
     
     leafletJS.onload = () => {
-      setMapLoaded(true);
+      // Load Leaflet Routing Machine JS after Leaflet loads
+      const routingJS = document.createElement('script');
+      routingJS.src = 'https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js';
+      routingJS.onload = () => {
+        setMapLoaded(true);
+      };
+      document.body.appendChild(routingJS);
     };
     
     document.body.appendChild(leafletJS);
@@ -50,23 +74,26 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
 
     mapInstanceRef.current = map;
 
-    // Add click handler for map - allows clicking anywhere!
+    // Add click handler for map - handles both routing and exploration
     map.on('click', async (e) => {
       const { lat, lng } = e.latlng;
       
-      // Use reverse geocoding to get location info
+      // Skip map clicks in routing mode (use address inputs instead)
+      if (routingMode) {
+        return;
+      }
+      
+      // Normal exploration mode (existing code)
       try {
         const response = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`
         );
         const data = await response.json();
         
-        console.log('Full Nominatim data:', data); // Debug: see what we get
+        console.log('Full Nominatim data:', data);
         
-        // Extract comprehensive location information
         const address = data.address || {};
         
-        // Build location name with priority order (most specific to least specific)
         const locationName = data.name || 
                             address.tourism ||
                             address.village || 
@@ -81,13 +108,11 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
                             data.display_name?.split(',')[0] ||
                             'Discovered Location';
         
-        // Get region/province
         const region = address.state || 
                       address.province || 
                       address.region ||
                       'Philippines';
         
-        // Build detailed description
         let description = `You've discovered ${locationName}`;
         if (address.city && address.city !== locationName) {
           description += ` in ${address.city}`;
@@ -97,7 +122,6 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
         }
         description += '! ';
         
-        // Add context based on what type of place it is
         if (address.tourism) {
           description += `This is a ${address.tourism} destination. `;
         } else if (address.amenity) {
@@ -108,28 +132,23 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
         
         description += `Click 'Ask AI' to discover local attractions, culture, food, and travel tips for this specific location!`;
         
-        // Build dynamic highlights based on actual location data
         const highlights = [];
         
-        // Add specific features if available
         if (address.tourism) highlights.push(`${address.tourism} destination`);
         if (address.amenity) highlights.push(`${address.amenity} available`);
         if (address.city && address.city !== locationName) highlights.push(`Part of ${address.city}`);
         if (region && region !== 'Philippines') highlights.push(`${region} region`);
         
-        // Add generic helpful options
         highlights.push('Local culture and traditions');
         highlights.push('Nearby attractions');
         highlights.push('Regional cuisine and specialties');
         highlights.push('Best time to visit');
         highlights.push('Travel tips and recommendations');
         
-        // If it's a natural feature
         if (data.class === 'natural' || address.natural) {
           highlights.push('Natural scenery and beauty');
         }
         
-        // Create a custom location object from the clicked area
         const clickedLocation = {
           id: `custom-${Date.now()}`,
           name: locationName,
@@ -137,14 +156,13 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
           lat: lat,
           lng: lng,
           description: description,
-          highlights: highlights.slice(0, 6), // Limit to 6 highlights
+          highlights: highlights.slice(0, 6),
           image: '/assets/images/philippines-placeholder.jpg',
           isCustom: true,
-          fullAddress: data.display_name, // Keep full address for AI context
+          fullAddress: data.display_name,
           locationType: data.type || data.class || 'location'
         };
         
-        // Add a temporary marker
         const tempIcon = window.L.divIcon({
           className: 'custom-marker',
           html: `
@@ -186,14 +204,11 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
           `)
           .openPopup();
         
-        // When clicked, open the location modal
         tempMarker.on('click', () => {
           onLocationClick(clickedLocation);
-          // Remove temp marker after a delay
           setTimeout(() => tempMarker.remove(), 500);
         });
         
-        // Auto-remove after 10 seconds if not clicked
         setTimeout(() => {
           if (map.hasLayer(tempMarker)) {
             tempMarker.remove();
@@ -203,7 +218,6 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
       } catch (error) {
         console.error('Error fetching location info:', error);
         
-        // Fallback if geocoding fails - use coordinates
         const basicLocation = {
           id: `custom-${Date.now()}`,
           name: `Location at ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`,
@@ -321,13 +335,446 @@ const PhilippinesMap = ({ onLocationClick, userProfile }) => {
     return '#3b82f6'; // Blue - Default
   };
 
+  // Routing helper functions
+  const geocodeAddress = async (address) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=ph&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+          name: data[0].display_name
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      return null;
+    }
+  };
+
+  const getCurrentLocation = () => {
+    setGettingLocation(true);
+    
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Reverse geocode to get address
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+            );
+            const data = await response.json();
+            const addressName = data.display_name || 'Current Location';
+            
+            setStartAddress(addressName);
+            setStartLocation({ lat: latitude, lng: longitude, name: addressName });
+            setGettingLocation(false);
+            
+            // Add marker for current location
+            if (startMarkerRef.current) {
+              startMarkerRef.current.remove();
+            }
+            
+            const startIcon = window.L.divIcon({
+              className: 'custom-marker',
+              html: `
+                <div style="
+                  background-color: #10b981;
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 50%;
+                  border: 3px solid white;
+                  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 20px;
+                  cursor: pointer;
+                ">
+                  📍
+                </div>
+              `,
+              iconSize: [40, 40],
+              iconAnchor: [20, 20],
+            });
+            
+            startMarkerRef.current = window.L.marker([latitude, longitude], { icon: startIcon })
+              .addTo(mapInstanceRef.current)
+              .bindPopup('<div style="text-align: center;"><strong>Your Current Location</strong></div>')
+              .openPopup();
+            
+            // Center map on current location
+            mapInstanceRef.current.setView([latitude, longitude], 13);
+          } catch (error) {
+            console.error('Reverse geocoding error:', error);
+            setStartAddress('Current Location');
+            setStartLocation({ lat: latitude, lng: longitude, name: 'Current Location' });
+            setGettingLocation(false);
+          }
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          alert('Unable to get your current location. Please enable location services or enter an address manually.');
+          setGettingLocation(false);
+        }
+      );
+    } else {
+      alert('Geolocation is not supported by your browser. Please enter an address manually.');
+      setGettingLocation(false);
+    }
+  };
+
+  const handleCalculateRoute = async () => {
+    if (!startAddress && !useCurrentLocation) {
+      alert('Please enter a starting address or use your current location.');
+      return;
+    }
+    
+    if (!endAddress) {
+      alert('Please enter a destination address.');
+      return;
+    }
+    
+    setIsGeocoding(true);
+    
+    try {
+      let startCoords = startLocation;
+      
+      // Geocode start address if not using current location
+      if (!useCurrentLocation || !startLocation) {
+        const startResult = await geocodeAddress(startAddress);
+        if (!startResult) {
+          alert('Could not find the starting location. Please try a different address.');
+          setIsGeocoding(false);
+          return;
+        }
+        startCoords = startResult;
+        setStartLocation(startResult);
+        
+        // Add start marker
+        if (startMarkerRef.current) {
+          startMarkerRef.current.remove();
+        }
+        
+        const startIcon = window.L.divIcon({
+          className: 'custom-marker',
+          html: `
+            <div style="
+              background-color: #10b981;
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              border: 3px solid white;
+              box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 20px;
+              cursor: pointer;
+            ">
+              🚩
+            </div>
+          `,
+          iconSize: [40, 40],
+          iconAnchor: [20, 20],
+        });
+        
+        startMarkerRef.current = window.L.marker([startResult.lat, startResult.lng], { icon: startIcon })
+          .addTo(mapInstanceRef.current)
+          .bindPopup(`<div style="text-align: center;"><strong>Start</strong><br/>${startResult.name}</div>`);
+      }
+      
+      // Geocode destination address
+      const endResult = await geocodeAddress(endAddress);
+      if (!endResult) {
+        alert('Could not find the destination. Please try a different address.');
+        setIsGeocoding(false);
+        return;
+      }
+      
+      setEndLocation(endResult);
+      
+      // Add end marker
+      if (endMarkerRef.current) {
+        endMarkerRef.current.remove();
+      }
+      
+      const endIcon = window.L.divIcon({
+        className: 'custom-marker',
+        html: `
+          <div style="
+            background-color: #ef4444;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+          ">
+            🎯
+          </div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+      });
+      
+      endMarkerRef.current = window.L.marker([endResult.lat, endResult.lng], { icon: endIcon })
+        .addTo(mapInstanceRef.current)
+        .bindPopup(`<div style="text-align: center;"><strong>Destination</strong><br/>${endResult.name}</div>`);
+      
+      // Calculate route
+      calculateRoute(startCoords, endResult);
+      
+      setIsGeocoding(false);
+    } catch (error) {
+      console.error('Error calculating route:', error);
+      alert('An error occurred while calculating the route. Please try again.');
+      setIsGeocoding(false);
+    }
+  };
+
+  const calculateRoute = (startCoords, endCoords) => {
+    if (!startCoords || !endCoords || !window.L || !window.L.Routing) {
+      console.error('Start/end location or routing library not loaded');
+      return;
+    }
+
+    // Remove existing routing control if any
+    if (routingControlRef.current) {
+      mapInstanceRef.current.removeControl(routingControlRef.current);
+    }
+
+    const waypoints = [
+      window.L.latLng(startCoords.lat, startCoords.lng),
+      window.L.latLng(endCoords.lat, endCoords.lng)
+    ];
+
+    const routingControl = window.L.Routing.control({
+      waypoints: waypoints,
+      routeWhileDragging: false,
+      showAlternatives: false,
+      addWaypoints: false,
+      fitSelectedRoutes: true,
+      show: false,
+      createMarker: () => null,
+      lineOptions: {
+        styles: [
+          {
+            color: '#667eea',
+            opacity: 0.8,
+            weight: 6
+          }
+        ]
+      },
+      router: window.L.Routing.osrmv1({
+        serviceUrl: 'https://router.project-osrm.org/route/v1'
+      })
+    }).addTo(mapInstanceRef.current);
+
+    routingControlRef.current = routingControl;
+
+    // Listen for route found event
+    routingControl.on('routesfound', (e) => {
+      const routes = e.routes;
+      const summary = routes[0].summary;
+      
+      const distanceKm = (summary.totalDistance / 1000).toFixed(2);
+      const totalMinutes = Math.round(summary.totalTime / 60);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      
+      let timeString = '';
+      if (hours > 0) {
+        timeString = `${hours} hour${hours > 1 ? 's' : ''}`;
+        if (minutes > 0) {
+          timeString += ` ${minutes} min`;
+        }
+      } else {
+        timeString = `${minutes} minutes`;
+      }
+      
+      setRouteInfo({
+        distance: distanceKm,
+        duration: timeString,
+        totalMinutes: totalMinutes
+      });
+    });
+
+    routingControl.on('routingerror', (e) => {
+      console.error('Routing error:', e);
+      alert('Unable to calculate route. Please try different locations.');
+    });
+  };
+
+  const toggleRoutingMode = () => {
+    const newMode = !routingMode;
+    setRoutingMode(newMode);
+    
+    if (!newMode) {
+      // Exiting routing mode - clear everything
+      clearRoute();
+    }
+  };
+
+  const clearRoute = () => {
+    // Remove routing control
+    if (routingControlRef.current && mapInstanceRef.current) {
+      mapInstanceRef.current.removeControl(routingControlRef.current);
+      routingControlRef.current = null;
+    }
+    
+    // Remove markers
+    if (startMarkerRef.current && mapInstanceRef.current) {
+      mapInstanceRef.current.removeLayer(startMarkerRef.current);
+      startMarkerRef.current = null;
+    }
+    
+    if (endMarkerRef.current && mapInstanceRef.current) {
+      mapInstanceRef.current.removeLayer(endMarkerRef.current);
+      endMarkerRef.current = null;
+    }
+    
+    // Reset state
+    setStartLocation(null);
+    setEndLocation(null);
+    setRouteInfo(null);
+    setUseCurrentLocation(false);
+    setStartAddress('');
+    setEndAddress('');
+  };
+
   return (
     <div className="map-container">
+      {/* Routing Control Panel */}
+      <div className="routing-panel">
+        <button 
+          className={`routing-toggle-btn ${routingMode ? 'active' : ''}`}
+          onClick={toggleRoutingMode}
+        >
+          {routingMode ? '🗺️ Exit Routing' : '🧭 Get Directions'}
+        </button>
+        
+        {routingMode && (
+          <div className="routing-controls">
+            <div className="routing-instructions">
+              <h4>📍 Plan Your Route</h4>
+              
+              <div className="address-inputs">
+                <div className="input-group">
+                  <label htmlFor="start-address">🚩 Starting Point</label>
+                  <div className="input-with-button">
+                    <input
+                      id="start-address"
+                      type="text"
+                      placeholder="Enter starting address..."
+                      value={startAddress}
+                      onChange={(e) => setStartAddress(e.target.value)}
+                      disabled={useCurrentLocation}
+                      className="address-input"
+                    />
+                    <button
+                      onClick={getCurrentLocation}
+                      className="gps-btn"
+                      disabled={gettingLocation}
+                      title="Use current location"
+                    >
+                      {gettingLocation ? '⏳' : '📱'}
+                    </button>
+                  </div>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={useCurrentLocation}
+                      onChange={(e) => {
+                        setUseCurrentLocation(e.target.checked);
+                        if (e.target.checked) {
+                          getCurrentLocation();
+                        } else {
+                          setStartAddress('');
+                          setStartLocation(null);
+                          if (startMarkerRef.current) {
+                            startMarkerRef.current.remove();
+                            startMarkerRef.current = null;
+                          }
+                        }
+                      }}
+                    />
+                    Use my current location
+                  </label>
+                </div>
+                
+                <div className="input-group">
+                  <label htmlFor="end-address">🎯 Destination</label>
+                  <input
+                    id="end-address"
+                    type="text"
+                    placeholder="Enter destination address..."
+                    value={endAddress}
+                    onChange={(e) => setEndAddress(e.target.value)}
+                    className="address-input"
+                  />
+                </div>
+                
+                <button
+                  onClick={handleCalculateRoute}
+                  className="calculate-btn"
+                  disabled={isGeocoding || (!startAddress && !useCurrentLocation) || !endAddress}
+                >
+                  {isGeocoding ? '⏳ Calculating...' : '🗺️ Calculate Route'}
+                </button>
+              </div>
+              
+              {routeInfo && (
+                <div className="route-summary">
+                  <div className="route-info-card">
+                    <div className="route-stat">
+                      <span className="route-icon">📏</span>
+                      <div>
+                        <div className="route-label">Distance</div>
+                        <div className="route-value">{routeInfo.distance} km</div>
+                      </div>
+                    </div>
+                    <div className="route-stat">
+                      <span className="route-icon">⏱️</span>
+                      <div>
+                        <div className="route-label">Est. Travel Time</div>
+                        <div className="route-value">{routeInfo.duration}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {(startLocation || endLocation || routeInfo) && (
+                <button 
+                  onClick={clearRoute} 
+                  className="clear-route-btn"
+                >
+                  🔄 Clear Route
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="map-header">
         <h2 className="map-title">🗺️ Explore the Philippines</h2>
         <p className="map-instruction">
-          <strong>💡 Tip:</strong> Click anywhere on the map to discover that area! 
-          Or click the colored markers (⭐) for featured destinations.
+          <strong>💡 Tip:</strong> {routingMode 
+            ? 'Enter addresses to calculate your route and travel time!' 
+            : 'Click anywhere on the map to discover that area! Or click the colored markers (⭐) for featured destinations.'}
         </p>
       </div>
       

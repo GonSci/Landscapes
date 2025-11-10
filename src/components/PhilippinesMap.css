@@ -9,6 +9,282 @@
   border: 2px solid #e2e8f0;
   border-left: none;
   overflow: hidden;
+  position: relative;
+}
+
+/* Routing Panel */
+.routing-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border: 2px solid #e2e8f0;
+  min-width: 280px;
+  max-width: 350px;
+}
+
+.routing-toggle-btn {
+  width: 100%;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.routing-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.routing-toggle-btn.active {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.routing-toggle-btn.active:hover {
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+.routing-controls {
+  padding: 16px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.routing-instructions h4 {
+  margin: 0 0 12px 0;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.routing-instructions p {
+  margin: 0 0 12px 0;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.address-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-group label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.input-with-button {
+  display: flex;
+  gap: 6px;
+}
+
+.address-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #0f172a;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.address-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.address-input:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.address-input::placeholder {
+  color: #94a3b8;
+}
+
+.gps-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gps-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.gps-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #10b981;
+}
+
+.calculate-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.calculate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.calculate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.routing-step {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 2px solid #86efac;
+  border-radius: 8px;
+  padding: 12px;
+  color: #166534 !important;
+  font-weight: 600 !important;
+  text-align: center;
+}
+
+.clear-route-btn {
+  width: 100%;
+  padding: 10px 14px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 12px;
+}
+
+.clear-route-btn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.route-summary {
+  margin: 16px 0 0 0;
+}
+
+.route-info-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.route-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.route-icon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #fbbf24;
+  flex-shrink: 0;
+}
+
+.route-label {
+  font-size: 0.7rem;
+  color: #92400e;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.route-value {
+  font-size: 1.1rem;
+  color: #78350f;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .map-header {
@@ -152,6 +428,13 @@
 
 /* Responsive Design */
 @media (max-width: 1024px) {
+  .routing-panel {
+    top: 16px;
+    right: 16px;
+    min-width: 260px;
+    max-width: 320px;
+  }
+
   .map-container {
     padding: 16px;
     border-radius: 12px;
@@ -172,6 +455,40 @@
 }
 
 @media (max-width: 768px) {
+  .routing-panel {
+    position: static;
+    max-width: 100%;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    margin: 0;
+  }
+
+  .routing-toggle-btn {
+    border-radius: 0;
+  }
+
+  .routing-controls {
+    padding: 14px;
+  }
+
+  .address-input {
+    padding: 9px 11px;
+    font-size: 0.8rem;
+  }
+
+  .gps-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  .calculate-btn {
+    padding: 11px 14px;
+    font-size: 0.85rem;
+  }
+
   .map-container {
     padding: 12px;
     border-radius: 8px;
@@ -227,6 +544,57 @@
 }
 
 @media (max-width: 480px) {
+  .routing-panel {
+    position: static;
+    border-radius: 0;
+  }
+
+  .routing-controls {
+    padding: 12px;
+  }
+
+  .address-inputs {
+    gap: 12px;
+  }
+
+  .address-input {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  .gps-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+  }
+
+  .input-group label {
+    font-size: 0.75rem;
+  }
+
+  .checkbox-label {
+    font-size: 0.75rem;
+  }
+
+  .calculate-btn {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+
+  .route-info-card {
+    padding: 12px;
+  }
+
+  .route-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
+  }
+
+  .route-value {
+    font-size: 1rem;
+  }
+
   .map-container {
     padding: 8px;
   }
@@ -258,4 +626,13 @@
   .leaflet-map {
     min-height: 300px;
   }
+}
+
+/* Hide Leaflet Routing Machine default UI */
+.leaflet-routing-container {
+  display: none;
+}
+
+.leaflet-control-container .leaflet-routing-container-hide {
+  display: none;
 }
