@@ -122,7 +122,6 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
       <div className="profile-section badges-section">
         <div className="section-header">
           <h4>🏆 Achievements</h4>
-          <span className="badge-count">{unlockedBadges.length}/{badges.length}</span>
         </div>
         
         <div className="badges-column">
@@ -152,22 +151,31 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
               </div>
             ))}
           </div>
-
-          {nextBadge && (
-            <div className="next-badge-hint">
-              <span className="hint-icon">🎯</span>
-              <span className="hint-text">
-                Next: {nextBadge.name} - {nextBadge.description}
-              </span>
-            </div>
-          )}
+          <span className="badge-count">{unlockedBadges.length}/{badges.length}</span>
         </div>
 
         {/* Right side placeholder for future content */}
         <div className="badges-right-column">
-          {/* Add your content here */}
+          {/* Checklist Section */}
+          <div className="checklist-container">
+            <h4 className="checklist-title">✓ Travel Checklist</h4>
+            <button className="add-checklist-btn">
+              <span className="btn-icon">+</span>
+              <span className="btn-text">Add Checklist Item</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Next Badge Hint - Moved below both sections */}
+      {nextBadge && (
+        <div className="next-badge-hint">
+          <span className="hint-icon">🎯</span>
+          <span className="hint-text">
+            Next: {nextBadge.name} - {nextBadge.description}
+          </span>
+        </div>
+      )}
 
       {/* AI Assistant Button */}
       <button onClick={onToggleAI} className="ai-toggle-btn">

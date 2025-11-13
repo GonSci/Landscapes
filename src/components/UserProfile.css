@@ -152,7 +152,6 @@
   border-bottom: 2px solid #e2e8f0;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
   align-items: start;
 }
 
@@ -167,12 +166,18 @@
 }
 
 .section-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
   align-items: center;
+  gap: 15px;
   margin-bottom: 16px;
   grid-column: 1 / -1;
   width: 100%;
+  padding-bottom: 0;
+}
+
+.user-profile.expanded .section-header {
+  margin-bottom: 0;
 }
 
 .section-header h4 {
@@ -184,6 +189,10 @@
   letter-spacing: 0.5px;
 }
 
+.section-header h4:first-child {
+  grid-column: 1;
+}
+
 .badge-count {
   font-size: 0.85rem;
   font-weight: 700;
@@ -191,13 +200,88 @@
   background: #ede9fe;
   padding: 4px 10px;
   border-radius: 12px;
+  display: none;
 }
 
-/* Only change badge-count in expanded mode - align to left */
+.checklist-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: grid;
+  align-items: center;
+  padding-top: 1px;
+  margin-bottom: 16px;
+}
+
+.user-profile.expanded .checklist-title {
+  margin-top: -36px;
+}
+
+.add-checklist-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 24px);
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #ede9fe 0%, #f3e8ff 100%);
+  border: 2px dashed #c4b5fd;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: capitalize;
+}
+
+.add-checklist-btn:hover {
+  background: linear-gradient(135deg, #ddd6fe 0%, #e9d5ff 100%);
+  border-color: #a78bfa;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+}
+
+.add-checklist-btn:active {
+  transform: translateY(0);
+}
+
+.add-checklist-btn .btn-icon {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.add-checklist-btn .btn-text {
+  font-size: 0.85rem;
+}
+
+.checklist-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #667eea;
+  background: #ede9fe;
+  padding: 4px 10px;
+  border-radius: 12px;
+  grid-column: 5;
+}
+
+/* Only change badge-count in expanded mode - move to bottom */
 .user-profile.expanded .badge-count {
-  margin-right: auto;
-  margin-left: 22rem;
-  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  grid-column: auto;
+  padding: 10px 12px;
+  margin-right: 0;
+  margin-left: 0;
+  font-size: 0.85rem;
+  width: calc(100% - 54px);
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 10px;
 }
 
 .badges-column {
@@ -209,21 +293,120 @@
 .badges-right-column {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
   /* Right column reserved for future content */
+}
+
+/* Checklist Container */
+.checklist-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.checklist-items {
+  display: grid;
+  gap: 10px;
+  max-width: 90%;
+  margin-top: 8px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.checklist-item.completed {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #86efac;
+}
+
+.checklist-item.completed::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+}
+
+.checklist-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #667eea;
+  flex-shrink: 0;
+}
+
+.checklist-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  flex: 1;
+  user-select: none;
+}
+
+.checklist-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+}
+
+.checklist-item.completed .checklist-icon {
+  background: white;
+  border-color: #86efac;
+  animation: checklistPulse 2s ease-in-out infinite;
+}
+
+@keyframes checklistPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.checklist-text {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.checklist-item.completed .checklist-text {
+  color: #166534;
+  text-decoration: line-through;
 }
 
 .badges-grid {
   display: grid;
   gap: 10px;
   margin-bottom: 0;
+  max-width: 90%;
 }
 
 .badge-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 10px 12px;
   background: #fafafa;
   border: 2px solid #e2e8f0;
   border-radius: 10px;
@@ -252,10 +435,10 @@
 }
 
 .badge-icon {
-  font-size: 2rem;
+  font-size: 1.6rem;
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -330,16 +513,24 @@
 }
 
 .next-badge-hint {
+  display: none;
+}
+
+.user-profile.expanded .next-badge-hint {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  padding: 12px 14px;
+  width: calc(100% - 40px);
+  margin: 20px 20px;
+  padding: 16px 20px;
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   border: 2px solid #fbbf24;
-  border-radius: 10px;
-  font-size: 0.85rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #92400e;
+  transition: all 0.3s ease;
 }
 
 .hint-icon {
