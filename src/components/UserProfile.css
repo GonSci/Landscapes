@@ -509,9 +509,10 @@
 
 .checklist-item {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 0;
   background: #fafafa;
   border: 2px solid #e2e8f0;
   border-radius: 10px;
@@ -519,6 +520,14 @@
   position: relative;
   overflow: hidden;
   width: 32.7rem;
+}
+
+.checklist-item-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
 }
 
 .checklist-item.completed {
@@ -611,6 +620,69 @@
 
 .checklist-delete-btn:active {
   transform: scale(0.95);
+}
+
+.checklist-expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.checklist-expand-btn:hover {
+  opacity: 1;
+}
+
+.checklist-item.expanded .checklist-expand-btn {
+  transform: rotate(180deg);
+}
+
+.checklist-notes-wrapper {
+  width: 100%;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.checklist-item.expanded .checklist-notes-wrapper {
+  max-height: 300px;
+  opacity: 1;
+}
+
+.checklist-notes-input {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: none;
+  min-height: 80px;
+  background: white;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.checklist-notes-input:focus {
+  outline: none;
+  background: #f8fafc;
+  border-top-color: #667eea;
+}
+
+.checklist-notes-input::placeholder {
+  color: #cbd5e1;
+  font-style: italic;
 }
 
 .badges-grid {

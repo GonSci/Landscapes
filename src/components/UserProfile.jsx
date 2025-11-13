@@ -4,6 +4,7 @@ import './UserProfile.css';
 const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
   const [showAddChecklistModal, setShowAddChecklistModal] = useState(false);
   const [checklistForm, setChecklistForm] = useState({ name: '', icon: '✓' });
+  const [expandedChecklistId, setExpandedChecklistId] = useState(null);
   const [userChecklists, setUserChecklists] = useState(() => {
     // Initialize state from localStorage immediately
     try {
@@ -159,6 +160,20 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
     setUserChecklists(prev => prev.filter(item => item.id !== id));
   };
 
+  // Handle expand/collapse checklist
+  const handleToggleExpand = (id) => {
+    setExpandedChecklistId(expandedChecklistId === id ? null : id);
+  };
+
+  // Handle note update
+  const handleUpdateNote = (id, note) => {
+    setUserChecklists(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, note } : item
+      )
+    );
+  };
+
   return (
     <div className={`user-profile ${expanded ? 'expanded' : ''}`}>
       <div className="profile-header">
@@ -242,22 +257,43 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
             {/* Display added checklists */}
             <div className="checklist-items">
               {userChecklists.map(item => (
-                <div key={item.id} className={`checklist-item ${item.completed ? 'completed' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={item.completed}
-                    onChange={() => handleToggleChecklistItem(item.id)}
-                    className="checklist-checkbox"
-                  />
-                  <span className="checklist-icon">{item.icon}</span>
-                  <span className="checklist-text">{item.name}</span>
-                  <button
-                    onClick={() => handleDeleteChecklistItem(item.id)}
-                    className="checklist-delete-btn"
-                    title="Delete this checklist item"
-                  >
-                    🗑️
-                  </button>
+                <div key={item.id} className={`checklist-item ${item.completed ? 'completed' : ''} ${expandedChecklistId === item.id ? 'expanded' : ''}`}>
+                  <div className="checklist-item-header">
+                    <input
+                      type="checkbox"
+                      checked={item.completed}
+                      onChange={() => handleToggleChecklistItem(item.id)}
+                      className="checklist-checkbox"
+                    />
+                    <span className="checklist-icon">{item.icon}</span>
+                    <span className="checklist-text">{item.name}</span>
+                    <button
+                      onClick={() => handleToggleExpand(item.id)}
+                      className="checklist-expand-btn"
+                      title="Add notes"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteChecklistItem(item.id)}
+                      className="checklist-delete-btn"
+                      title="Delete this checklist item"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                  {expandedChecklistId === item.id && (
+                    <div className="checklist-notes-wrapper">
+                      <textarea
+                        className="checklist-notes-input"
+                        placeholder="Add notes, reminders, or details..."
+                        value={item.note || ''}
+                        onChange={(e) => handleUpdateNote(item.id, e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
