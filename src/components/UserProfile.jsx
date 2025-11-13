@@ -15,6 +15,19 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
       return [];
     }
   });
+  
+  // State for save/load checklist templates
+  const [showSaveChecklistModal, setShowSaveChecklistModal] = useState(false);
+  const [saveChecklistName, setSaveChecklistName] = useState('');
+  const [savedChecklistTemplates, setSavedChecklistTemplates] = useState(() => {
+    try {
+      const saved = localStorage.getItem('savedChecklistTemplates');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading saved templates:', error);
+      return [];
+    }
+  });
 
   // Save checklists to localStorage whenever they change
   useEffect(() => {
@@ -22,6 +35,12 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
     console.log('Checklists saved:', userChecklists);
     console.log('LocalStorage content:', localStorage.getItem('userChecklists'));
   }, [userChecklists]);
+
+  // Save templates to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('savedChecklistTemplates', JSON.stringify(savedChecklistTemplates));
+    console.log('Templates saved:', savedChecklistTemplates);
+  }, [savedChecklistTemplates]);
   // Calculate gamification stats
   const stats = useMemo(() => {
     const visitedCount = profile.beenThere.length;
@@ -174,6 +193,52 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
     );
   };
 
+  // Handle save checklist template
+  const handleSaveChecklist = () => {
+    if (saveChecklistName.trim() && userChecklists.length > 0) {
+      const newTemplate = {
+        id: Date.now(),
+        name: saveChecklistName,
+        items: userChecklists.map(({ name, icon, note }) => ({ name, icon, note }))
+      };
+      setSavedChecklistTemplates(prev => [...prev, newTemplate]);
+      setSaveChecklistName('');
+      setShowSaveChecklistModal(false);
+      console.log('Checklist saved as template:', newTemplate);
+    }
+  };
+
+  // Handle load checklist template
+  const handleLoadTemplate = (template) => {
+    const newItems = template.items.map(item => ({
+      id: Date.now() + Math.random(),
+      ...item,
+      completed: false
+    }));
+    setUserChecklists(prev => [...prev, ...newItems]);
+    console.log('Template loaded:', template);
+  };
+
+  // Handle delete saved template
+  const handleDeleteTemplate = (templateId) => {
+    setSavedChecklistTemplates(prev => prev.filter(t => t.id !== templateId));
+  };
+
+  // Handle open save modal
+  const handleOpenSaveModal = () => {
+    if (userChecklists.length === 0) {
+      alert('Add some checklist items before saving a template!');
+      return;
+    }
+    setShowSaveChecklistModal(true);
+  };
+
+  // Handle close save modal
+  const handleCloseSaveModal = () => {
+    setShowSaveChecklistModal(false);
+    setSaveChecklistName('');
+  };
+
   return (
     <div className={`user-profile ${expanded ? 'expanded' : ''}`}>
       <div className="profile-header">
@@ -297,6 +362,52 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
                 </div>
               ))}
             </div>
+
+            {/* Saved Templates Section - Combined Save/Load */}
+            <div className="templates-section">
+              <div className="templates-header">
+                <h5 className="templates-header-title">📦 Template Management</h5>
+                {userChecklists.length > 0 && (
+                  <button onClick={handleOpenSaveModal} className="templates-action-btn save-btn">
+                    <span className="btn-icon">💾</span>
+                    <span className="btn-text">Save Current</span>
+                  </button>
+                )}
+              </div>
+              
+              {savedChecklistTemplates.length > 0 ? (
+                <div className="templates-list">
+                  {savedChecklistTemplates.map(template => (
+                    <div key={template.id} className="template-item">
+                      <div className="template-info">
+                        <span className="template-name">{template.name}</span>
+                        <span className="template-meta">{template.items.length} item{template.items.length !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="template-actions">
+                        <button
+                          onClick={() => handleLoadTemplate(template)}
+                          className="templates-action-btn load-btn"
+                          title="Load this template"
+                        >
+                          📥 Load
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTemplate(template.id)}
+                          className="templates-action-btn delete-btn"
+                          title="Delete this template"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="templates-empty">
+                  <p>No saved templates yet. Create one to get started!</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -343,6 +454,49 @@ const UserProfile = ({ profile, onToggleAI, expanded = false }) => {
               <div className="modal-footer">
                 <button onClick={handleCloseModal} className="btn-cancel">Cancel</button>
                 <button onClick={handleAddChecklist} className="btn-add">Add Item</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Template Modal */}
+      {showSaveChecklistModal && (
+        <div className="modal-overlay" onClick={handleCloseSaveModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Save Checklist as Template</h3>
+              <button className="modal-close" onClick={handleCloseSaveModal}>✕</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-group">
+                <label htmlFor="template-name">Template Name</label>
+                <input
+                  type="text"
+                  id="template-name"
+                  placeholder="e.g., 'Beach Trip Essentials'"
+                  value={saveChecklistName}
+                  onChange={(e) => setSaveChecklistName(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="template-preview">
+                <p className="preview-label">Items to save: {userChecklists.length}</p>
+                <ul className="preview-list">
+                  {userChecklists.slice(0, 5).map(item => (
+                    <li key={item.id}>{item.icon} {item.name}</li>
+                  ))}
+                  {userChecklists.length > 5 && (
+                    <li className="more-items">... and {userChecklists.length - 5} more</li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="modal-footer">
+                <button onClick={handleCloseSaveModal} className="btn-cancel">Cancel</button>
+                <button onClick={handleSaveChecklist} className="btn-save">Save Template</button>
               </div>
             </div>
           </div>
