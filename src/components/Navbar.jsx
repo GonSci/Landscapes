@@ -7,7 +7,8 @@ const Navbar = ({ currentPage, onNavigate, currentUser }) => { // Added currentU
     { id: 'map', label: ' Interactive Map', icon: '🗺️' },
     { id: 'explore', label: ' Explore', icon: '🌴' },
     { id: 'community', label: ' Community', icon: '🌏' },
-    { id: 'profile', label: ' My Travels', icon: '👤' }
+    { id: 'profile', label: ' My Travels', icon: '👤' },
+    { id: 'campaigns', label: ' Campaigns ', icon: '💼'}
   ];
 
   return (

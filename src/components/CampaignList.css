@@ -1,0 +1,947 @@
+/* CampaignList Component Styles */
+
+.campaign-list {
+  width: 100%;
+  padding: 40px 24px;
+  background: white;
+  min-height: calc(100vh - 100px);
+}
+
+/* ========================================
+   CAMPAIGNS GRID LAYOUT
+   ======================================== */
+
+.campaigns-grid {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 28px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   CAMPAIGN CARD
+   ======================================== */
+
+.campaign-card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: relative;
+  outline: none;
+}
+
+.campaign-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+  z-index: 1;
+}
+
+.campaign-card:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.15);
+}
+
+.campaign-card:hover::before {
+  transform: scaleX(1);
+}
+
+.campaign-card:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* ========================================
+   CREATE CAMPAIGN CARD
+   ======================================== */
+
+.campaign-create-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  border: 2px dashed #667eea;
+  border-radius: 12px;
+  padding: 40px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  outline: none;
+  min-height: 260px;
+}
+
+.campaign-create-card:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.12) 100%);
+  border-color: #764ba2;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.15);
+}
+
+.campaign-create-card:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+.create-card-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.campaign-create-card h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.campaign-create-card p {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* ========================================
+   CAMPAIGN IMAGE
+   ======================================== */
+
+.campaign-image-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 52.33%; /* 628/1200 = 52.33% aspect ratio for 1200x628px */
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.campaign-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s ease;
+}
+
+.campaign-card:hover .campaign-image {
+  transform: scale(1.05);
+}
+
+.campaign-image-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 60px;
+  color: #cbd5e1;
+  z-index: 1;
+}
+
+/* ========================================
+   CAMPAIGN CONTENT
+   ======================================== */
+
+.campaign-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  flex: 1;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ========================================
+   PLATFORM BADGE
+   ======================================== */
+
+.campaign-platform-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  color: #667eea;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  width: fit-content;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+/* ========================================
+   CAMPAIGN TITLE
+   ======================================== */
+
+.campaign-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a365d;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+/* ========================================
+   CAMPAIGN METADATA
+   ======================================== */
+
+.campaign-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.metadata-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.metadata-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metadata-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a365d;
+}
+
+/* ========================================
+   PAYOUT PROGRESS SECTION
+   ======================================== */
+
+.payout-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.payout-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.payout-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payout-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+/* Progress Bar Container */
+.payout-progress-container {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+}
+
+/* Progress Bar Background */
+.payout-progress-background {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Progress Bar Fill */
+.payout-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Payout Percentage Display */
+.payout-percentage {
+  font-size: 12px;
+  font-weight: 600;
+  color: #667eea;
+  text-align: right;
+}
+
+/* ========================================
+   VIEW DETAILS BUTTON
+   ======================================== */
+
+.view-details-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+  margin-top: auto;
+}
+
+.view-details-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+}
+
+.view-details-btn:active {
+  transform: translateY(0);
+}
+
+.view-details-btn:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* ========================================
+   PAYOUT PROGRESS SECTION
+   ======================================== */
+
+.payout-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.payout-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.payout-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payout-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+/* Progress Bar Container */
+.payout-progress-container {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+}
+
+/* Progress Bar Background */
+.payout-progress-background {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Progress Bar Fill */
+.payout-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+}
+
+/* Payout Percentage Display */
+.payout-percentage {
+  font-size: 12px;
+  font-weight: 600;
+  color: #667eea;
+  text-align: right;
+}
+
+/* ========================================
+   LOADING STATE
+   ======================================== */
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 200px);
+  gap: 20px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-container p {
+  font-size: 16px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ========================================
+   EMPTY STATE
+   ======================================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 200px);
+  gap: 16px;
+}
+
+.empty-icon {
+  font-size: 80px;
+  line-height: 1;
+}
+
+.empty-state h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a365d;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 16px;
+  color: #64748b;
+  text-align: center;
+  max-width: 400px;
+}
+
+/* ========================================
+   ERROR STATE
+   ======================================== */
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 200px);
+  gap: 16px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 80px;
+  line-height: 1;
+}
+
+.error-state h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a365d;
+}
+
+.error-state p {
+  margin: 0;
+  font-size: 16px;
+  color: #64748b;
+  max-width: 400px;
+}
+
+.retry-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  margin-top: 16px;
+}
+
+.retry-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.retry-button:active {
+  transform: translateY(0);
+}
+
+.retry-button:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 1024px) {
+  .campaigns-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .campaign-list {
+    padding: 24px 16px;
+  }
+
+  .campaigns-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .campaign-image-container {
+    height: 180px;
+  }
+
+  .campaign-content {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  .campaign-name {
+    font-size: 16px;
+  }
+
+  .campaign-description {
+    font-size: 13px;
+  }
+
+  .metadata-item {
+    gap: 4px;
+  }
+
+  .metadata-label {
+    font-size: 11px;
+  }
+
+  .metadata-value {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .campaign-list {
+    padding: 20px 12px;
+  }
+
+  .campaigns-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .campaign-image-container {
+    padding-bottom: 52.33%;
+  }
+
+  .campaign-content {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .campaign-name {
+    font-size: 15px;
+  }
+
+  .campaign-platform-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .view-details-btn {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .payout-progress-background {
+    height: 6px;
+  }
+
+  .payout-percentage {
+    font-size: 11px;
+  }
+
+  .empty-icon,
+  .error-icon {
+    font-size: 60px;
+  }
+
+  .empty-state h2,
+  .error-state h2 {
+    font-size: 22px;
+  }
+
+  .campaign-details-modal {
+    max-height: 90vh;
+    max-width: 90vw;
+    width: auto;
+  }
+
+  .details-image-container {
+    height: 250px;
+    flex-shrink: 0;
+  }
+}
+
+/* ========================================
+   CAMPAIGN DETAILS MODAL
+   ======================================== */
+
+.campaign-details-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeInOverlay 0.3s ease;
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.campaign-details-modal {
+  background: white;
+  border-radius: 16px;
+  max-height: 85vh;
+  max-width: 800px;
+  width: 100%;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUpModal 0.3s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideUpModal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.campaign-details-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1a365d;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #e2e8f0;
+  padding: 0;
+}
+
+.campaign-details-close:hover {
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+}
+
+.campaign-details-close:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* ========================================
+   DETAILS CONTENT
+   ======================================== */
+
+.campaign-details-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.details-image-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  overflow: hidden;
+  border-radius: 16px 16px 0 0;
+  flex-shrink: 0;
+  display: block;
+}
+
+.details-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.details-image-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 80px;
+  color: #cbd5e1;
+  z-index: 1;
+}
+
+/* ========================================
+   DETAILS INFO SECTION
+   ======================================== */
+
+.details-info {
+  padding: 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.details-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.details-platform-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  color: #667eea;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  width: fit-content;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.details-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: #1a365d;
+  line-height: 1.2;
+}
+
+.details-created {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ========================================
+   DETAILS SECTION
+   ======================================== */
+
+.details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.details-section-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a365d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.details-description {
+  margin: 0;
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* ========================================
+   DETAILS GRID
+   ======================================== */
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.details-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.details-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.details-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+/* ========================================
+   DETAILS PAYOUT SECTION
+   ======================================== */
+
+.details-payout-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.details-payout-section .payout-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.details-payout-section .payout-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.details-payout-section .payout-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.details-payout-section .payout-progress-container {
+  height: 32px;
+}
+
+.details-payout-section .payout-progress-background {
+  height: 12px;
+}
+
+.details-payout-section .payout-percentage {
+  font-size: 13px;
+  font-weight: 600;
+  color: #667eea;
+  margin-top: 4px;
+}

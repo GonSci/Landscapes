@@ -8,6 +8,8 @@ import LocationModal from './components/LocationModal';
 import ExploreSection from './components/ExploreSection';
 import FloatingAIButton from './components/FloatingAIButton';
 import CommunityFeed from './components/CommunityFeed';
+import CampaignSection from './components/CampaignSection';
+import CampaignList from './components/CampaignList';
 
 // --> Firebase Imports <-- //
 import { auth, db } from './firebase'; // check who is logged in and read/write user data
@@ -24,6 +26,8 @@ function App() {
   });
   const [showAIChat, setShowAIChat] = useState(false);
   const [focusLocation, setFocusLocation] = useState(null);
+  const [campaigns, setCampaigns] = useState([]);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
 
   // --> New States for Firebase <-- //
   const [currentUser, setCurrentUser] = useState(null); // Iniistore nito yung information about sa logged in user
@@ -103,6 +107,102 @@ function App() {
       console.log('No user logged in, data not saved')
     }
   };
+
+  // --> Fetch campaigns from localStorage <-- //
+  const fetchCampaigns = () => {
+    try {
+      const savedCampaigns = localStorage.getItem('campaigns');
+      if (savedCampaigns) {
+        const campaigns = JSON.parse(savedCampaigns);
+        setCampaigns(campaigns);
+        console.log('Campaigns loaded from localStorage:', campaigns);
+      } else {
+        setCampaigns([]);
+      }
+    } catch (error) {
+      console.error('Error loading campaigns from localStorage:', error);
+      setCampaigns([]);
+    }
+  };
+
+  // Save campaign to localStorage
+  const saveCampaignToStorage = (formData) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const savedCampaigns = localStorage.getItem('campaigns');
+        const campaigns = savedCampaigns ? JSON.parse(savedCampaigns) : [];
+
+        // Convert image file to base64 if it exists
+        if (formData.imageFile) {
+          // Create a FileReader to convert file to base64
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const imageBase64 = e.target.result;
+              
+              // Create new campaign object with generated ID
+              const newCampaign = {
+                id: Date.now().toString(),
+                name: formData.name,
+                description: formData.description,
+                imageUrl: imageBase64, // Store base64 image
+                platform: formData.platform,
+                total_payout: formData.budget,
+                distributed_payout: 0,
+                rpm: formData.rpm,
+                createdAt: new Date().toISOString()
+              };
+
+              campaigns.push(newCampaign);
+              localStorage.setItem('campaigns', JSON.stringify(campaigns));
+              console.log('Campaign saved to localStorage with image:', newCampaign.id);
+              
+              // Update state with new campaigns
+              setCampaigns(campaigns);
+              resolve(newCampaign);
+            } catch (error) {
+              console.error('Error processing image:', error);
+              reject(error);
+            }
+          };
+          reader.onerror = (error) => {
+            console.error('FileReader error:', error);
+            reject(error);
+          };
+          reader.readAsDataURL(formData.imageFile);
+        } else {
+          // No image, use placeholder
+          const newCampaign = {
+            id: Date.now().toString(),
+            name: formData.name,
+            description: formData.description,
+            imageUrl: null,
+            platform: formData.platform,
+            total_payout: formData.budget,
+            distributed_payout: 0,
+            rpm: formData.rpm,
+            createdAt: new Date().toISOString()
+          };
+
+          campaigns.push(newCampaign);
+          localStorage.setItem('campaigns', JSON.stringify(campaigns));
+          console.log('Campaign saved to localStorage without image:', newCampaign.id);
+          
+          // Update state with new campaigns
+          setCampaigns(campaigns);
+          resolve(newCampaign);
+        }
+      } catch (error) {
+        console.error('Error saving campaign to localStorage:', error);
+        reject(error);
+      }
+    });
+  };
+
+  // Load campaigns on component mount
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
 
 
   const handleLocationClick = (location) => {
@@ -240,6 +340,50 @@ function App() {
         {currentPage === 'community' && (
           <div className="page community-page">
             <CommunityFeed currentUser={currentUser} /> {/* New prop to */}
+          </div>
+        )}
+
+        {/* Campaigns Page - Create Marketing Campaigns */}
+        {currentPage === 'campaigns' && (
+          <div className="page campaigns-page">
+            {/* Show CampaignSection modal when button is clicked or no campaigns exist */}
+            {showCampaignModal && (
+              <CampaignSection 
+                hideHeader={true}
+                onClose={() => setShowCampaignModal(false)}
+                onCreate={async (formData) => {
+                  try {
+                    // Save campaign to localStorage
+                    await saveCampaignToStorage(formData);
+                    console.log('Campaign created:', formData);
+                    setShowCampaignModal(false);
+                    // Refresh campaigns list after creation
+                    fetchCampaigns();
+                  } catch (error) {
+                    console.error('Error creating campaign:', error);
+                  }
+                }}
+              />
+            )}
+            
+            {/* Show CampaignSection header if no campaigns, otherwise show CampaignList */}
+            {campaigns.length === 0 ? (
+              <CampaignSection 
+                onCreate={async (formData) => {
+                  try {
+                    // Save campaign to localStorage
+                    await saveCampaignToStorage(formData);
+                    console.log('Campaign created:', formData);
+                    // Refresh campaigns list after creation
+                    fetchCampaigns();
+                  } catch (error) {
+                    console.error('Error creating campaign:', error);
+                  }
+                }}
+              />
+            ) : (
+              <CampaignList campaigns={campaigns} onCreate={() => setShowCampaignModal(true)} />
+            )}
           </div>
         )}
       </div>
