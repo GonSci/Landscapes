@@ -10,6 +10,7 @@ import FloatingAIButton from './components/FloatingAIButton';
 import CommunityFeed from './components/CommunityFeed';
 import CampaignSection from './components/CampaignSection';
 import CampaignList from './components/CampaignList';
+import Home from './components/Home';
 
 // --> Firebase Imports <-- //
 import { auth, db } from './firebase'; // check who is logged in and read/write user data
@@ -17,7 +18,13 @@ import { onAuthStateChanged } from 'firebase/auth'; // detects login/logout
 import { doc, getDoc, setDoc } from 'firebase/firestore'; // create and save documents in firestore
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('map');
+  // Check URL hash on initial load to support new tab navigation
+  const getInitialPage = () => {
+    const hash = window.location.hash.replace('#', '');
+    return hash || 'home'; // Default to 'home' if no hash
+  };
+
+  const [currentPage, setCurrentPage] = useState(getInitialPage());
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [userProfile, setUserProfile] = useState({
@@ -366,6 +373,8 @@ function App() {
 
   const handleNavigate = (page) => {
     setCurrentPage(page);
+    // Update URL hash for bookmarking and new tab support
+    window.location.hash = page;
     // Close AI chat when navigating to different pages
     setShowAIChat(false);
   };
@@ -407,6 +416,13 @@ function App() {
       />
 
       <div className="app-content">
+        {/* Home Page - Landing Page */}
+        {currentPage === 'home' && (
+          <div className="page home-page">
+            <Home onNavigate={handleNavigate} currentUser={currentUser} />
+          </div>
+        )}
+
         {/* Map Page - Main Focus */}
         {currentPage === 'map' && (
           <div className="page map-page">
