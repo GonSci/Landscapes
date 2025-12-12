@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './CampaignList.css';
+import ConfirmationModal from './ConfirmationModal';
 
 /**
  * CampaignList Component
@@ -32,8 +33,42 @@ import './CampaignList.css';
  * <CampaignList campaigns={campaignArray} onCreate={() => openModal()} />
  */
 
-const CampaignList = ({ campaigns, onCreate }) => {
+// TikTok Logo Icon
+const TikTokIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.1 1.82 2.89 2.89 0 0 1 5.1-1.81V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 5.1 2.81 6.59 6.59 0 0 0 5.87-3.8A6.45 6.45 0 0 0 19 14.9V9.35a8.16 8.16 0 0 0 2.91 2.04v-3.72a4.3 4.3 0 0 1-.32-.03z"/>
+  </svg>
+);
+
+// YouTube Logo Icon
+const YouTubeIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+);
+
+// Edit Icon
+const EditIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+  </svg>
+);
+
+// Delete Icon
+const DeleteIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    <line x1="10" y1="11" x2="10" y2="17"></line>
+    <line x1="14" y1="11" x2="14" y2="17"></line>
+  </svg>
+);
+
+const CampaignList = ({ campaigns, onCreate, onDelete }) => {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, campaignId: null });
 
   // If campaigns is empty or not provided, return null
   if (!campaigns || campaigns.length === 0) {
@@ -100,6 +135,59 @@ const CampaignList = ({ campaigns, onCreate }) => {
     setSelectedCampaign(null);
   };
 
+  const handleMenuToggle = (campaignId, e) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === campaignId ? null : campaignId);
+  };
+
+  const handleEditCampaign = (campaign, e) => {
+    e.stopPropagation();
+    console.log('Edit campaign:', campaign);
+    setOpenMenuId(null);
+    // TODO: Open edit modal with campaign data
+  };
+
+  const handleDeleteCampaign = (campaignId, e) => {
+    e.stopPropagation();
+    setDeleteConfirm({ isOpen: true, campaignId });
+    setOpenMenuId(null);
+  };
+
+  const handleConfirmDelete = () => {
+    const campaignId = deleteConfirm.campaignId;
+    if (onDelete && typeof onDelete === 'function') {
+      const success = onDelete(campaignId);
+      if (success) {
+        console.log('Campaign deleted successfully:', campaignId);
+        // Close details modal if it's open for this campaign
+        if (selectedCampaign?.id === campaignId) {
+          setSelectedCampaign(null);
+        }
+      } else {
+        alert('Failed to delete campaign. Please try again.');
+      }
+    } else {
+      console.error('onDelete callback not provided or not a function');
+    }
+    setDeleteConfirm({ isOpen: false, campaignId: null });
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirm({ isOpen: false, campaignId: null });
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenMenuId(null);
+    };
+
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openMenuId]);
+
   // Campaigns Grid
   return (
     <div className="campaign-list">
@@ -125,6 +213,38 @@ const CampaignList = ({ campaigns, onCreate }) => {
               role="region"
               aria-label={`Campaign: ${campaign.name}`}
             >
+              {/* Menu Button */}
+              <div className="campaign-menu-container">
+                <button
+                  className="campaign-menu-button"
+                  onClick={(e) => handleMenuToggle(campaign.id, e)}
+                  aria-label="Campaign options menu"
+                  type="button"
+                >
+                  ⋮
+                </button>
+                {openMenuId === campaign.id && (
+                  <div className="campaign-menu-dropdown" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className="campaign-menu-item"
+                      onClick={(e) => handleEditCampaign(campaign, e)}
+                      type="button"
+                    >
+                      <EditIcon />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      className="campaign-menu-item delete"
+                      onClick={(e) => handleDeleteCampaign(campaign.id, e)}
+                      type="button"
+                    >
+                      <DeleteIcon />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Campaign Image */}
               <div className="campaign-image-container">
                 {campaign.imageUrl ? (
@@ -142,7 +262,8 @@ const CampaignList = ({ campaigns, onCreate }) => {
               <div className="campaign-content">
                 {/* Platform Badge */}
                 <div className="campaign-platform-badge">
-                  {campaign.platform === 'TikTok' ? '🎵' : '▶️'} {campaign.platform}
+                  {campaign.platform === 'TikTok' ? <TikTokIcon /> : <YouTubeIcon />}
+                  <span>{campaign.platform}</span>
                 </div>
 
                 {/* Campaign Name */}
@@ -236,7 +357,8 @@ const CampaignList = ({ campaigns, onCreate }) => {
                 {/* Header Section */}
                 <div className="details-header">
                   <div className="details-platform-badge">
-                    {selectedCampaign.platform === 'TikTok' ? '🎵' : '▶️'} {selectedCampaign.platform}
+                    {selectedCampaign.platform === 'TikTok' ? <TikTokIcon /> : <YouTubeIcon />}
+                    <span>{selectedCampaign.platform}</span>
                   </div>
                   <h2 className="details-title">{selectedCampaign.name}</h2>
                   <p className="details-created">Created: {formatDate(selectedCampaign.createdAt)}</p>
@@ -301,6 +423,18 @@ const CampaignList = ({ campaigns, onCreate }) => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteConfirm.isOpen}
+        title="Delete Campaign"
+        message="Are you sure you want to delete this campaign? This action cannot be undone and all campaign data will be permanently removed."
+        confirmText="Delete Campaign"
+        cancelText="Keep Campaign"
+        confirmButtonType="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };

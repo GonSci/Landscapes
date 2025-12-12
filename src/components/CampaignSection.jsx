@@ -31,6 +31,15 @@ import './CampaignSection.css';
  * }} />
  */
 
+// Image Upload Icon
+const ImageUploadIcon = () => (
+  <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <polyline points="17 8 12 3 7 8"></polyline>
+    <line x1="12" y1="3" x2="12" y2="15"></line>
+  </svg>
+);
+
 const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
   // Modal & Form State
   const [isModalOpen, setIsModalOpen] = useState(hideHeader ? true : false);
@@ -397,10 +406,10 @@ const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
                       </div>
                     ) : (
                       <label htmlFor="campaign-image" className="image-upload-label">
-                        <div className="image-upload-icon">📷</div>
+                        <ImageUploadIcon />
                         <p>Click to upload image</p>
                         <span className="image-upload-hint">JPG, PNG (max 5MB)</span>
-                        <span className="image-upload-hint">Recommended: 1200x628px</span>
+                        <span className="image-upload-hint">Recommended: 1200x680px</span>
                       </label>
                     )}
                     <input
@@ -514,8 +523,8 @@ const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
                     onChange={handleInputChange}
                     className="platform-select"
                   >
-                    <option value="TikTok">🎵 TikTok</option>
-                    <option value="YouTube">▶️ YouTube</option>
+                    <option value="TikTok">TikTok</option>
+                    <option value="YouTube">YouTube</option>
                   </select>
                 </div>
 

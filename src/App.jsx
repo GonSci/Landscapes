@@ -209,6 +209,29 @@ function App() {
     });
   };
 
+  // Delete campaign from localStorage
+  const deleteCampaignFromStorage = (campaignId) => {
+    try {
+      const savedCampaigns = localStorage.getItem('campaigns');
+      let campaigns = savedCampaigns ? JSON.parse(savedCampaigns) : [];
+      
+      // Filter out the campaign to delete
+      campaigns = campaigns.filter(campaign => campaign.id !== campaignId);
+      
+      // Update localStorage
+      localStorage.setItem('campaigns', JSON.stringify(campaigns));
+      
+      // Update state
+      setCampaigns(campaigns);
+      console.log('Campaign deleted from localStorage:', campaignId);
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting campaign from localStorage:', error);
+      return false;
+    }
+  };
+
   // Load campaigns on component mount
   useEffect(() => {
     fetchCampaigns();
@@ -399,7 +422,11 @@ function App() {
                 }}
               />
             ) : (
-              <CampaignList campaigns={campaigns} onCreate={() => setShowCampaignModal(true)} />
+              <CampaignList 
+                campaigns={campaigns} 
+                onCreate={() => setShowCampaignModal(true)}
+                onDelete={deleteCampaignFromStorage}
+              />
             )}
           </div>
         )}
