@@ -34,7 +34,7 @@ const Navbar = ({ currentPage, onNavigate, currentUser }) => { // Added currentU
         </div>
         
         <div className="nav-auth">
-          <LoginButton currentUser={currentUser} />
+          <LoginButton currentUser={currentUser} onNavigate={onNavigate} />
         </div>
       </div>
     </nav>

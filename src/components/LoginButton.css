@@ -1,3 +1,28 @@
+.profile-auth-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logout-icon-btn {
+  background: none;
+  border: none;
+  padding: 0 0 0 2px;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.logout-icon-btn:hover, .logout-icon-btn:focus {
+  background: #ffeaea;
+  box-shadow: 0 2px 8px rgba(229,62,62,0.13);
+  transform: scale(1.12);
+}
 .login-button-container {
   display: flex;
   align-items: center;
@@ -5,60 +30,79 @@
 }
 
 /* Login Button Styles */
+
+
 .login-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: white;
-  color: #333;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 4px 14px 4px 8px;
+  background: #fff;
+  color: #222;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.18s, transform 0.18s, background 0.18s, color 0.18s;
+  box-shadow: 0 2px 8px 0 rgba(102,126,234,0.10);
+  letter-spacing: -0.01em;
+  outline: none;
+  line-height: 1;
+  gap: 0;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.login-btn:hover {
-  background: #f8f9fa;
+.login-btn:hover, .login-btn:focus {
+  background: #f1f5f9;
+  color: #222;
+  transform: scale(1.04) translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(102,126,234,0.13);
   border-color: #667eea;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
 }
 
 .google-icon {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+  background: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(60,64,67,0.08);
 }
 
 /* User Info Styles (When Logged In) */
-.user-info {
+
+/* Profile avatar button after login */
+.profile-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  background: #f7fafc;
-  border-radius: 50px;
-  border: 2px solid #e2e8f0;
+  justify-content: center;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  box-shadow: 0 1px 4px rgba(102,126,234,0.10);
+  transition: box-shadow 0.18s, transform 0.18s;
 }
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
+.profile-avatar-btn:hover, .profile-avatar-btn:focus {
+  box-shadow: 0 4px 12px rgba(102,126,234,0.18);
+  transform: scale(1.08);
+}
+.profile-avatar-img {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #667eea;
-}
-
-.user-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #2d3748;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background: #f1f5f9;
 }
 
 /* Logout Button Styles */
