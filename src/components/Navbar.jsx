@@ -14,7 +14,7 @@ const Navbar = ({ currentPage, onNavigate, currentUser }) => { // Added currentU
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <div className="navbar-brand">
+        <div className="navbar-brand" onClick={() => onNavigate('home')} style={{ cursor: 'pointer' }}>
           <h1>🇵🇭 Landscapes</h1>
           <p className="navbar-tagline">Discover the Beauty of the Philippines</p>
         </div>
