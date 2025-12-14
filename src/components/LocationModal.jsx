@@ -717,7 +717,6 @@ const LocationModal = ({ location, onClose, onMarkBeen, onMarkWant, onAskAI }) =
           <div className="reviews-modal" onClick={(e) => e.stopPropagation()}>
             <div className="reviews-modal-header">
               <div className="reviews-header-info">
-                <span className="reviews-item-emoji">{selectedItem.image}</span>
                 <div>
                   <h3 className="reviews-item-name">{selectedItem.name}</h3>
                   <div className="reviews-item-rating">
