@@ -39,6 +39,7 @@ function App() {
   const [focusLocation, setFocusLocation] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [showCampaignListView, setShowCampaignListView] = useState(false);
 
   // --> New States for Firebase <-- //
   const [currentUser, setCurrentUser] = useState(null); // Iniistore nito yung information about sa logged in user
@@ -502,11 +503,14 @@ function App() {
               />
             )}
             
-            {/* Show CampaignLandingPage if no campaigns, otherwise show CampaignList */}
-            {campaigns.length === 0 ? (
+            {/* Show CampaignLandingPage only if not browsing view AND no campaigns exist */}
+            {!showCampaignListView && campaigns.length === 0 ? (
               <CampaignLandingPage 
                 onCreateCampaign={() => setShowCampaignModal(true)}
-                onBrowseCampaigns={() => setShowCampaignModal(true)}
+                onBrowseCampaigns={() => {
+                  setShowCampaignListView(true);
+                  fetchCampaigns();
+                }}
               />
             ) : (
               <CampaignList 
@@ -514,6 +518,8 @@ function App() {
                 onCreate={() => setShowCampaignModal(true)}
                 onDelete={deleteCampaignFromStorage}
                 onUpdate={updateCampaignInStorage}
+                onBackToLanding={showCampaignListView && campaigns.length > 0 ? () => setShowCampaignListView(false) : undefined}
+                onLearnMore={showCampaignListView && campaigns.length > 0 ? () => setShowCampaignListView(false) : undefined}
               />
             )}
           </div>

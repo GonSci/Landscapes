@@ -71,6 +71,18 @@
   }
 }
 
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /* Root container scoped with .campaign-section to avoid global conflicts */
 .campaign-section {
   display: flex;
@@ -780,12 +792,16 @@
 
 .campaign-hero-left {
   background: linear-gradient(135deg, #667eea 0%, #5568d3 100%);
-  animation: slideInLeft 0.8s ease-out;
+  background-size: 200% 200%;
+  animation: slideInLeft 0.8s ease-out, gradientFlow 15s ease-in-out infinite;
+  animation-delay: 0s, 0.8s;
 }
 
 .campaign-hero-right {
   background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
-  animation: slideInRight 0.8s ease-out;
+  background-size: 200% 200%;
+  animation: slideInRight 0.8s ease-out, gradientFlow 18s ease-in-out infinite;
+  animation-delay: 0s, 0.8s;
 }
 
 .campaign-hero-left h2,

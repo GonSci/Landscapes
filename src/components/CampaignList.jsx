@@ -24,6 +24,8 @@ import EditCampaignModal from './modals/EditCampaignModal';
  *   - onCreate: function called when "Create Campaign" button is clicked
  *   - onDelete: function called when delete is confirmed
  *   - onUpdate: async function(campaignId, updatedData) => void for updating campaigns
+ *   - onBackToLanding: optional function called when back button is clicked (for browse mode)
+ *   - onLearnMore: optional function called when "How Campaigns Work" button is clicked
  *
  * Features:
  *   - Responsive grid layout (1-3 columns based on screen size)
@@ -39,7 +41,7 @@ import EditCampaignModal from './modals/EditCampaignModal';
 // TikTok Logo Icon
 const TikTokIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.1 1.82 2.89 2.89 0 0 1 5.1-1.81V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 5.1 2.81 6.59 6.59 0 0 0 5.87-3.8A6.45 6.45 0 0 0 19 14.9V9.35a8.16 8.16 0 0 0 2.91 2.04v-3.72a4.3 4.3 0 0 1-.32-.03z"/>
+    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02c.08 1.53.63 3.09 1.75 4.17c1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97c-.57-.26-1.1-.59-1.62-.93c-.01 2.92.01 5.84-.02 8.75c-.08 1.4-.54 2.79-1.35 3.94c-1.31 1.92-3.58 3.17-5.91 3.21c-1.43.08-2.86-.31-4.08-1.03c-2.02-1.19-3.44-3.37-3.65-5.71c-.02-.5-.03-1-.01-1.49c.18-1.9 1.12-3.72 2.58-4.96c1.66-1.44 3.98-2.13 6.15-1.72c.02 1.48-.04 2.96-.04 4.44c-.99-.32-2.15-.23-3.02.37c-.63.41-1.11 1.04-1.36 1.75c-.21.51-.15 1.07-.14 1.61c.24 1.64 1.82 3.02 3.5 2.87c1.12-.01 2.19-.66 2.77-1.61c.19-.33.4-.67.41-1.06c.1-1.79.06-3.57.07-5.36c.01-4.03-.01-8.05.02-12.07z"/>
   </svg>
 );
 
@@ -68,15 +70,15 @@ const DeleteIcon = () => (
   </svg>
 );
 
-const CampaignList = ({ campaigns, onCreate, onDelete, onUpdate }) => {
+const CampaignList = ({ campaigns, onCreate, onDelete, onUpdate, onBackToLanding, onLearnMore }) => {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, campaignId: null });
   const [editingCampaign, setEditingCampaign] = useState(null);
 
-  // If campaigns is empty or not provided, return null
-  if (!campaigns || campaigns.length === 0) {
-    return null;
+  // If no campaigns, still render the component to show the button and create option
+  if (!campaigns) {
+    campaigns = [];
   }
 
   /**
@@ -426,26 +428,54 @@ const CampaignList = ({ campaigns, onCreate, onDelete, onUpdate }) => {
           </div>
         </div>
       )}
+      
+      {/* Empty State Message */}
+      {campaigns.length === 0 && (
+        <div className="campaigns-empty-state">
+          <div className="empty-state-content">
+            <div className="empty-state-icon">📋</div>
+            <h3>No campaigns yet</h3>
+            <p>Create your first campaign to get started!</p>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
-        isOpen={deleteConfirm.isOpen}
-        title="Delete Campaign"
-        message="Are you sure you want to delete this campaign? This action cannot be undone and all campaign data will be permanently removed."
-        confirmText="Delete Campaign"
-        cancelText="Keep Campaign"
-        confirmButtonType="danger"
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-      />
+      isOpen={deleteConfirm.isOpen}
+      title="Delete Campaign"
+      message="Are you sure you want to delete this campaign? This action cannot be undone and all campaign data will be permanently removed."
+      confirmText="Delete Campaign"
+      cancelText="Keep Campaign"
+      confirmButtonType="danger"
+      onConfirm={handleConfirmDelete}
+      onCancel={handleCancelDelete}
+    />
 
-      {/* Edit Campaign Modal */}
-      <EditCampaignModal
-        campaign={editingCampaign}
-        isOpen={!!editingCampaign}
-        onClose={() => setEditingCampaign(null)}
-        onUpdate={onUpdate}
-      />
+    {/* Edit Campaign Modal */}
+    <EditCampaignModal
+      campaign={editingCampaign}
+      isOpen={!!editingCampaign}
+      onClose={() => setEditingCampaign(null)}
+      onUpdate={onUpdate}
+    />
+    
+    {/* How Campaigns Work Floating Button */}
+    {onLearnMore && (
+      <button 
+        className="how-campaigns-work-btn"
+        onClick={onLearnMore}
+        aria-label="Learn how campaigns work"
+        title="How Campaigns Work"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 16v-4"></path>
+          <path d="M12 8h.01"></path>
+        </svg>
+        <span>How it Works</span>
+      </button>
+    )}
     </div>
   );
 };
