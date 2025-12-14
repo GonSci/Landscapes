@@ -1,33 +1,39 @@
 import React from 'react';
 import './Navbar.css';
 import LoginButton from './LoginButton'; // New import para sa login button
+import { Map, Compass, Calendar, Globe, User, Briefcase } from 'lucide-react';
 
 const Navbar = ({ currentPage, onNavigate, currentUser }) => { // Added currentUser prop
   const menuItems = [
-    { id: 'map', label: ' Interactive Map', icon: '🗺️' },
-    { id: 'explore', label: ' Explore', icon: '🌴' },
-    { id: 'itinerary', label: ' Make Itinerary', icon: '✈️' },
-    { id: 'community', label: ' Community', icon: '🌏' },
-    { id: 'profile', label: ' My Travels', icon: '👤' },
-    { id: 'campaigns', label: ' Campaigns ', icon: '💼'}
+    { id: 'map', label: 'Interactive Map', Icon: Map },
+    { id: 'explore', label: 'Explore', Icon: Compass },
+    { id: 'itinerary', label: 'Make Itinerary', Icon: Calendar },
+    { id: 'community', label: 'Community', Icon: Globe },
+    { id: 'profile', label: 'My Travels', Icon: User },
+    { id: 'campaigns', label: 'Campaigns', Icon: Briefcase }
   ];
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-brand" onClick={() => onNavigate('home')} style={{ cursor: 'pointer' }}>
-          <h1>🇵🇭 Landscapes</h1>
-          <p className="navbar-tagline">Discover the Beauty of the Philippines</p>
+          <h1>Landscapes</h1>
         </div>
         
-        <div className="navbar-menu">
+        <div className="navbar-menu" role="navigation" aria-label="Main navigation">
           {menuItems.map(item => (
             <button
               key={item.id}
               className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
               onClick={() => onNavigate(item.id)}
+              aria-current={currentPage === item.id ? 'page' : undefined}
+              title={item.label}
             >
-              <span className="nav-icon">{item.icon}</span>
+              {item.Icon && (
+                <span className="nav-icon" aria-hidden>
+                  <item.Icon />
+                </span>
+              )}
               <span className="nav-label">{item.label}</span>
             </button>
           ))}
