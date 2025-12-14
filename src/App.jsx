@@ -503,8 +503,8 @@ function App() {
               />
             )}
             
-            {/* Show CampaignLandingPage only if not browsing view AND no campaigns exist */}
-            {!showCampaignListView && campaigns.length === 0 ? (
+            {/* Show CampaignLandingPage if not browsing, show CampaignList if browsing */}
+            {!showCampaignListView ? (
               <CampaignLandingPage 
                 onCreateCampaign={() => setShowCampaignModal(true)}
                 onBrowseCampaigns={() => {
@@ -518,8 +518,8 @@ function App() {
                 onCreate={() => setShowCampaignModal(true)}
                 onDelete={deleteCampaignFromStorage}
                 onUpdate={updateCampaignInStorage}
-                onBackToLanding={showCampaignListView && campaigns.length > 0 ? () => setShowCampaignListView(false) : undefined}
-                onLearnMore={showCampaignListView && campaigns.length > 0 ? () => setShowCampaignListView(false) : undefined}
+                onBackToLanding={undefined}
+                onLearnMore={() => setShowCampaignListView(false)}
               />
             )}
           </div>
@@ -537,11 +537,11 @@ function App() {
         />
       )}
 
-      {/* Floating AI Button - Always visible */}
-      <FloatingAIButton onClick={toggleAIChat} isActive={showAIChat} />
+      {/* Floating AI Button - Hidden on campaigns tab */}
+      {currentPage !== 'campaigns' && <FloatingAIButton onClick={toggleAIChat} isActive={showAIChat} />}
 
-      {/* AI Assistant Overlay - Global */}
-      {showAIChat && (
+      {/* AI Assistant Overlay - Hidden on campaigns tab */}
+      {currentPage !== 'campaigns' && showAIChat && (
         <div className="ai-overlay" onClick={() => setShowAIChat(false)}>
           <div onClick={(e) => e.stopPropagation()}>
             <AIAssistant
