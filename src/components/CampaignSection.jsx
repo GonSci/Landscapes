@@ -685,12 +685,14 @@ const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
                     aria-invalid={!!errors.name}
                     aria-describedby={errors.name ? 'name-error' : undefined}
                   />
-                  <div className="char-counter">
-                    {formData.name.length}/100
+                  <div className="form-group-footer">
+                    <div className="char-counter">
+                      {formData.name.length}/100
+                    </div>
+                    {errors.name && (
+                      <p className="error-message" id="name-error">{errors.name}</p>
+                    )}
                   </div>
-                  {errors.name && (
-                    <p className="error-message" id="name-error">{errors.name}</p>
-                  )}
                 </div>
 
                 {/* Campaign Image */}
@@ -753,12 +755,14 @@ const CampaignSection = ({ onCreate, hideHeader = false, onClose }) => {
                     aria-invalid={!!errors.description}
                     aria-describedby={errors.description ? 'description-error' : undefined}
                   />
-                  <div className="char-counter">
-                    {formData.description.length}/500
+                  <div className="form-group-footer">
+                    <div className="char-counter">
+                      {formData.description.length}/500
+                    </div>
+                    {errors.description && (
+                      <p className="error-message" id="description-error">{errors.description}</p>
+                    )}
                   </div>
-                  {errors.description && (
-                    <p className="error-message" id="description-error">{errors.description}</p>
-                  )}
                 </div>
 
                 {/* Budget and RPM in two columns */}
