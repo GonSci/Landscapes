@@ -249,7 +249,7 @@ const CampaignList = ({ campaigns, onCreate, onDelete, onUpdate, onBackToLanding
                   </div>
                   <div className="metadata-item">
                     <span className="metadata-label">Price per 1K Views:</span>
-                    <span className="metadata-value">₱{campaign.rpm.toFixed(2)}</span>
+                    <span className="metadata-value">₱{campaign.rpm && Number.isInteger(campaign.rpm) ? campaign.rpm : campaign.rpm?.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -350,7 +350,7 @@ const CampaignList = ({ campaigns, onCreate, onDelete, onUpdate, onBackToLanding
                   </div>
                   <div className="details-item">
                     <span className="details-label">Revenue Per 1K Views</span>
-                    <span className="details-value">₱{selectedCampaign.rpm.toFixed(2)}</span>
+                    <span className="details-value">₱{selectedCampaign.rpm && Number.isInteger(selectedCampaign.rpm) ? selectedCampaign.rpm : selectedCampaign.rpm?.toFixed(2)}</span>
                   </div>
                   <div className="details-item">
                     <span className="details-label">Distributed Payout</span>

@@ -10,6 +10,7 @@ import FloatingAIButton from './components/FloatingAIButton';
 import CommunityFeed from './components/CommunityFeed';
 import CampaignSection, { CampaignLandingPage } from './components/CampaignSection';
 import CampaignList from './components/CampaignList';
+import BusinessDashboard from './components/BusinessDashboard';
 import Home from './components/Home';
 import ItineraryPlanner from './components/ItineraryPlanner';
 
@@ -41,6 +42,8 @@ function App() {
   const [campaigns, setCampaigns] = useState([]);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [showCampaignListView, setShowCampaignListView] = useState(false);
+  const [createdCampaign, setCreatedCampaign] = useState(null); // Track the just-created campaign
+  const [showBusinessDashboard, setShowBusinessDashboard] = useState(false); // Show dashboard after creation
 
   // --> New States for Firebase <-- //
   const [currentUser, setCurrentUser] = useState(null); // Iniistore nito yung information about sa logged in user
@@ -484,17 +487,39 @@ function App() {
         {/* Campaigns Page - Create Marketing Campaigns */}
         {currentPage === 'campaigns' && (
           <div className="page campaigns-page">
-            {/* Show CampaignSection modal when button is clicked or no campaigns exist */}
+            {/* Show Business Dashboard */}
+            {showBusinessDashboard && (
+              <BusinessDashboard
+                campaigns={campaigns}
+                onCreateAnother={() => {
+                  setShowCampaignModal(true);
+                }}
+                onBack={() => {
+                  setShowBusinessDashboard(false);
+                }}
+                onEdit={(campaignId) => {
+                  // Handle edit - you can implement this later
+                  console.log('Edit campaign:', campaignId);
+                }}
+                onDelete={(campaignId) => {
+                  deleteCampaignFromStorage(campaignId);
+                  fetchCampaigns();
+                }}
+              />
+            )}
+
+            {/* Show CampaignSection modal when button is clicked in BusinessDashboard */}
             {showCampaignModal && (
               <CampaignSection 
                 hideHeader={true}
                 onClose={() => setShowCampaignModal(false)}
                 onCreate={async (formData) => {
                   try {
-                    // Save campaign to localStorage
-                    await saveCampaignToStorage(formData);
-                    console.log('Campaign created:', formData);
+                    // Save campaign to localStorage and get the created campaign
+                    const newCampaign = await saveCampaignToStorage(formData);
+                    console.log('Campaign created:', newCampaign);
                     setShowCampaignModal(false);
+                    setShowBusinessDashboard(true);
                     // Refresh campaigns list after creation
                     fetchCampaigns();
                   } catch (error) {
@@ -504,16 +529,18 @@ function App() {
               />
             )}
             
-            {/* Show CampaignLandingPage if not browsing, show CampaignList if browsing */}
-            {!showCampaignListView ? (
+            {/* Show CampaignLandingPage if not browsing and not in dashboard, show CampaignList if browsing */}
+            {!showCampaignListView && !showBusinessDashboard && (
               <CampaignLandingPage 
-                onCreateCampaign={() => setShowCampaignModal(true)}
+                onCreateCampaign={() => setShowBusinessDashboard(true)}
                 onBrowseCampaigns={() => {
                   setShowCampaignListView(true);
                   fetchCampaigns();
                 }}
               />
-            ) : (
+            )}
+
+            {showCampaignListView && !showBusinessDashboard && (
               <CampaignList 
                 campaigns={campaigns} 
                 onCreate={() => setShowCampaignModal(true)}
