@@ -180,7 +180,7 @@ const BusinessDashboard = ({ campaigns = [], onCreateAnother, onBack, onEdit, on
         </button>
         {onBack && (
           <button className="btn-secondary btn-back" onClick={onBack}>
-            Back to Landing
+            How It Works
           </button>
         )}
       </div>
@@ -190,7 +190,7 @@ const BusinessDashboard = ({ campaigns = [], onCreateAnother, onBack, onEdit, on
         <h3>Tips for Campaign Success</h3>
         <ul>
           <li>Monitor your campaign performance regularly</li>
-          <li>Adjust your RPM rates based on creator demand</li>
+          <li>Track engagement metrics to optimize future campaigns</li>
           <li>Respond quickly to creator inquiries</li>
           <li>Provide clear guidelines for content creators</li>
         </ul>
