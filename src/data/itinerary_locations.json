@@ -1,0 +1,291 @@
+{
+  "manila": {
+    "name": "Manila",
+    "center": [14.5995, 120.9842],
+    "days": [
+      {
+        "day": 1,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Intramuros Walking Tour",
+            "description": "Explore 400-year-old Spanish walled city. Tour Fort Santiago, San Agustin Church, and Casa Manila.",
+            "position": [14.5917, 120.9747],
+            "image": "/assets/featured_images/intramuros-walking-tour.jpg",
+            "tag": "Historic Site",
+            "price": "₱500-800",
+            "rating": 4.8,
+            "reviews": 22,
+            "emoji": "🏰",
+            "business": "Manila Tours Co.",
+            "bestTime": "7:00 AM - 10:00 AM"
+          },
+          {
+            "type": "food",
+            "title": "Barbara's Heritage Restaurant",
+            "description": "Authentic Filipino heritage cuisine in a Spanish-era mansion.",
+            "position": [14.5906, 120.9749],
+            "image": "/assets/featured_images/barbaras-heritage-restaurant.jpg",
+            "tag": "Restaurant",
+            "price": "₱₱₱",
+            "rating": 4.8,
+            "reviews": 6,
+            "emoji": "🍽️",
+            "business": "Barbara's Group",
+            "bestTime": "11:00 AM - 2:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "National Museum Complex",
+            "description": "World-class art and history museums.",
+            "position": [14.5869, 120.9816],
+            "image": "/assets/featured_images/national-museum-complex.jpg",
+            "tag": "Museum",
+            "price": "FREE",
+            "rating": 4.9,
+            "reviews": 3,
+            "emoji": "🏛️",
+            "business": "National Museum PH",
+            "bestTime": "2 PM - 5:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "activities": [
+          {
+            "type": "food",
+            "title": "Abe Restaurant",
+            "description": "Kapampangan traditional dishes in a cozy setting.",
+            "position": [14.5535, 121.0450],
+            "image": "/assets/featured_images/abe-restaurant.jpg",
+            "tag": "Restaurant",
+            "price": "₱₱",
+            "rating": 4.7,
+            "reviews": 4,
+            "emoji": "🥘",
+            "business": "Abe Franchise",
+            "bestTime": "7:00 AM - 10:00 AM"
+          },
+          {
+            "type": "place",
+            "title": "BGC High Street",
+            "description": "Modern shopping and dining district.",
+            "position": [14.5534, 121.0437],
+            "image": "/assets/featured_images/bgc-high-street.jpg",
+            "tag": "Shopping District",
+            "price": "FREE",
+            "rating": 4.7,
+            "reviews": 19,
+            "emoji": "🏙️",
+            "business": "BGC Development",
+            "bestTime": "10:00 AM - 3:00 PM"
+          },
+          {
+            "type": "activity",
+            "title": "Manila Bay Sunset Cruise",
+            "description": "Romantic sunset cruise with dinner buffet.",
+            "position": [14.5792, 120.9747],
+            "image": "/assets/featured_images/manila-bay-sunset-cruise.jpg",
+            "tag": "Cruise",
+            "price": "₱1,500",
+            "rating": 4.9,
+            "reviews": 3,
+            "emoji": "⛵",
+            "business": "Bay Cruise Manila",
+            "bestTime": "5:00 PM - 7:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "activities": [
+
+          {
+            "type": "food",
+            "title": "Café Adriatico",
+            "description": "Historic café since 1980s, famous for Filipino-Spanish dishes.",
+            "position": [14.5731, 120.9842],
+            "image": "/assets/featured_images/cafe-adriatico.jpg",
+            "tag": "Cafe",
+            "price": "₱₱",
+            "rating": 4.6,
+            "reviews": 21,
+            "emoji": "☕",
+            "business": "Café Adriatico Inc.",
+            "bestTime": "7:00 AM - 11:00 AM"
+          },
+          {
+            "type": "activity",
+            "title": "Rizal Park Cultural Show",
+            "description": "Live cultural performances every weekend.",
+            "position": [14.5826, 120.9796],
+            "image": "/assets/featured_images/rizal-park-cultural-show.jpg",
+            "tag": "Cultural Show",
+            "price": "₱300",
+            "rating": 4.6,
+            "reviews": 12,
+            "emoji": "🎭",
+            "business": "National Parks Board",
+            "bestTime": "11:00 AM - 3:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "Manila Ocean Park",
+            "description": "Aquarium & marine life experiences.",
+            "position": [14.5792, 120.9747],
+            "image": "/assets/featured_images/manila-ocean-park.jpg",
+            "tag": "Aquarium",
+            "price": "₱800",
+            "rating": 4.5,
+            "reviews": 11,
+            "emoji": "🐠",
+            "business": "Ocean Park Manila",
+            "bestTime": "3:00 PM - 7:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 4,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Street Food Tour Binondo",
+            "description": "Authentic Chinatown food adventure.",
+            "position": [14.6010, 120.9772],
+            "image": "/assets/featured_images/street-food-tour-binondo.jpg",
+            "tag": "Food Tour",
+            "price": "₱650",
+            "rating": 4.9,
+            "reviews": 18,
+            "emoji": "🍜",
+            "business": "Manila Food Tours",
+            "bestTime": "7:00 AM - 11:00 AM"
+          },
+          {
+            "type": "food",
+            "title": "Binondo Food Stalls",
+            "description": "Street food paradise - siopao, lumpia, and more.",
+            "position": [14.6015, 120.9752],
+            "image": "/assets/featured_images/binondo-food-stalls.jpg",
+            "tag": "Street Food",
+            "price": "₱",
+            "rating": 4.9,
+            "reviews": 14,
+            "emoji": "🥟",
+            "business": "Various Vendors",
+            "bestTime": "11:00 AM - 12:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "SM Mall of Asia",
+            "description": "One of largest malls in the world.",
+            "position": [14.5322, 120.9814],
+            "image": "/assets/featured_images/sm-mall-of-asia.jpg",
+            "tag": "Mall",
+            "price": "FREE",
+            "rating": 4.6,
+            "reviews": 12,
+            "emoji": "🛍️",
+            "business": "SM Supermalls",
+            "bestTime": "12:00 PM - 9:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 5,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Rizal Park",
+            "description": "Relax and stroll through Manila's iconic park, see the Rizal Monument and gardens.",
+            "position": [14.5826, 120.9796],
+            "image": "/assets/featured_images/rizal-park.jpg",
+            "tag": "Park",
+            "price": "FREE",
+            "rating": 4.7,
+            "reviews": 30,
+            "emoji": "🌳",
+            "business": "National Parks Board",
+            "bestTime": "8:00 AM - 10:00 AM"
+          },
+          {
+            "type": "food",
+            "title": "Lunch at Ilustrado Restaurant",
+            "description": "Classic Filipino-Spanish cuisine in a heritage setting inside Intramuros.",
+            "position": [14.5912, 120.9752],
+            "image": "/assets/featured_images/ilustrado.jpg",
+            "tag": "Restaurant",
+            "price": "₱₱₱",
+            "rating": 4.8,
+            "reviews": 6,
+            "emoji": "🍽️",
+            "business": "Ilustrado Group",
+            "bestTime": "11:00 AM - 2:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "Rizal Park Cultural Show",
+            "description": "Live cultural performances every weekend.",
+            "position": [14.5826, 120.9796],
+            "image": "/assets/featured_images/rizal-park-cultural-show.jpg",
+            "tag": "Cultural Show",
+            "price": "₱300",
+            "rating": 4.6,
+            "reviews": 12,
+            "emoji": "🎭",
+            "business": "National Parks Board",
+            "bestTime": "4:00 PM - 7:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 6,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Manila Ocean Park",
+            "description": "Aquarium & marine life experiences.",
+            "position": [14.5792, 120.9747],
+            "image": "/assets/featured_images/manila-ocean-park.jpg",
+            "tag": "Aquarium",
+            "price": "₱800",
+            "rating": 4.5,
+            "reviews": 11,
+            "emoji": "🐠",
+            "business": "Ocean Park Manila",
+            "bestTime": "10:00 AM - 3:00 PM"
+          },
+          {
+            "type": "food",
+            "title": "Café Adriatico",
+            "description": "Historic café since 1980s, famous for Filipino-Spanish dishes.",
+            "position": [14.5731, 120.9842],
+            "image": "/assets/featured_images/cafe-adriatico.jpg",
+            "tag": "Cafe",
+            "price": "₱₱",
+            "rating": 4.6,
+            "reviews": 21,
+            "emoji": "☕",
+            "business": "Café Adriatico Inc.",
+            "bestTime": "3:00 PM - 4:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "SM Mall of Asia",
+            "description": "One of largest malls in the world.",
+            "position": [14.5322, 120.9814],
+            "image": "/assets/featured_images/sm-mall-of-asia.jpg",
+            "tag": "Mall",
+            "price": "FREE",
+            "rating": 4.6,
+            "reviews": 12,
+            "emoji": "🛍️",
+            "business": "SM Supermalls",
+            "bestTime": "5:00 PM - 9:00 PM"
+          }
+        ]
+      }
+    ]
+  }
+}

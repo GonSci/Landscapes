@@ -11,6 +11,7 @@ import CommunityFeed from './components/CommunityFeed';
 import CampaignSection, { CampaignLandingPage } from './components/CampaignSection';
 import CampaignList from './components/CampaignList';
 import Home from './components/Home';
+import ItineraryPlanner from './components/ItineraryPlanner';
 
 // --> Firebase Imports <-- //
 import { auth, db } from './firebase'; // check who is logged in and read/write user data
@@ -519,6 +520,11 @@ function App() {
           </div>
         )}
       </div>
+
+      {/* Itinerary Planner Page */}
+      {currentPage === 'itinerary' && (
+        <ItineraryPlanner />
+      )}
 
       {/* Location Modal - Global */}
       {showModal && (

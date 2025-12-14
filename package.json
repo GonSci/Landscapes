@@ -10,11 +10,15 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@huggingface/inference": "^4.13.5",
     "firebase": "^12.6.0",
     "framer-motion": "^12.23.26",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.561.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-date-range": "^2.0.1",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
