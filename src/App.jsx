@@ -137,17 +137,52 @@ function App() {
   //Fetch campaigns from localStorage
   const fetchCampaigns = () => {
     try {
+      // Demo campaign for pitch purposes
+      const demoCampaign = {
+        id: 'demo_bayview_kitchen_001',
+        name: 'Bayview Kitchen - TikTok Campaign',
+        description: 'Create a TikTok or short-form video tasting our meals\nShowcase your favorite dish in the video\nCapture your full dining experience\nLeave an honest review\nVideo must be 1 minute or longer',
+        imageUrl: '/assets/campaign_images/campaign_image1.jpg',
+        platform: 'TikTok',
+        total_payout: 30000,
+        distributed_payout: 8500,
+        rpm: 20,
+        createdAt: new Date().toISOString(),
+        viewsGenerated: 425000 // To show payout progress calculation
+      };
+
       const savedCampaigns = localStorage.getItem('campaigns');
+      let campaigns = [];
+
       if (savedCampaigns) {
-        const campaigns = JSON.parse(savedCampaigns);
-        setCampaigns(campaigns);
-        console.log('Campaigns loaded from localStorage:', campaigns);
-      } else {
-        setCampaigns([]);
+        campaigns = JSON.parse(savedCampaigns);
       }
+
+      // Always include the demo campaign if it's not already in the list
+      const hasDemoId = campaigns.some(c => c.id === 'demo_bayview_kitchen_001');
+      if (!hasDemoId) {
+        campaigns.unshift(demoCampaign);
+        localStorage.setItem('campaigns', JSON.stringify(campaigns));
+      }
+
+      setCampaigns(campaigns);
+      console.log('Campaigns loaded:', campaigns);
     } catch (error) {
       console.error('Error loading campaigns from localStorage:', error);
-      setCampaigns([]);
+      // Fallback to demo campaign
+      const demoCampaign = {
+        id: 'demo_bayview_kitchen_001',
+        name: 'Bayview Kitchen - TikTok Campaign',
+        description: 'Create a TikTok or short-form video tasting our meals\nShowcase your favorite dish in the video\nCapture your full dining experience\nLeave an honest review\nVideo must be 1 minute or longer',
+        imageUrl: '/assets/campaign_images/campaign_image1.jpg',
+        platform: 'TikTok',
+        total_payout: 30000,
+        distributed_payout: 8500,
+        rpm: 20,
+        createdAt: new Date().toISOString(),
+        viewsGenerated: 425000
+      };
+      setCampaigns([demoCampaign]);
     }
   };
 
