@@ -197,15 +197,6 @@ const CampaignList = ({ campaigns, onCreate, onDelete, onUpdate, onBackToLanding
   return (
     <div className="campaign-list">
       <div className="campaigns-grid">
-        {/* Create Campaign Button - First Item in Grid */}
-        {onCreate && (
-          <div className="campaign-create-card" onClick={onCreate} role="button" tabIndex={0} aria-label="Create a new campaign" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCreate(); } }}>
-            <div className="create-card-icon">✨</div>
-            <h3>Create New Campaign</h3>
-            <p>Launch a new marketing campaign</p>
-          </div>
-        )}
-        
         {campaigns.map((campaign) => {
           const distributedPayout = getDistributedPayout(campaign);
           const totalPayout = campaign.total_payout || campaign.budget || 0;
@@ -218,38 +209,6 @@ const CampaignList = ({ campaigns, onCreate, onDelete, onUpdate, onBackToLanding
               role="region"
               aria-label={`Campaign: ${campaign.name}`}
             >
-              {/* Menu Button */}
-              <div className="campaign-menu-container">
-                <button
-                  className="campaign-menu-button"
-                  onClick={(e) => handleMenuToggle(campaign.id, e)}
-                  aria-label="Campaign options menu"
-                  type="button"
-                >
-                  ⋮
-                </button>
-                {openMenuId === campaign.id && (
-                  <div className="campaign-menu-dropdown" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      className="campaign-menu-item"
-                      onClick={(e) => handleEditCampaign(campaign, e)}
-                      type="button"
-                    >
-                      <EditIcon />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      className="campaign-menu-item delete"
-                      onClick={(e) => handleDeleteCampaign(campaign.id, e)}
-                      type="button"
-                    >
-                      <DeleteIcon />
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
               {/* Campaign Image */}
               <div className="campaign-image-container">
                 {campaign.imageUrl ? (
@@ -423,6 +382,11 @@ const CampaignList = ({ campaigns, onCreate, onDelete, onUpdate, onBackToLanding
                     {Math.round(getPayoutPercentage(selectedCampaign))}% distributed
                   </div>
                 </div>
+
+                {/* Join Campaign Button */}
+                <button className="join-campaign-btn" type="button">
+                  Join Campaign
+                </button>
               </div>
             </div>
           </div>

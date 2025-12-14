@@ -1112,6 +1112,41 @@
   color: #667eea;
   margin-top: 4px;
 }
+
+/* ========================================
+   JOIN CAMPAIGN BUTTON
+   ======================================== */
+
+.join-campaign-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #5568d3 100%);
+  border: none;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  outline: none;
+}
+
+.join-campaign-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #5568d3 0%, #4556c2 100%);
+}
+
+.join-campaign-btn:active {
+  transform: translateY(0);
+}
+
+.join-campaign-btn:focus-visible {
+  outline: 3px solid #667eea;
+  outline-offset: 2px;
+}
+
 /* ========================================
    HOW CAMPAIGNS WORK FLOATING BUTTON
    ======================================== */
