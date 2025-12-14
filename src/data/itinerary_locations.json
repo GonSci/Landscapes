@@ -100,7 +100,6 @@
       {
         "day": 3,
         "activities": [
-
           {
             "type": "food",
             "title": "Café Adriatico",
@@ -283,6 +282,868 @@
             "emoji": "🛍️",
             "business": "SM Supermalls",
             "bestTime": "5:00 PM - 9:00 PM"
+          }
+        ]
+      }
+    ]
+  },
+  "boracay": {
+    "name": "Boracay",
+    "center": [11.9674, 121.9248],
+    "days": [
+      {
+        "day": 1,
+        "activities": [
+          {
+            "type": "food",
+            "title": "The Sunny Side Café",
+            "description": "Famous for all-day breakfast, bacon & mango grilled cheese, and ube pancakes.",
+            "position": [11.9534, 121.9296],
+            "image": "/assets/featured_images/boracay-sunny-side-cafe.jpg",
+            "tag": "Cafe",
+            "price": "₱₱",
+            "rating": 4.8,
+            "reviews": 1250,
+            "emoji": "🥞",
+            "business": "The Sunny Side Group",
+            "bestTime": "8:00 AM - 11:00 AM"
+          },
+          {
+            "type": "activity",
+            "title": "White Beach Station 2 Walk",
+            "description": "Stroll through the heart of Boracay, shops, and powder-white sand.",
+            "position": [11.9602, 121.9234],
+            "image": "/assets/featured_images/boracay-white-beach-st2.jpg",
+            "tag": "Beach Walk",
+            "price": "FREE",
+            "rating": 4.9,
+            "reviews": 5000,
+            "emoji": "🏖️",
+            "business": "Public Beach",
+            "bestTime": "4:00 PM - 6:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "Willy's Rock",
+            "description": "Iconic volcanic rock formation with a statue of the Virgin Mary. Best sunset spot.",
+            "position": [11.9674, 121.9166],
+            "image": "/assets/featured_images/boracay-willys-rock.jpg",
+            "tag": "Landmark",
+            "price": "FREE",
+            "rating": 4.8,
+            "reviews": 320,
+            "emoji": "🗿",
+            "business": "Public Landmark",
+            "bestTime": "5:00 PM - 6:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Island Hopping Tour",
+            "description": "Boat tour visiting Crocodile Island, Crystal Cove, and Magic Island.",
+            "position": [11.9547, 121.9360],
+            "image": "/assets/featured_images/boracay-island-hopping.jpg",
+            "tag": "Tour",
+            "price": "₱800-1,500",
+            "rating": 4.7,
+            "reviews": 840,
+            "emoji": "⛵",
+            "business": "Local Boat Associations",
+            "bestTime": "9:00 AM - 1:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "Puka Shell Beach",
+            "description": "Remote, untouched beach with puka shells and rougher texture sand. Quiet vibes.",
+            "position": [11.9947, 121.9122],
+            "image": "/assets/featured_images/boracay-puka-beach.jpg",
+            "tag": "Beach",
+            "price": "FREE",
+            "rating": 4.8,
+            "reviews": 600,
+            "emoji": "🐚",
+            "business": "Public Beach",
+            "bestTime": "2:00 PM - 4:00 PM"
+          },
+          {
+            "type": "food",
+            "title": "D'Talipapa Seafood Market",
+            "description": "Buy fresh seafood and have it cooked ('paluto') by nearby restaurants.",
+            "position": [11.9567, 121.9288],
+            "image": "/assets/featured_images/boracay-dtalipapa.jpg",
+            "tag": "Seafood Market",
+            "price": "₱₱₱",
+            "rating": 4.5,
+            "reviews": 900,
+            "emoji": "🦞",
+            "business": "Market Vendor Association",
+            "bestTime": "6:00 PM - 8:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Helmet Diving",
+            "description": "Walk underwater on the ocean floor surrounded by fish. No swimming skills needed.",
+            "position": [11.9610, 121.9300],
+            "image": "/assets/featured_images/boracay-helmet-diving.jpg",
+            "tag": "Water Sport",
+            "price": "₱800-1000",
+            "rating": 4.6,
+            "reviews": 310,
+            "emoji": "🤿",
+            "business": "Boracay Water Sports",
+            "bestTime": "10:00 AM - 12:00 PM"
+          },
+          {
+            "type": "food",
+            "title": "Two Seasons (BarLO)",
+            "description": "Home of the famous Four Cheese Pizza and Oyster Sisig.",
+            "position": [11.9734, 121.9142],
+            "image": "/assets/featured_images/boracay-two-seasons.jpg",
+            "tag": "Restaurant",
+            "price": "₱₱₱",
+            "rating": 4.9,
+            "reviews": 1100,
+            "emoji": "🍕",
+            "business": "Two Seasons Resorts",
+            "bestTime": "12:00 PM - 2:00 PM"
+          },
+          {
+            "type": "activity",
+            "title": "Paraw Sailing Sunset",
+            "description": "Traditional double-outrigger sailboat ride during golden hour.",
+            "position": [11.9650, 121.9210],
+            "image": "/assets/featured_images/boracay-paraw-sailing.jpg",
+            "tag": "Sailing",
+            "price": "₱1,000",
+            "rating": 4.9,
+            "reviews": 2000,
+            "emoji": "🌅",
+            "business": "Paraw Association",
+            "bestTime": "5:15 PM - 6:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 4,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Mount Luho View Deck",
+            "description": "Highest point on the island with panoramic 360-degree views.",
+            "position": [11.9800, 121.9300],
+            "image": "/assets/featured_images/boracay-mt-luho.jpg",
+            "tag": "Viewpoint",
+            "price": "₱100",
+            "rating": 4.4,
+            "reviews": 200,
+            "emoji": "⛰️",
+            "business": "Local Management",
+            "bestTime": "8:00 AM - 10:00 AM"
+          },
+          {
+            "type": "place",
+            "title": "Bulabog Beach",
+            "description": "The windy side of the island. Watch kite surfers and wind surfers.",
+            "position": [11.9667, 121.9301],
+            "image": "/assets/featured_images/boracay-bulabog-beach.jpg",
+            "tag": "Beach",
+            "price": "FREE",
+            "rating": 4.5,
+            "reviews": 400,
+            "emoji": "🪁",
+            "business": "Public Beach",
+            "bestTime": "10:30 AM - 12:00 PM"
+          },
+          {
+            "type": "food",
+            "title": "Jonah's Fruit Shake",
+            "description": "Legendary fruit shakes. Best known for Banana Choco Peanut.",
+            "position": [11.9692, 121.9184],
+            "image": "/assets/featured_images/boracay-jonahs-shake.jpg",
+            "tag": "Snack Bar",
+            "price": "₱150",
+            "rating": 4.7,
+            "reviews": 2300,
+            "emoji": "🍹",
+            "business": "Jonah's",
+            "bestTime": "2:00 PM - 3:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 5,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Mandala Spa & Villas",
+            "description": "Award-winning spa known for the 'Hilot' massage in a jungle setting.",
+            "position": [11.9482, 121.9317],
+            "image": "/assets/featured_images/boracay-mandala-spa.jpg",
+            "tag": "Spa",
+            "price": "₱2,500+",
+            "rating": 4.9,
+            "reviews": 150,
+            "emoji": "💆",
+            "business": "Mandala Spa",
+            "bestTime": "1:00 PM - 4:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "Diniwid Beach",
+            "description": "A quiet cove just past Station 1. Perfect for escaping crowds.",
+            "position": [11.9760, 121.9135],
+            "image": "/assets/featured_images/boracay-diniwid-beach.jpg",
+            "tag": "Relaxation",
+            "price": "FREE",
+            "rating": 4.8,
+            "reviews": 320,
+            "emoji": "🌴",
+            "business": "Public Beach",
+            "bestTime": "4:00 PM - 6:00 PM"
+          },
+          {
+            "type": "food",
+            "title": "Dinibeach Bar & Restaurant",
+            "description": "Chill beachfront dining in Diniwid with great cocktails and sunset views.",
+            "position": [11.9755, 121.9130],
+            "image": "/assets/featured_images/boracay-dinibeach.jpg",
+            "tag": "Bar/Restaurant",
+            "price": "₱₱",
+            "rating": 4.6,
+            "reviews": 180,
+            "emoji": "🍸",
+            "business": "Dinibeach",
+            "bestTime": "5:30 PM - 8:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 6,
+        "activities": [
+          {
+            "type": "place",
+            "title": "D'Mall Boracay",
+            "description": "Open-air mall for last-minute souvenir shopping and beachwear.",
+            "position": [11.9615, 121.9242],
+            "image": "/assets/featured_images/boracay-dmall.jpg",
+            "tag": "Shopping",
+            "price": "Various",
+            "rating": 4.5,
+            "reviews": 5000,
+            "emoji": "🛍️",
+            "business": "D'Mall",
+            "bestTime": "9:00 AM - 11:00 AM"
+          },
+          {
+            "type": "food",
+            "title": "Lemoni Café & Restaurant",
+            "description": "Fresh salads, pastries, and refreshing lemonades in D'Mall.",
+            "position": [11.9618, 121.9240],
+            "image": "/assets/featured_images/boracay-lemoni-cafe.jpg",
+            "tag": "Cafe",
+            "price": "₱₱",
+            "rating": 4.7,
+            "reviews": 850,
+            "emoji": "🍋",
+            "business": "Lemoni Group",
+            "bestTime": "11:00 AM - 1:00 PM"
+          },
+          {
+            "type": "activity",
+            "title": "Cagban Jetty Port",
+            "description": "Departure point. Say goodbye to the island.",
+            "position": [11.9443, 121.9392],
+            "image": "/assets/featured_images/boracay-cagban-port.jpg",
+            "tag": "Travel",
+            "price": "N/A",
+            "rating": 4.0,
+            "reviews": 100,
+            "emoji": "⛴️",
+            "business": "Port Authority",
+            "bestTime": "2:00 PM - 3:00 PM"
+          }
+        ]
+      }
+    ]
+  },
+  "cebu": {
+    "name": "Cebu",
+    "center": [10.3157, 123.8854],
+    "days": [
+      {
+        "day": 1,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Cebu City Heritage Tour",
+            "description": "Visit Magellan's Cross, Basilica Minore del Santo Niño, and Fort San Pedro.",
+            "position": [10.2935, 123.9019],
+            "image": "/assets/featured_images/cebu-magellans-cross.jpg",
+            "tag": "Historic Site",
+            "price": "₱50",
+            "rating": 4.7,
+            "reviews": 3200,
+            "emoji": "✝️",
+            "business": "Cebu City Tourism",
+            "bestTime": "8:00 AM - 11:00 AM"
+          },
+          {
+            "type": "food",
+            "title": "House of Lechon",
+            "description": "Best place to try the world-famous Cebu Lechon (roasted pig).",
+            "position": [10.3168, 123.9025],
+            "image": "/assets/featured_images/cebu-house-of-lechon.jpg",
+            "tag": "Restaurant",
+            "price": "₱₱",
+            "rating": 4.8,
+            "reviews": 1500,
+            "emoji": "🐖",
+            "business": "House of Lechon",
+            "bestTime": "11:30 AM - 1:30 PM"
+          },
+          {
+            "type": "place",
+            "title": "Temple of Leah",
+            "description": "Grand Roman-style temple with panoramic views of the city.",
+            "position": [10.3654, 123.8762],
+            "image": "/assets/featured_images/cebu-temple-of-leah.jpg",
+            "tag": "Landmark",
+            "price": "₱150",
+            "rating": 4.5,
+            "reviews": 890,
+            "emoji": "🏛️",
+            "business": "Adarna Family",
+            "bestTime": "4:00 PM - 6:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Oslob Whale Shark Watching",
+            "description": "Once-in-a-lifetime swimming with gentle giant whale sharks.",
+            "position": [9.4627, 123.3807],
+            "image": "/assets/featured_images/cebu-oslob-whaleshark.jpg",
+            "tag": "Adventure",
+            "price": "₱1,000-2,000",
+            "rating": 4.6,
+            "reviews": 5000,
+            "emoji": "🦈",
+            "business": "Oslob LGU",
+            "bestTime": "6:00 AM - 9:00 AM"
+          },
+          {
+            "type": "place",
+            "title": "Tumalog Falls",
+            "description": "A stunning curtain-like waterfall perfect for cooling down.",
+            "position": [9.4833, 123.3769],
+            "image": "/assets/featured_images/cebu-tumalog-falls.jpg",
+            "tag": "Nature",
+            "price": "₱50",
+            "rating": 4.7,
+            "reviews": 1200,
+            "emoji": "🌊",
+            "business": "Public Park",
+            "bestTime": "10:00 AM - 12:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Kawasan Falls Canyoneering",
+            "description": "Extreme adventure jumping off cliffs and trekking through blue waters.",
+            "position": [9.8028, 123.3735],
+            "image": "/assets/featured_images/cebu-kawasan-falls.jpg",
+            "tag": "Adventure",
+            "price": "₱1,500",
+            "rating": 4.9,
+            "reviews": 4500,
+            "emoji": "🧗",
+            "business": "Badian Canyoneering",
+            "bestTime": "8:00 AM - 2:00 PM"
+          },
+          {
+            "type": "activity",
+            "title": "Moalboal Sardine Run",
+            "description": "Snorkel with millions of sardines just off the shore.",
+            "position": [9.9563, 123.3725],
+            "image": "/assets/featured_images/cebu-sardine-run.jpg",
+            "tag": "Snorkeling",
+            "price": "FREE",
+            "rating": 4.9,
+            "reviews": 3200,
+            "emoji": "🐟",
+            "business": "Panagsama Beach",
+            "bestTime": "3:00 PM - 5:00 PM"
+          }
+        ]
+      }
+    ]
+  },
+  "palawan": {
+    "name": "Palawan (El Nido)",
+    "center": [11.1956, 119.4189],
+    "days": [
+      {
+        "day": 1,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Tour A: Big Lagoon",
+            "description": "Kayaking through the majestic limestone cliffs of Big Lagoon.",
+            "position": [11.1518, 119.3225],
+            "image": "/assets/featured_images/palawan-big-lagoon.jpg",
+            "tag": "Island Hopping",
+            "price": "₱1,200",
+            "rating": 4.9,
+            "reviews": 4000,
+            "emoji": "🛶",
+            "business": "El Nido Tours",
+            "bestTime": "9:00 AM - 12:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "Seven Commandos Beach",
+            "description": "White sand beach with coconut trees and beach bars.",
+            "position": [11.1822, 119.3875],
+            "image": "/assets/featured_images/palawan-seven-commandos.jpg",
+            "tag": "Beach",
+            "price": "FREE",
+            "rating": 4.7,
+            "reviews": 1100,
+            "emoji": "🌴",
+            "business": "Public Beach",
+            "bestTime": "2:00 PM - 4:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Tour C: Hidden Beach",
+            "description": "Discover a beach hidden behind towering limestone walls.",
+            "position": [11.1969, 119.2900],
+            "image": "/assets/featured_images/palawan-hidden-beach.jpg",
+            "tag": "Island Hopping",
+            "price": "₱1,400",
+            "rating": 4.9,
+            "reviews": 3200,
+            "emoji": "🤫",
+            "business": "El Nido Tours",
+            "bestTime": "10:00 AM - 1:00 PM"
+          },
+          {
+            "type": "food",
+            "title": "Trattoria Altrove",
+            "description": "Famous brick-oven pizza place where you leave your shoes at the door.",
+            "position": [11.1793, 119.3923],
+            "image": "/assets/featured_images/palawan-altrove.jpg",
+            "tag": "Restaurant",
+            "price": "₱₱",
+            "rating": 4.8,
+            "reviews": 1500,
+            "emoji": "🍕",
+            "business": "Altrove Group",
+            "bestTime": "6:00 PM - 8:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Nacpan Beach",
+            "description": "A 4-kilometer stretch of golden sand. One of the best beaches in the world.",
+            "position": [11.3197, 119.4265],
+            "image": "/assets/featured_images/palawan-nacpan.jpg",
+            "tag": "Beach",
+            "price": "FREE",
+            "rating": 4.9,
+            "reviews": 2100,
+            "emoji": "🏖️",
+            "business": "Public Beach",
+            "bestTime": "10:00 AM - 3:00 PM"
+          },
+          {
+            "type": "activity",
+            "title": "Las Cabanas Sunset",
+            "description": "Best sunset view in El Nido with zipline options.",
+            "position": [11.1578, 119.3970],
+            "image": "/assets/featured_images/palawan-las-cabanas.jpg",
+            "tag": "Sunset Spot",
+            "price": "FREE",
+            "rating": 4.8,
+            "reviews": 3000,
+            "emoji": "🌅",
+            "business": "Maremegmeg Beach",
+            "bestTime": "5:00 PM - 6:30 PM"
+          }
+        ]
+      }
+    ]
+  },
+  "baguio": {
+    "name": "Baguio",
+    "center": [16.4023, 120.5960],
+    "days": [
+      {
+        "day": 1,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Burnham Park",
+            "description": "Historic urban park. Go boating on the lake or rent a bike.",
+            "position": [16.4125, 120.5927],
+            "image": "/assets/featured_images/baguio-burnham-park.jpg",
+            "tag": "Park",
+            "price": "FREE",
+            "rating": 4.7,
+            "reviews": 8000,
+            "emoji": "🚣",
+            "business": "City Government",
+            "bestTime": "8:00 AM - 10:00 AM"
+          },
+          {
+            "type": "food",
+            "title": "Good Taste Restaurant",
+            "description": "Legendary budget-friendly restaurant famous for buttered chicken.",
+            "position": [16.4138, 120.5935],
+            "image": "/assets/featured_images/baguio-good-taste.jpg",
+            "tag": "Restaurant",
+            "price": "₱",
+            "rating": 4.6,
+            "reviews": 5000,
+            "emoji": "🍗",
+            "business": "Good Taste",
+            "bestTime": "11:00 AM - 1:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "activities": [
+          {
+            "type": "place",
+            "title": "BenCab Museum",
+            "description": "Museum of National Artist Benedicto Cabrera with stunning mountain views.",
+            "position": [16.3980, 120.5539],
+            "image": "/assets/featured_images/baguio-bencab.jpg",
+            "tag": "Museum",
+            "price": "₱200",
+            "rating": 4.8,
+            "reviews": 3000,
+            "emoji": "🎨",
+            "business": "BenCab Foundation",
+            "bestTime": "9:00 AM - 11:00 AM"
+          },
+          {
+            "type": "activity",
+            "title": "Baguio Night Market",
+            "description": "Famous 'Ukay-Ukay' street thrift shopping and street food.",
+            "position": [16.4116, 120.5954],
+            "image": "/assets/featured_images/baguio-night-market.jpg",
+            "tag": "Shopping",
+            "price": "FREE",
+            "rating": 4.6,
+            "reviews": 4000,
+            "emoji": "👕",
+            "business": "Vendor Association",
+            "bestTime": "9:00 PM - 11:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Camp John Hay",
+            "description": "Pine tree reserve, former US military base. Visit the Bell Amphitheater.",
+            "position": [16.3920, 120.6133],
+            "image": "/assets/featured_images/baguio-camp-john-hay.jpg",
+            "tag": "Nature",
+            "price": "FREE",
+            "rating": 4.8,
+            "reviews": 5000,
+            "emoji": "🌲",
+            "business": "CJH Dev Corp",
+            "bestTime": "8:00 AM - 11:00 AM"
+          },
+          {
+            "type": "place",
+            "title": "Mines View Park",
+            "description": "Overlook of the mining town of Itogon. Buy souvenirs here.",
+            "position": [16.4215, 120.6267],
+            "image": "/assets/featured_images/baguio-mines-view.jpg",
+            "tag": "Viewpoint",
+            "price": "₱10",
+            "rating": 4.4,
+            "reviews": 6000,
+            "emoji": "⛰️",
+            "business": "City Government",
+            "bestTime": "2:00 PM - 4:00 PM"
+          }
+        ]
+      }
+    ]
+  },
+  "davao": {
+    "name": "Davao",
+    "center": [7.1907, 125.4553],
+    "days": [
+      {
+        "day": 1,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Philippine Eagle Center",
+            "description": "Sanctuary for the endangered Philippine Eagle.",
+            "position": [7.1853, 125.4125],
+            "image": "/assets/featured_images/davao-eagle-center.jpg",
+            "tag": "Conservation",
+            "price": "₱150",
+            "rating": 4.8,
+            "reviews": 1200,
+            "emoji": "🦅",
+            "business": "Phil Eagle Foundation",
+            "bestTime": "9:00 AM - 11:00 AM"
+          },
+          {
+            "type": "food",
+            "title": "Malagos Garden Resort",
+            "description": "Famous for their award-winning chocolates and bird shows.",
+            "position": [7.1820, 125.4100],
+            "image": "/assets/featured_images/davao-malagos.jpg",
+            "tag": "Attraction",
+            "price": "₱250",
+            "rating": 4.7,
+            "reviews": 1100,
+            "emoji": "🍫",
+            "business": "Malagos Group",
+            "bestTime": "11:30 AM - 2:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Samal Island Hopping",
+            "description": "Visit Coral Garden and Babu Santa Beach.",
+            "position": [7.0945, 125.7000],
+            "image": "/assets/featured_images/davao-samal.jpg",
+            "tag": "Beach",
+            "price": "₱1,500",
+            "rating": 4.6,
+            "reviews": 2000,
+            "emoji": "🏝️",
+            "business": "Samal Tours",
+            "bestTime": "8:00 AM - 3:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "activities": [
+          {
+            "type": "food",
+            "title": "Roxas Night Market",
+            "description": "Famous for grilled tuna panga, seafood, and durian ice cream.",
+            "position": [7.0706, 125.6128],
+            "image": "/assets/featured_images/davao-roxas-market.jpg",
+            "tag": "Street Food",
+            "price": "₱",
+            "rating": 4.7,
+            "reviews": 3500,
+            "emoji": "🍢",
+            "business": "City Government",
+            "bestTime": "6:00 PM - 9:00 PM"
+          }
+        ]
+      }
+    ]
+  },
+  "vigan": {
+    "name": "Vigan",
+    "center": [17.5709, 120.3872],
+    "days": [
+      {
+        "day": 1,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Calle Crisologo",
+            "description": "World-famous cobblestone street lined with Spanish heritage houses.",
+            "position": [17.5714, 120.3888],
+            "image": "/assets/featured_images/vigan-calle-crisologo.jpg",
+            "tag": "Historic Site",
+            "price": "FREE",
+            "rating": 4.9,
+            "reviews": 5000,
+            "emoji": "🏘️",
+            "business": "City Government",
+            "bestTime": "6:00 AM - 8:00 AM"
+          },
+          {
+            "type": "food",
+            "title": "Cafe Leona",
+            "description": "Dining in an ancestral house featuring Vigan Longganisa and Bagnet.",
+            "position": [17.5720, 120.3889],
+            "image": "/assets/featured_images/vigan-cafe-leona.jpg",
+            "tag": "Restaurant",
+            "price": "₱₱",
+            "rating": 4.5,
+            "reviews": 800,
+            "emoji": "🍽️",
+            "business": "Cafe Leona",
+            "bestTime": "12:00 PM - 1:30 PM"
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Baluarte Zoo",
+            "description": "Private zoo of Chavit Singson. Interactive animal encounters.",
+            "position": [17.5516, 120.3752],
+            "image": "/assets/featured_images/vigan-baluarte.jpg",
+            "tag": "Zoo",
+            "price": "FREE",
+            "rating": 4.5,
+            "reviews": 2000,
+            "emoji": "🐯",
+            "business": "LCS Group",
+            "bestTime": "8:00 AM - 10:00 AM"
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Bantay Bell Tower",
+            "description": "Historic bell tower offering panoramic views of Vigan.",
+            "position": [17.5810, 120.3920],
+            "image": "/assets/featured_images/vigan-bantay-tower.jpg",
+            "tag": "Landmark",
+            "price": "Donation",
+            "rating": 4.8,
+            "reviews": 1500,
+            "emoji": "🔔",
+            "business": "St. Augustine Parish",
+            "bestTime": "4:00 PM - 5:30 PM"
+          }
+        ]
+      }
+    ]
+  },
+  "siargao": {
+    "name": "Siargao",
+    "center": [9.7899, 126.1522],
+    "days": [
+      {
+        "day": 1,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Cloud 9 Boardwalk",
+            "description": "Famous surfing spot with a wooden boardwalk. Perfect for sunrise.",
+            "position": [9.8030, 126.1664],
+            "image": "/assets/featured_images/siargao-cloud9.jpg",
+            "tag": "Surfing",
+            "price": "₱50",
+            "rating": 4.9,
+            "reviews": 3000,
+            "emoji": "🏄",
+            "business": "Local Government",
+            "bestTime": "5:30 AM - 7:00 AM"
+          },
+          {
+            "type": "food",
+            "title": "Shaka Cafe",
+            "description": "Famous for colorful smoothie bowls and healthy breakfasts.",
+            "position": [9.8020, 126.1650],
+            "image": "/assets/featured_images/siargao-shaka.jpg",
+            "tag": "Cafe",
+            "price": "₱250",
+            "rating": 4.8,
+            "reviews": 900,
+            "emoji": "🥣",
+            "business": "Shaka Life",
+            "bestTime": "8:00 AM - 10:00 AM"
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "activities": [
+          {
+            "type": "activity",
+            "title": "Island Hopping (Tri-Island)",
+            "description": "Visit Guyam, Daku, and Naked Island.",
+            "position": [9.7900, 126.1600],
+            "image": "/assets/featured_images/siargao-island-hopping.jpg",
+            "tag": "Tour",
+            "price": "₱1,500",
+            "rating": 4.9,
+            "reviews": 2500,
+            "emoji": "🏝️",
+            "business": "Local Boatmen",
+            "bestTime": "9:00 AM - 3:00 PM"
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "activities": [
+          {
+            "type": "place",
+            "title": "Magpupungko Rock Pools",
+            "description": "Natural tidal pools exposed during low tide. Crystal clear water.",
+            "position": [9.8887, 126.1215],
+            "image": "/assets/featured_images/siargao-magpupungko.jpg",
+            "tag": "Nature",
+            "price": "₱50",
+            "rating": 4.7,
+            "reviews": 2100,
+            "emoji": "🏊",
+            "business": "Pilar LGU",
+            "bestTime": "11:00 AM - 2:00 PM"
+          },
+          {
+            "type": "place",
+            "title": "Maasin River (Coconut Road)",
+            "description": "Famous bent palm tree swing and river cruise.",
+            "position": [9.8525, 126.0820],
+            "image": "/assets/featured_images/siargao-maasin.jpg",
+            "tag": "Landmark",
+            "price": "₱20",
+            "rating": 4.6,
+            "reviews": 1800,
+            "emoji": "🥥",
+            "business": "Maasin Community",
+            "bestTime": "8:00 AM - 10:00 AM"
           }
         ]
       }

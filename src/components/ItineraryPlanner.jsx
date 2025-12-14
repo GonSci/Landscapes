@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import manilaItineraryData from '../data/itinerary_locations.json';
+import itineraryLocations from '../data/itinerary_locations.json';
 import { Tooltip } from 'react-leaflet';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import { Calendar, MapPin, Clock, Sparkles, Star } from 'lucide-react';
@@ -92,55 +93,73 @@ const ItineraryPlanner = () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     const days = calculateDays();
-    const destKey = Object.keys(philippinesLocations).find(
-      key => philippinesLocations[key].name.toLowerCase().includes(destination.toLowerCase())
-    );
+    const normalizedInput = (destination || '').trim().toLowerCase();
 
-    // If Manila, use the JSON data
-    if (destKey === 'manila' && manilaItineraryData.manila) {
-      const manilaData = manilaItineraryData.manila;
-      const itineraryDays = manilaData.days.slice(0, days);
-      const start = new Date(dateRange.startDate);
-      const dailyPlan = itineraryDays.map((dayObj, idx) => {
-        const date = new Date(start);
-        date.setDate(start.getDate() + idx);
-        return {
-          day: dayObj.day,
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          activities: dayObj.activities.map(act => ({
-            title: act.title,
-            description: act.description,
-            image: act.image,
-            period: act.tag, // Show tag in the UI instead of time
-            time: act.bestTime,
-            position: act.position,
-          })),
-        };
+    // Try to find a matching place in the JSON data (match by key or by place name substring)
+    const jsonKeys = Object.keys(itineraryLocations || {});
+    let matchedKey = jsonKeys.find(k => k.toLowerCase() === normalizedInput);
+    if (!matchedKey) {
+      matchedKey = jsonKeys.find(k => (itineraryLocations[k].name || '').toLowerCase().includes(normalizedInput));
+    }
+    if (!matchedKey) {
+      // Try substring match against names if user typed a partial name
+      matchedKey = jsonKeys.find(k => normalizedInput && (itineraryLocations[k].name || '').toLowerCase().indexOf(normalizedInput) !== -1);
+    }
+
+    if (matchedKey) {
+      const placeData = itineraryLocations[matchedKey];
+      // Build itinerary from JSON days, repeat or trim to match requested days
+      const availableDays = placeData.days || [];
+      const dailyPlan = [];
+
+      for (let i = 0; i < days; i++) {
+        const srcDay = availableDays[i % availableDays.length] || availableDays[0] || { day: i + 1, activities: [] };
+        // Map activities into our UI shape
+        const activities = (srcDay.activities || []).map(act => ({
+          title: act.title || act.business || 'Activity',
+          description: act.description || '',
+          position: act.position || act.coords || [placeData.center[0], placeData.center[1]],
+          image: act.image ? act.image : null,
+          emoji: act.emoji || '',
+          period: act.tag || act.bestTime || '',
+          tag: act.tag || '',
+          time: act.bestTime || '',
+          type: act.type || 'place'
+        }));
+
+        dailyPlan.push({
+          day: i + 1,
+          date: new Date(new Date(dateRange.startDate).getTime() + i * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          activities
+        });
+      }
+
+      // Build allPins for the map
+      const allPins = [];
+      dailyPlan.forEach(d => {
+        d.activities.forEach((a, idx) => {
+          allPins.push({ position: a.position, title: a.title, day: d.day, time: a.time || '', tag: a.tag || '' });
+        });
       });
-      // Collect all pins for map
-      const allPins = itineraryDays.flatMap((dayObj, idx) => dayObj.activities.map(act => ({
-        title: act.title,
-        position: act.position,
-        image: act.image,
-        day: dayObj.day,
-        time: act.bestTime,
-      })));
+
       setItinerary({
-        destination: manilaData.name,
-        center: manilaData.center,
-        days: itineraryDays.length,
-        startDate: new Date(dateRange.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        endDate: new Date(dateRange.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        destination: placeData.name || destination,
+        days,
+        startDate: new Date(dateRange.startDate).toLocaleDateString(),
+        endDate: new Date(dateRange.endDate).toLocaleDateString(),
         dailyPlan,
-        allPins,
+        center: placeData.center || [14.5995, 120.9842],
+        allPins
       });
       setView('planner');
       setIsGenerating(false);
       return;
     }
 
-    // Fallback: use generic data for other destinations
-    const selectedLocation = destKey ? philippinesLocations[destKey] : philippinesLocations.boracay;
+    // Fallback: no JSON match — use nearest known Philippines location or generic generator
+    const destKey = Object.keys(philippinesLocations).find(
+      key => philippinesLocations[key].name.toLowerCase().includes(destination.toLowerCase())
+    );
     // ...existing code for generic itinerary generation...
     const generatedItinerary = {
       destination: selectedLocation.name,
@@ -403,7 +422,29 @@ const ItineraryPlanner = () => {
                         </div>
                         <div className="activity-content">
                           <div className="activity-image">
-                            <img src={activity.image} alt={activity.title} onError={(e) => e.target.src = 'https://via.placeholder.com/80'} />
+                            {activity.image ? (
+                              <img
+                                src={activity.image}
+                                alt={activity.title}
+                                onError={(e) => {
+                                  // Replace broken image with emoji fallback (avoid external placeholder request)
+                                  try {
+                                    const emoji = activity.emoji || '📍';
+                                    const wrapper = document.createElement('div');
+                                    wrapper.className = 'activity-emoji';
+                                    wrapper.setAttribute('aria-hidden', 'true');
+                                    wrapper.textContent = emoji;
+                                    e.target.replaceWith(wrapper);
+                                  } catch (err) {
+                                    e.target.style.display = 'none';
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div className="activity-emoji" aria-hidden>
+                                {activity.emoji || '📍'}
+                              </div>
+                            )}
                           </div>
                           <div className="activity-details">
                             <h4>{activity.title}</h4>
@@ -423,7 +464,10 @@ const ItineraryPlanner = () => {
               center={itinerary.center}
               zoom={12}
               className="itinerary-map"
-              scrollWheelZoom={false}
+              scrollWheelZoom={true}
+              touchZoom={true}
+              doubleClickZoom={true}
+              zoomControl={true}
             >
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

@@ -645,6 +645,18 @@
   object-fit: cover;
 }
 
+/* Emoji fallback when no image is available */
+.activity-emoji {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
 .activity-details {
   flex: 1;
 }
