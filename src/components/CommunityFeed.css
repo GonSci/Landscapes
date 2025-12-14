@@ -1,3 +1,25 @@
+/* Add-comment-btn custom styles to mimic Tailwind */
+.add-comment-btn {
+  background: #3b82f6; /* Tailwind bg-blue-500 */
+  color: #fff;
+  border: none;
+  border-radius: 0.375rem; /* Tailwind rounded */
+  padding: 0.5rem 1rem; /* px-4 py-2 */
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-comment-btn:hover:not(:disabled),
+.add-comment-btn:focus:not(:disabled) {
+  background: #2563eb; /* Tailwind hover:bg-blue-600 */
+}
+
+.add-comment-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .community-feed {
   width: 100%;
   max-width: 1200px;
@@ -745,6 +767,15 @@
 .thread-sidebar {
   background: #ffffff;
   border-right: 1px solid #e5e7eb;
+  min-width: 220px;
+  max-width: 260px;
+  padding: 20px 12px 12px 12px;
+  box-sizing: border-box;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .thread-sidebar h3 {

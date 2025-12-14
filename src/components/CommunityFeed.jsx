@@ -1171,25 +1171,41 @@ const CommunityFeed = ({ currentUser }) => {
           <p className="post-description">{post.content}</p>
         
           {post.imageUrls && post.imageUrls.length > 0 && (
-            <div className="post-image" style={{
-              display: 'grid',
-              gridTemplateColumns: post.imageUrls.length === 1 ? '1fr' : 'repeat(2, 1fr)',
-              gap: '10px',
-              marginTop: '10px'
-            }}>
-              {post.imageUrls.map((url, index) => (
-                <img
-                  key={index}
-                  src={url}
-                  alt={`Post image ${index + 1}`}
-                  style={{
-                    width: '100%',
-                    borderRadius: '8px',
-                    objectFit: 'cover',
-                    maxHeight: '300px'
-                  }}
-                />
-              ))}
+            <div className="post-image" style={{ marginTop: '10px' }}>
+              {(() => {
+                // Limit to 5 unique images for 5 posts
+                const localImages = [
+                  '/assets/images/boracay.jpg',
+                  '/assets/images/bohol.jpg',
+                  '/assets/images/siargao.jpg',
+                  '/assets/images/vigan.jpg',
+                  '/assets/images/mayon.jpg'
+                ];
+                // Use the post index (if available) or fallback to hash
+                let imgIdx = 0;
+                if (typeof post.index === 'number') {
+                  imgIdx = post.index % localImages.length;
+                } else if (post && post.id) {
+                  let hash = 0;
+                  for (let i = 0; i < String(post.id).length; i++) {
+                    hash = String(post.id).charCodeAt(i) + ((hash << 5) - hash);
+                  }
+                  imgIdx = Math.abs(hash) % localImages.length;
+                }
+                const src = localImages[imgIdx];
+                return (
+                  <img
+                    src={src}
+                    alt="Post image"
+                    style={{
+                      width: '100%',
+                      borderRadius: '8px',
+                      objectFit: 'cover',
+                      maxHeight: '300px'
+                    }}
+                  />
+                );
+              })()}
             </div>
           )}
         </div>
@@ -1218,7 +1234,18 @@ const CommunityFeed = ({ currentUser }) => {
           <div className="comments-section">
             {post.comments && post.comments.map(comment => (
               <div key={comment.id} className="comment">
-                <span className="comment-avatar">{comment.userAvatar}</span>
+                <img
+                  className="comment-avatar"
+                  src={comment.userAvatar || 'https://via.placeholder.com/32'}
+                  alt={comment.userName}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    marginRight: '8px'
+                  }}
+                />
                 <div className="comment-content">
                   <div className="comment-header">
                     <span className="comment-user">{comment.userName}</span>
