@@ -9,6 +9,7 @@ import ExploreSection from './components/explore/ExploreSection';
 import FloatingAIButton from './components/ai/FloatingAIButton';
 import CommunityFeed from './components/community/CommunityFeed';
 import Home from './components/landingPage/Home';
+import LiveView from './components/liveView/LiveView';
 
 // --> Firebase Imports <-- //
 import { auth, db } from './firebase';
@@ -235,6 +236,12 @@ function App() {
         {currentPage === 'community' && (
           <div className="page community-page">
             <CommunityFeed currentUser={currentUser} />
+          </div>
+        )}
+
+        {currentPage === 'liveview' && (
+          <div className="page liveview-page">
+            <LiveView />
           </div>
         )}
       </div>

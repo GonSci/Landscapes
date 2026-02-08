@@ -1,0 +1,152 @@
+{
+  "locations": [
+    {
+      "id": "burnham-park",
+      "name": "Burnham Park",
+      "type": "park",
+      "coordinates": { "lat": 16.4120, "lng": 120.5930 },
+      "currentCrowdLevel": "high",
+      "detectedPeople": 87,
+      "capacity": 150,
+      "crowdDensity": 0.58,
+      "description": "Central park with boating lagoon and gardens",
+      "videoFeed": "burnham-park-live.mp4",
+      "alternatives": ["teachers-camp", "mines-view-park"],
+      "peakHours": ["10:00-12:00", "14:00-17:00"],
+      "averageWaitTime": 45,
+      "facilities": ["Restrooms", "Food Stalls", "Parking", "Boat Rental"]
+    },
+    {
+      "id": "session-road",
+      "name": "Session Road",
+      "type": "street",
+      "coordinates": { "lat": 16.4050, "lng": 120.5900 },
+      "currentCrowdLevel": "moderate",
+      "detectedPeople": 52,
+      "capacity": 120,
+      "crowdDensity": 0.43,
+      "description": "Main shopping and dining street",
+      "videoFeed": "session-road-live.mp4",
+      "alternatives": ["sm-baguio", "harrison-road"],
+      "peakHours": ["11:00-13:00", "18:00-20:00"],
+      "averageWaitTime": 20,
+      "facilities": ["Shops", "Restaurants", "ATMs", "Public Transport"]
+    },
+    {
+      "id": "mines-view-park",
+      "name": "Mines View Park",
+      "type": "viewpoint",
+      "coordinates": { "lat": 16.4023, "lng": 120.5800 },
+      "currentCrowdLevel": "low",
+      "detectedPeople": 18,
+      "capacity": 80,
+      "crowdDensity": 0.23,
+      "description": "Scenic viewpoint overlooking mining town",
+      "videoFeed": "mines-view-live.mp4",
+      "alternatives": ["philippines-military-academy", "botanical-garden"],
+      "peakHours": ["08:00-10:00", "15:00-17:00"],
+      "averageWaitTime": 5,
+      "facilities": ["Souvenir Shops", "Photo Spots", "Parking", "Food Vendors"]
+    },
+    {
+      "id": "strawberry-farm",
+      "name": "Strawberry Farm",
+      "type": "farm",
+      "coordinates": { "lat": 16.3980, "lng": 120.5600 },
+      "currentCrowdLevel": "moderate",
+      "detectedPeople": 34,
+      "capacity": 70,
+      "crowdDensity": 0.49,
+      "description": "Pick-your-own strawberries experience",
+      "videoFeed": "strawberry-farm-live.mp4",
+      "alternatives": ["tam-awan-village", "bell-church"],
+      "peakHours": ["09:00-11:00", "14:00-16:00"],
+      "averageWaitTime": 15,
+      "facilities": ["Strawberry Picking", "Fresh Produce", "Photo Areas", "Parking"]
+    },
+    {
+      "id": "teachers-camp",
+      "name": "Teachers Camp",
+      "type": "historical",
+      "coordinates": { "lat": 16.4100, "lng": 120.5950 },
+      "currentCrowdLevel": "low",
+      "detectedPeople": 12,
+      "capacity": 60,
+      "crowdDensity": 0.20,
+      "description": "Historical American-era training facility",
+      "videoFeed": "teachers-camp-live.mp4",
+      "alternatives": ["mansion-house", "wright-park"],
+      "peakHours": ["10:00-12:00"],
+      "averageWaitTime": 0,
+      "facilities": ["Historical Sites", "Walking Paths", "Gardens", "Chapel"]
+    },
+    {
+      "id": "sm-baguio",
+      "name": "SM City Baguio",
+      "type": "mall",
+      "coordinates": { "lat": 16.4080, "lng": 120.5970 },
+      "currentCrowdLevel": "high",
+      "detectedPeople": 142,
+      "capacity": 200,
+      "crowdDensity": 0.71,
+      "description": "Large shopping mall with various stores",
+      "videoFeed": "sm-baguio-live.mp4",
+      "alternatives": ["porta-vaga-mall", "session-road"],
+      "peakHours": ["12:00-14:00", "17:00-20:00"],
+      "averageWaitTime": 30,
+      "facilities": ["Shopping", "Dining", "Cinema", "Parking", "ATM"]
+    },
+    {
+      "id": "baguio-cathedral",
+      "name": "Baguio Cathedral",
+      "type": "religious",
+      "coordinates": { "lat": 16.4102, "lng": 120.5935 },
+      "currentCrowdLevel": "low",
+      "detectedPeople": 15,
+      "capacity": 100,
+      "crowdDensity": 0.15,
+      "description": "Rose-tinted twin-spired Catholic cathedral",
+      "videoFeed": "cathedral-live.mp4",
+      "alternatives": ["lourdes-grotto", "bell-church"],
+      "peakHours": ["06:00-08:00", "17:00-19:00"],
+      "averageWaitTime": 0,
+      "facilities": ["Prayer Area", "Candle Lighting", "Souvenir Shop"]
+    },
+    {
+      "id": "wright-park",
+      "name": "Wright Park",
+      "type": "park",
+      "coordinates": { "lat": 16.4088, "lng": 120.5945 },
+      "currentCrowdLevel": "moderate",
+      "detectedPeople": 28,
+      "capacity": 90,
+      "crowdDensity": 0.31,
+      "description": "Horseback riding and pine tree park",
+      "videoFeed": "wright-park-live.mp4",
+      "alternatives": ["burnham-park", "botanical-garden"],
+      "peakHours": ["09:00-12:00", "14:00-16:00"],
+      "averageWaitTime": 10,
+      "facilities": ["Horse Riding", "Photo Spots", "Walking Paths", "Vendors"]
+    }
+  ],
+  "crowdLevels": {
+    "low": {
+      "threshold": 0.3,
+      "color": "#10b981",
+      "label": "Low Crowd",
+      "recommendation": "Great time to visit"
+    },
+    "moderate": {
+      "threshold": 0.6,
+      "color": "#f59e0b",
+      "label": "Moderate Crowd",
+      "recommendation": "Visit with caution"
+    },
+    "high": {
+      "threshold": 1.0,
+      "color": "#ef4444",
+      "label": "High Crowd",
+      "recommendation": "Consider alternative locations"
+    }
+  }
+}

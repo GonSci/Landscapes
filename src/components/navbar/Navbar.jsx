@@ -1,12 +1,13 @@
 import React from 'react';
 import './Navbar.css';
 import LoginButton from '../profile/LoginButton'; // New import para sa login button
-import { Map, Compass, Globe, User } from 'lucide-react';
+import { Map, Compass, Globe, User, Video } from 'lucide-react';
 
 const Navbar = ({ currentPage, onNavigate, currentUser }) => { // Added currentUser prop
   const menuItems = [
     { id: 'map', label: 'Interactive Map', Icon: Map },
     { id: 'explore', label: 'Explore', Icon: Compass },
+    { id: 'liveview', label: 'Live View', Icon: Video },
     { id: 'community', label: 'Community', Icon: Globe },
     { id: 'profile', label: 'My Travels', Icon: User }
   ];
