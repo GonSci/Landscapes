@@ -11,22 +11,20 @@ import CommunityFeed from './components/community/CommunityFeed';
 import Home from './components/landingPage/Home';
 
 // --> Firebase Imports <-- //
-import { auth, db } from './firebase'; // check who is logged in and read/write user data
-import { onAuthStateChanged } from 'firebase/auth'; // detects login/logout
-import { doc, getDoc, setDoc } from 'firebase/firestore'; // create and save documents in firestore
+import { auth, db } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 function App() {
-  // Check URL hash on initial load to support new tab navigation
   const getInitialPage = () => {
     const hash = window.location.hash.replace('#', '');
-    return hash || 'home'; // Default to 'home' if no hash
+    return hash || 'home';
   };
 
   const [currentPage, setCurrentPage] = useState(getInitialPage());
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [userProfile, setUserProfile] = useState({
-    // Ito yung array kung saan natin ise-save yung data ng users, like been there and want to go
     beenThere: [],
     wantToGo: [],
     checklists: [], 
@@ -35,30 +33,20 @@ function App() {
   });
   const [showAIChat, setShowAIChat] = useState(false);
   const [focusLocation, setFocusLocation] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // --> New States for Firebase <-- //
-  const [currentUser, setCurrentUser] = useState(null); // Iniistore nito yung information about sa logged in user
-  const [loading, setLoading] = useState(true); // Loading state lang to while checing Auth status
-
-  // --> Dito ko na ilalagay yung useEffect para sa user login/logout tracking <-- //
-  // Nag rurun to as soon as the app loads, tinatrack nito yung login/logout, if user is logs in niloload nito yung firebase profile nila. If no profile exists, create.
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // User is logged in
         try {
-          // Check natin if existing si user sa Firestore
           const userDocRef = doc(db, 'users', user.uid);
-
-          // kunin natin ung users data from Firestore
           const userDocSnap = await getDoc(userDocRef);
 
           if (userDocSnap.exists()) {
-            // If exists, load the profile data
             setUserProfile(userDocSnap.data());
           } else {
-            // First time user, create a new profile
             const newProfile = {
               beenThere: [],
               wantToGo: [],
@@ -71,7 +59,6 @@ function App() {
               createdAt: new Date().toISOString()
             };
 
-            // Save na natin yung new profile sa FireStore
             await setDoc(userDocRef, newProfile);
             setUserProfile(newProfile);
           }
@@ -79,7 +66,6 @@ function App() {
           console.error("Error fetching or creating user profile:", error);
         }
       } else {
-        // If user is logged out, reset natin to guest profile
         setUserProfile({
           beenThere: [],
           wantToGo: [],
@@ -92,25 +78,19 @@ function App() {
       setLoading(false);
     });
 
-    // Cleanup function - unmounting
     return () => unsubscribe();
   }, []); 
 
-
-  // --> New Function para masave yung user profile data sa Firebase <-- //
-  // If nag mark si user ng place as "been there" or "want to go" this function saves it.
   const saveProfileToFirebase = async (newProfile) => {
     if (currentUser) {
       try {
         const userDocRef = doc(db, 'users', currentUser.uid);
 
-        // Save to Firestore with merge option para hindi maoverwrite lahat
         await setDoc(userDocRef, {
           ...newProfile,
           updatedAt: new Date().toISOString()
         }, { merge: true });
 
-        // Pang check lang, console log natin
         console.log('Profile saved to Firebase!')
 
       } catch (error) {
@@ -124,13 +104,10 @@ function App() {
   const handleLocationClick = (location) => {
     setSelectedLocation(location);
     setShowModal(true);
-    // If clicking from explore page, switch to map page
     if (currentPage === 'explore') {
       setCurrentPage('map');
     }
   };
-
-  // --> Inupdate ko tong function para mag save sa Firebase everytime magmark yung user <-- //
 
   const handleMarkLocation = async (location, type) => {
     const newProfile = { ...userProfile };
@@ -141,7 +118,6 @@ function App() {
     if (type === 'been') {
       if (!newProfile.beenThere.includes(locationId)) {
         newProfile.beenThere.push(locationId);
-        // Remove from want to go if it exists
         newProfile.wantToGo = newProfile.wantToGo.filter(id => id !== locationId);
       }
     } else if (type === 'want') {
@@ -151,12 +127,8 @@ function App() {
     }
     
     setUserProfile(newProfile);
-
-    // --> Save to firebase after maupdate yung state <--//
     await saveProfileToFirebase(newProfile);
-
     
-    // Close modal only if marking from modal
     if (!location) {
       setShowModal(false);
     }
@@ -169,9 +141,7 @@ function App() {
 
   const handleNavigate = (page) => {
     setCurrentPage(page);
-    // Update URL hash for bookmarking and new tab support
     window.location.hash = page;
-    // Close AI chat when navigating to different pages
     setShowAIChat(false);
   };
 
@@ -183,11 +153,9 @@ function App() {
     setCurrentPage('map');
     setFocusLocation(location);
     setShowModal(false);
-    // Clear focus after animation
     setTimeout(() => setFocusLocation(null), 3000);
   };
 
-  // --> Naglagay ako ng loading screen while checking auth status <-- //
   if (loading) {
     return (
       <div className="App loading-screen">
@@ -212,14 +180,12 @@ function App() {
       />
 
       <div className="app-content">
-        {/* Home Page - Landing Page */}
         {currentPage === 'home' && (
           <div className="page home-page">
             <Home onNavigate={handleNavigate} currentUser={currentUser} />
           </div>
         )}
 
-        {/* Map Page - Main Focus */}
         {currentPage === 'map' && (
           <div className="page map-page">
             <div className="map-layout">
@@ -228,7 +194,7 @@ function App() {
                   profile={userProfile}
                   onToggleAI={() => setShowAIChat(!showAIChat)}
                   compactMode={true}
-                  currentUser={currentUser} // Pass currentUser for display
+                  currentUser={currentUser}
                 />
               </div>
 
@@ -243,7 +209,6 @@ function App() {
           </div>
         )}
 
-        {/* Explore Page - Categories and Carousels */}
         {currentPage === 'explore' && (
           <div className="page explore-page">
             <ExploreSection 
@@ -254,7 +219,6 @@ function App() {
           </div>
         )}
 
-        {/* Profile Page - User's Travel Statistics */}
         {currentPage === 'profile' && (
           <div className="page profile-page">
             <div className="profile-container">
@@ -262,28 +226,19 @@ function App() {
                 profile={userProfile}
                 onToggleAI={() => setShowAIChat(!showAIChat)}
                 expanded={true}
-                currentUser={currentUser} // pass current user
+                currentUser={currentUser}
               />
             </div>
           </div>
         )}
 
-        {/* Community Page - Posts and Chat */}
         {currentPage === 'community' && (
           <div className="page community-page">
-            <CommunityFeed currentUser={currentUser} /> {/* New prop to */}
+            <CommunityFeed currentUser={currentUser} />
           </div>
         )}
-
-
       </div>
 
-      {/* Itinerary Planner Page */}
-      {currentPage === 'itinerary' && (
-        <ItineraryPlanner />
-      )}
-
-      {/* Location Modal - Global */}
       {showModal && (
         <LocationModal
           location={selectedLocation}
@@ -294,11 +249,9 @@ function App() {
         />
       )}
 
-      {/* Floating AI Button - Hidden on campaigns tab */}
-      {currentPage !== 'campaigns' && <FloatingAIButton onClick={toggleAIChat} isActive={showAIChat} />}
+      <FloatingAIButton onClick={toggleAIChat} isActive={showAIChat} />
 
-      {/* AI Assistant Overlay - Hidden on campaigns tab */}
-      {currentPage !== 'campaigns' && showAIChat && (
+      {showAIChat && (
         <div className="ai-overlay" onClick={() => setShowAIChat(false)}>
           <div onClick={(e) => e.stopPropagation()}>
             <AIAssistant

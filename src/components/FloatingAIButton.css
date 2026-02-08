@@ -1,0 +1,174 @@
+.floating-ai-button {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  z-index: 10000;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.floating-ai-button:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
+}
+
+.floating-ai-button:active {
+  transform: translateY(-2px) scale(1);
+}
+
+.ai-icon {
+  position: relative;
+  z-index: 2;
+}
+
+.robot-emoji {
+  font-size: 32px;
+  display: block;
+  animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+.ai-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  opacity: 0;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Tooltip on hover */
+.floating-ai-button::before {
+  content: 'AI Assistant';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 12px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.floating-ai-button::after {
+  content: '';
+  position: absolute;
+  right: calc(100% - 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-left-color: rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.floating-ai-button:hover::before,
+.floating-ai-button:hover::after {
+  opacity: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .floating-ai-button {
+    width: 56px;
+    height: 56px;
+    bottom: 24px;
+    right: 24px;
+  }
+
+  .robot-emoji {
+    font-size: 28px;
+  }
+
+  /* Hide tooltip on mobile */
+  .floating-ai-button::before,
+  .floating-ai-button::after {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .floating-ai-button {
+    width: 52px;
+    height: 52px;
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .robot-emoji {
+    font-size: 26px;
+  }
+}
+
+/* When AI is open, change button to close icon */
+.floating-ai-button.active {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  transform: rotate(45deg);
+}
+
+.floating-ai-button.active:hover {
+  transform: rotate(45deg) translateY(-4px) scale(1.05);
+}
+
+.floating-ai-button.active .robot-emoji {
+  display: none;
+}
+
+.floating-ai-button.active::after {
+  content: '✕';
+  font-size: 32px;
+  color: white;
+  font-weight: 300;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: none;
+}
