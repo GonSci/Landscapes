@@ -1,0 +1,154 @@
+{
+  "locations": [
+    {
+      "id": "manila",
+      "name": "Manila",
+      "region": "National Capital Region",
+      "lat": 14.5995,
+      "lng": 120.9842,
+      "description": "The capital city of the Philippines, a vibrant hub of history, culture, and modernity.",
+      "highlights": [
+        "Intramuros - Historic walled city",
+        "Rizal Park - National hero monument",
+        "Manila Bay sunset views",
+        "Rich Spanish colonial architecture"
+      ],
+      "image": "/assets/images/manila.jpg"
+    },
+    {
+      "id": "cebu",
+      "name": "Cebu City",
+      "region": "Central Visayas",
+      "lat": 10.3157,
+      "lng": 123.8854,
+      "description": "The Queen City of the South, known for its rich history and beautiful beaches.",
+      "highlights": [
+        "Magellan's Cross",
+        "Sinulog Festival",
+        "Beautiful beaches and diving spots",
+        "Lechon (roasted pig) capital"
+      ],
+      "image": "/assets/images/cebu.jpg"
+    },
+    {
+      "id": "davao",
+      "name": "Davao City",
+      "region": "Davao Region",
+      "lat": 7.1907,
+      "lng": 125.4553,
+      "description": "The largest city in Mindanao, home to Mount Apo and the Philippine Eagle.",
+      "highlights": [
+        "Mount Apo - Highest peak",
+        "Philippine Eagle Center",
+        "Durian capital",
+        "Safe and clean city"
+      ],
+      "image": "/assets/images/davao.jpg"
+    },
+    {
+      "id": "boracay",
+      "name": "Boracay",
+      "region": "Western Visayas",
+      "lat": 11.9674,
+      "lng": 121.9248,
+      "description": "World-famous island paradise with white sand beaches and crystal clear waters.",
+      "highlights": [
+        "White Beach - 4km pristine shore",
+        "Water sports paradise",
+        "Vibrant nightlife",
+        "Stunning sunsets"
+      ],
+      "image": "/assets/images/boracay.jpg"
+    },
+    {
+      "id": "palawan",
+      "name": "El Nido, Palawan",
+      "region": "MIMAROPA",
+      "lat": 11.1949,
+      "lng": 119.4013,
+      "description": "Breathtaking limestone cliffs, hidden lagoons, and pristine beaches.",
+      "highlights": [
+        "Island hopping tours",
+        "Bacuit Archipelago",
+        "Secret lagoons and beaches",
+        "Best island in the world"
+      ],
+      "image": "/assets/images/palawan.jpg"
+    },
+    {
+      "id": "baguio",
+      "name": "Baguio City",
+      "region": "Cordillera Administrative Region",
+      "lat": 16.4023,
+      "lng": 120.5960,
+      "description": "The Summer Capital of the Philippines, known for its cool climate and pine trees.",
+      "highlights": [
+        "Burnham Park",
+        "Mines View Park",
+        "Strawberry farms",
+        "Cool mountain climate"
+      ],
+      "image": "/assets/images/baguio.jpg"
+    },
+    {
+      "id": "vigan",
+      "name": "Vigan City",
+      "region": "Ilocos Region",
+      "lat": 17.5747,
+      "lng": 120.3869,
+      "description": "UNESCO World Heritage Site with preserved Spanish colonial architecture.",
+      "highlights": [
+        "Calle Crisologo - Cobblestone streets",
+        "Spanish colonial houses",
+        "Kalesa (horse-drawn carriage) rides",
+        "Vigan longganisa and empanada"
+      ],
+      "image": "/assets/images/vigan.jpg"
+    },
+    {
+      "id": "siargao",
+      "name": "Siargao Island",
+      "region": "Caraga",
+      "lat": 9.8522,
+      "lng": 126.0469,
+      "description": "Surfing capital of the Philippines with world-class waves and island vibes.",
+      "highlights": [
+        "Cloud 9 - Legendary surf break",
+        "Sugba Lagoon",
+        "Island hopping tours",
+        "Laid-back island lifestyle"
+      ],
+      "image": "/assets/images/siargao.jpg"
+    },
+    {
+      "id": "chocolate-hills",
+      "name": "Chocolate Hills",
+      "region": "Central Visayas - Bohol",
+      "lat": 9.7963,
+      "lng": 124.1692,
+      "description": "Geological wonder with over 1,200 perfectly cone-shaped hills.",
+      "highlights": [
+        "Unique geological formation",
+        "Tarsier sanctuary nearby",
+        "Loboc River cruise",
+        "Historic churches"
+      ],
+      "image": "/assets/images/chocolate-hills.jpg"
+    },
+    {
+      "id": "mayon",
+      "name": "Mayon Volcano",
+      "region": "Bicol Region",
+      "lat": 13.2572,
+      "lng": 123.6856,
+      "description": "The world's most perfectly-shaped active volcano.",
+      "highlights": [
+        "Perfect cone shape",
+        "ATV tours around the volcano",
+        "Cagsawa Ruins",
+        "Bicol Express cuisine"
+      ],
+      "image": "/assets/images/mayon.jpg"
+    }
+  ]
+}
