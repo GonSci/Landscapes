@@ -50,10 +50,10 @@ const MapPreview = ({
   useEffect(() => {
     if (!mapLoaded || !window.L || mapInstanceRef.current) return;
 
-    // Initialize map centered on the Philippines
+    // Initialize map centered on Baguio City
     const map = window.L.map(mapRef.current, {
-      center: [12.8797, 121.7740],
-      zoom: 6,
+      center: [16.4023, 120.5960],
+      zoom: 13,
       zoomControl: false,
       dragging: false,
       scrollWheelZoom: false,
@@ -72,8 +72,14 @@ const MapPreview = ({
 
     mapInstanceRef.current = map;
 
-    // Add markers for each location - EXACT same style as PhilippinesMap.jsx
-    philippinesData.locations.forEach((location) => {
+    // Filter to only show Baguio locations
+    const baguioLocations = philippinesData.locations.filter(location => 
+      location.region === 'Cordillera Administrative Region' || 
+      location.name.toLowerCase().includes('baguio')
+    );
+
+    // Add markers for Baguio locations only - EXACT same style as PhilippinesMap.jsx
+    baguioLocations.forEach((location) => {
       const color = getLocationColor(location.id);
       
       // Create custom icon - identical to PhilippinesMap

@@ -41,180 +41,38 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
   useEffect(() => {
     if (!mapLoaded || !window.L || mapInstanceRef.current) return;
 
-    // Initialize map centered on the Philippines
-    const map = window.L.map(mapRef.current).setView([12.8797, 121.7740], 6);
+    // Initialize map centered on Baguio City
+    const map = window.L.map(mapRef.current).setView([16.4023, 120.5960], 13);
 
     // Add OpenStreetMap tiles
     window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 18,
+      minZoom: 12,
     }).addTo(map);
+
+    // Set max bounds to restrict map to Baguio area
+    const baguioBounds = window.L.latLngBounds(
+      [16.35, 120.52],  // Southwest coordinates
+      [16.45, 120.65]   // Northeast coordinates
+    );
+    map.setMaxBounds(baguioBounds);
+    map.on('drag', function() {
+      map.panInsideBounds(baguioBounds, { animate: false });
+    });
 
     mapInstanceRef.current = map;
 
-    // Add click handler for map exploration
-    map.on('click', async (e) => {
-      const { lat, lng } = e.latlng;
-      
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`
-        );
-        const data = await response.json();
-        
-        console.log('Full Nominatim data:', data);
-        
-        const address = data.address || {};
-        
-        const locationName = data.name || 
-                            address.tourism ||
-                            address.village || 
-                            address.town || 
-                            address.city || 
-                            address.municipality ||
-                            address.suburb ||
-                            address.neighbourhood ||
-                            address.hamlet ||
-                            address.county ||
-                            address.state_district ||
-                            data.display_name?.split(',')[0] ||
-                            'Discovered Location';
-        
-        const region = address.state || 
-                      address.province || 
-                      address.region ||
-                      'Philippines';
-        
-        let description = `You've discovered ${locationName}`;
-        if (address.city && address.city !== locationName) {
-          description += ` in ${address.city}`;
-        }
-        if (region !== 'Philippines') {
-          description += `, ${region}`;
-        }
-        description += '! ';
-        
-        if (address.tourism) {
-          description += `This is a ${address.tourism} destination. `;
-        } else if (address.amenity) {
-          description += `This area features ${address.amenity} facilities. `;
-        } else if (data.type === 'city' || data.type === 'town') {
-          description += `This is a ${data.type} area. `;
-        }
-        
-        description += `Click 'Ask AI' to discover local attractions, culture, food, and travel tips for this specific location!`;
-        
-        const highlights = [];
-        
-        if (address.tourism) highlights.push(`${address.tourism} destination`);
-        if (address.amenity) highlights.push(`${address.amenity} available`);
-        if (address.city && address.city !== locationName) highlights.push(`Part of ${address.city}`);
-        if (region && region !== 'Philippines') highlights.push(`${region} region`);
-        
-        highlights.push('Local culture and traditions');
-        highlights.push('Nearby attractions');
-        highlights.push('Regional cuisine and specialties');
-        highlights.push('Best time to visit');
-        highlights.push('Travel tips and recommendations');
-        
-        if (data.class === 'natural' || address.natural) {
-          highlights.push('Natural scenery and beauty');
-        }
-        
-        const clickedLocation = {
-          id: `custom-${Date.now()}`,
-          name: locationName,
-          region: region,
-          lat: lat,
-          lng: lng,
-          description: description,
-          highlights: highlights.slice(0, 6),
-          image: '/assets/images/philippines-placeholder.jpg',
-          isCustom: true,
-          fullAddress: data.display_name,
-          locationType: data.type || data.class || 'location'
-        };
-        
-        const tempIcon = window.L.divIcon({
-          className: 'custom-marker',
-          html: `
-            <div style="
-              background-color: #8b5cf6;
-              width: 30px;
-              height: 30px;
-              border-radius: 50%;
-              border: 3px solid white;
-              box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 16px;
-              cursor: pointer;
-              animation: pulse 1s ease-in-out infinite;
-            ">
-              🔍
-            </div>
-            <style>
-              @keyframes pulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.1); }
-              }
-            </style>
-          `,
-          iconSize: [30, 30],
-          iconAnchor: [15, 15],
-        });
-        
-        const tempMarker = window.L.marker([lat, lng], { icon: tempIcon })
-          .addTo(map)
-          .bindPopup(`
-            <div style="text-align: center;">
-              <h3 style="margin: 0 0 5px 0; color: #1f2937;">📍 ${clickedLocation.name}</h3>
-              <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 0.875rem;">${clickedLocation.region}</p>
-              <p style="margin: 0; color: #8b5cf6; font-size: 0.75rem;">Click to explore this area!</p>
-            </div>
-          `)
-          .openPopup();
-        
-        tempMarker.on('click', () => {
-          onLocationClick(clickedLocation);
-          setTimeout(() => tempMarker.remove(), 500);
-        });
-        
-        setTimeout(() => {
-          if (map.hasLayer(tempMarker)) {
-            tempMarker.remove();
-          }
-        }, 10000);
-        
-      } catch (error) {
-        console.error('Error fetching location info:', error);
-        
-        const basicLocation = {
-          id: `custom-${Date.now()}`,
-          name: `Location at ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`,
-          region: 'Philippines',
-          lat: lat,
-          lng: lng,
-          description: `You've clicked on coordinates ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E in the Philippines. While we couldn't fetch specific details, you can still ask the AI about this area to discover nearby attractions, culture, and travel information!`,
-          highlights: [
-            'Philippine destination',
-            'Local culture and heritage',
-            'Regional attractions',
-            'Travel recommendations',
-            'Ask AI for detailed information'
-          ],
-          image: '/assets/images/philippines-placeholder.jpg',
-          isCustom: true,
-          fullAddress: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-        };
-        
-        onLocationClick(basicLocation);
-      }
-    });
+    // Removed: Click handler for map exploration - users can only click on markers
 
-    // Add markers for each predefined location
-    philippinesData.locations.forEach((location) => {
+    // Filter to only show Baguio locations
+    const baguioLocations = philippinesData.locations.filter(location => 
+      location.region === 'Cordillera Administrative Region' || 
+      location.name.toLowerCase().includes('baguio')
+    );
+
+    // Add markers for Baguio locations only
+    baguioLocations.forEach((location) => {
       const color = getLocationColor(location.id);
       
       // Create custom icon
@@ -326,7 +184,7 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
     }
   }, [focusLocation]);
 
-  // Add feature markers for activities, places, and food
+  // Add feature markers for Baguio activities, places, and food only
   useEffect(() => {
     if (!mapInstanceRef.current || !window.L) return;
     
@@ -337,39 +195,22 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
     // If features are hidden, don't add any markers
     if (!showFeatures) return;
     
-    // Featured locations with their categories
+    // Featured locations with their categories - Baguio only
     const featuredLocations = [
-      // Manila features
-      { lat: 14.5907, lng: 120.9735, type: 'place', name: 'Intramuros', city: 'Manila', icon: '🏰' },
-      { lat: 14.5831, lng: 120.9813, type: 'place', name: 'National Museum', city: 'Manila', icon: '🏛️' },
-      { lat: 14.5547, lng: 121.0244, type: 'place', name: 'Ayala Museum', city: 'Manila', icon: '🎨' },
-      { lat: 14.5897, lng: 120.9745, type: 'food', name: 'Barbara\'s Restaurant', city: 'Manila', icon: '🍽️' },
-      { lat: 14.5350, lng: 121.0500, type: 'activity', name: 'Manila Bay Cruise', city: 'Manila', icon: '⛵' },
-      
-      // Cebu features
-      { lat: 10.2930, lng: 123.9020, type: 'place', name: 'Magellan\'s Cross', city: 'Cebu', icon: '✝️' },
-      { lat: 10.2950, lng: 123.9000, type: 'place', name: 'Basilica del Santo Niño', city: 'Cebu', icon: '⛪' },
-      { lat: 9.8500, lng: 123.4000, type: 'activity', name: 'Oslob Whale Sharks', city: 'Cebu', icon: '🦈' },
-      { lat: 9.9400, lng: 123.3900, type: 'activity', name: 'Kawasan Falls', city: 'Cebu', icon: '🏞️' },
-      { lat: 10.3100, lng: 123.8900, type: 'food', name: 'Zubuchon', city: 'Cebu', icon: '🍖' },
-      
-      // Boracay features
-      { lat: 11.9670, lng: 121.9240, type: 'place', name: 'White Beach', city: 'Boracay', icon: '🏖️' },
-      { lat: 11.9945, lng: 121.9178, type: 'place', name: 'Puka Beach', city: 'Boracay', icon: '🐚' },
-      { lat: 11.9680, lng: 121.9250, type: 'activity', name: 'Sunset Sailing', city: 'Boracay', icon: '⛵' },
-      { lat: 11.9665, lng: 121.9260, type: 'food', name: 'Jonah\'s Fruit Shake', city: 'Boracay', icon: '🥤' },
-      
-      // Palawan features
-      { lat: 11.2050, lng: 119.4100, type: 'place', name: 'Big Lagoon', city: 'Palawan', icon: '💧' },
-      { lat: 11.2588, lng: 119.4949, type: 'place', name: 'Nacpan Beach', city: 'Palawan', icon: '🏝️' },
-      { lat: 10.3670, lng: 119.0830, type: 'activity', name: 'Underground River', city: 'Palawan', icon: '🦇' },
-      { lat: 11.1950, lng: 119.4020, type: 'food', name: 'Artcafe', city: 'Palawan', icon: '🍽️' },
-      
       // Baguio features
       { lat: 16.4120, lng: 120.5930, type: 'place', name: 'Burnham Park', city: 'Baguio', icon: '🌳' },
       { lat: 16.4050, lng: 120.5900, type: 'place', name: 'Session Road', city: 'Baguio', icon: '🛍️' },
-      { lat: 16.3980, lng: 120.5600, type: 'activity', name: 'Strawberry Picking', city: 'Baguio', icon: '🍓' },
+      { lat: 16.4109, lng: 120.5926, type: 'place', name: 'Baguio Cathedral', city: 'Baguio', icon: '⛪' },
+      { lat: 16.4170, lng: 120.5970, type: 'place', name: 'The Mansion', city: 'Baguio', icon: '🏛️' },
+      { lat: 16.4185, lng: 120.5935, type: 'place', name: 'Wright Park', city: 'Baguio', icon: '🐴' },
+      { lat: 16.4210, lng: 120.5825, type: 'place', name: 'Camp John Hay', city: 'Baguio', icon: '🏕️' },
+      { lat: 16.3980, lng: 120.5600, type: 'activity', name: 'Strawberry Farm', city: 'Baguio', icon: '🍓' },
+      { lat: 16.4155, lng: 120.5715, type: 'activity', name: 'Tree Top Adventure', city: 'Baguio', icon: '🌲' },
+      { lat: 16.3895, lng: 120.6145, type: 'activity', name: 'Mines View Park', city: 'Baguio', icon: '🔭' },
       { lat: 16.4023, lng: 120.5960, type: 'food', name: 'Good Shepherd', city: 'Baguio', icon: '🫙' },
+      { lat: 16.4050, lng: 120.5920, type: 'food', name: 'Hill Station', city: 'Baguio', icon: '☕' },
+      { lat: 16.4090, lng: 120.5940, type: 'food', name: 'Oh My Gulay!', city: 'Baguio', icon: '🥗' },
+      { lat: 16.4060, lng: 120.5905, type: 'food', name: 'Café by the Ruins', city: 'Baguio', icon: '🍽️' },
     ];
     
     // Add markers for each featured location
@@ -489,9 +330,9 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
       <div className="map-header">
         <div className="map-header-content">
           <div className="map-title-section">
-            <h2 className="map-title">🗺️ Explore the Philippines</h2>
+            <h2 className="map-title">🗺️ Explore Baguio City</h2>
             <p className="map-instruction">
-              <strong>💡 Tip:</strong> Click anywhere on the map to discover that area! Or click the colored markers (⭐) for featured destinations.
+              <strong>💡 Tip:</strong> Click the colored markers to discover featured destinations in Baguio City - the Summer Capital of the Philippines!
             </p>
           </div>
         </div>
@@ -499,7 +340,7 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
       
       <div className="map-legend">
         <div className="legend-section">
-          <h4 className="legend-heading">Main Destinations</h4>
+          <h4 className="legend-heading">Baguio Locations</h4>
           <div className="legend-items">
             <div className="legend-item">
               <span className="legend-color" style={{ background: '#3b82f6' }}>📍</span>
@@ -544,7 +385,7 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
       >
         {!mapLoaded && (
           <div className="map-loading">
-            <p>🗺️ Loading interactive map of the Philippines...</p>
+            <p>🗺️ Loading interactive map of Baguio City...</p>
           </div>
         )}
       </div>

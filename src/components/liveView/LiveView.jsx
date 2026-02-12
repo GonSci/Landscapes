@@ -197,17 +197,14 @@ const LiveView = () => {
     const currentHour = currentTime.getHours();
     const hours = [];
     
-    // Get last 4 hours of data
+    // Get last 4 hours of data (handle midnight wrapping)
     for (let i = 3; i >= 0; i--) {
-      const hour = currentHour - i;
-      if (hour >= 0) {
-        hours.push(hour);
+      let hour = currentHour - i;
+      // Handle negative hours (wrap to previous day)
+      if (hour < 0) {
+        hour = 24 + hour;
       }
-    }
-    
-    // If we don't have 4 hours, pad with recent hours
-    while (hours.length < 4) {
-      hours.unshift(Math.max(0, hours[0] - 1));
+      hours.push(hour);
     }
     
     return hours.map((hour, index) => {
@@ -221,11 +218,57 @@ const LiveView = () => {
     });
   };
 
+  // Calculate prediction based on hourly data trend
+  const getPrediction = () => {
+    const currentHour = currentTime.getHours();
+    const currentMinute = currentTime.getMinutes();
+    
+    // If we have hourly data, find the peak
+    if (Object.keys(hourlyData).length > 0) {
+      let maxCount = 0;
+      let peakHour = currentHour;
+      
+      Object.entries(hourlyData).forEach(([time, count]) => {
+        if (count > maxCount) {
+          maxCount = count;
+          peakHour = parseInt(time.split(':')[0]);
+        }
+      });
+      
+      // Calculate minutes until peak
+      let hoursUntilPeak = peakHour - currentHour;
+      if (hoursUntilPeak < 0) {
+        hoursUntilPeak += 24; // Handle next day
+      }
+      
+      const minutesUntilPeak = (hoursUntilPeak * 60) - currentMinute;
+      
+      // Show prediction if peak is in the future within 3 hours
+      if (minutesUntilPeak > 0 && minutesUntilPeak <= 180) {
+        return {
+          minutes: Math.round(minutesUntilPeak),
+          expectedCount: Math.round(maxCount)
+        };
+      }
+    }
+    
+    // Default prediction based on current trend (estimate 30% increase in next hour)
+    const estimatedPeak = Math.max(detectedCount, 10); // At least show 10
+    const estimatedIncrease = Math.round(estimatedPeak * 1.3);
+    
+    return {
+      minutes: 45,
+      expectedCount: estimatedIncrease
+    };
+  };
+
+  const prediction = getPrediction();
+
   return (
     <div className="live-view-container">
       <div className="live-view-header">
         <h1 className="live-view-title">Live Crowd Monitoring - Baguio City</h1>
-        <p className="live-view-subtitle">Real-time AI powered crowd detection and tourist flow management</p>
+        <p className="live-view-subtitle">Smart city monitoring for a safer, more organized Baguio.</p>
       </div>
 
       <div className="live-view-content">
@@ -279,6 +322,18 @@ const LiveView = () => {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Prediction Statement */}
+            <div className="prediction-container">
+              <div className="prediction-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+              </div>
+              <span className="prediction-text">
+                Prediction: Crowd expected to peak in {prediction.minutes} minutes (approx. {prediction.expectedCount} people).
+              </span>
             </div>
           </div>
 
