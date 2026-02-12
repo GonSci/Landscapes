@@ -1,0 +1,76 @@
+/* CSRNET Density Mapping */
+.density-mapping-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.density-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.density-placeholder {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border: 2px dashed #667eea;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 540px;
+  padding: 3rem;
+}
+
+.density-info {
+  text-align: center;
+  color: #6b7280;
+}
+
+.density-icon {
+  width: 64px;
+  height: 64px;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+.density-info p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.density-subtitle {
+  font-size: 0.8125rem !important;
+  font-weight: 400 !important;
+  color: #9ca3af !important;
+}
+
+/* Responsive Design for CSRNET */
+@media (max-width: 1400px) {
+  .density-placeholder {
+    min-height: 480px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .density-placeholder {
+    min-height: 300px;
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .density-placeholder {
+    min-height: 250px;
+    padding: 1.5rem;
+  }
+  
+  .density-icon {
+    width: 48px;
+    height: 48px;
+  }
+}

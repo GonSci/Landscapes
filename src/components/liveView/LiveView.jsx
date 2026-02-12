@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './LiveView.css';
+import Redirection from './Redirection';
 
 const API_URL = 'http://localhost:5001/api';
 
@@ -18,6 +19,7 @@ const LiveView = () => {
   const videoRef = useRef(null);
   const detectionIntervalRef = useRef(null);
   const currentFrameRef = useRef(0);
+  const hiddenGemsRef = useRef(null);
 
   // Update current time every second
   useEffect(() => {
@@ -163,12 +165,19 @@ const LiveView = () => {
     console.log('Continuous detection stopped');
   };
 
-  // Get crowd level based on detected count
+  // Get crowd level based on detected count (10+ people = HIGH for demo)
   const getCrowdLevel = () => {
     if (detectedCount === 0) return { label: 'LOW', color: '#10b981', percentage: 0 };
-    if (detectedCount < 150) return { label: 'LOW', color: '#10b981', percentage: 33 };
-    if (detectedCount < 300) return { label: 'MEDIUM', color: '#f59e0b', percentage: 66 };
+    if (detectedCount < 5) return { label: 'LOW', color: '#10b981', percentage: 33 };
+    if (detectedCount < 10) return { label: 'MEDIUM', color: '#f59e0b', percentage: 66 };
     return { label: 'HIGH', color: '#ef4444', percentage: 100 };
+  };
+
+  // Scroll to Hidden Gems section
+  const scrollToHiddenGems = () => {
+    if (hiddenGemsRef.current) {
+      hiddenGemsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const crowdLevel = getCrowdLevel();
@@ -218,51 +227,7 @@ const LiveView = () => {
     });
   };
 
-  // Calculate prediction based on hourly data trend
-  const getPrediction = () => {
-    const currentHour = currentTime.getHours();
-    const currentMinute = currentTime.getMinutes();
-    
-    // If we have hourly data, find the peak
-    if (Object.keys(hourlyData).length > 0) {
-      let maxCount = 0;
-      let peakHour = currentHour;
-      
-      Object.entries(hourlyData).forEach(([time, count]) => {
-        if (count > maxCount) {
-          maxCount = count;
-          peakHour = parseInt(time.split(':')[0]);
-        }
-      });
-      
-      // Calculate minutes until peak
-      let hoursUntilPeak = peakHour - currentHour;
-      if (hoursUntilPeak < 0) {
-        hoursUntilPeak += 24; // Handle next day
-      }
-      
-      const minutesUntilPeak = (hoursUntilPeak * 60) - currentMinute;
-      
-      // Show prediction if peak is in the future within 3 hours
-      if (minutesUntilPeak > 0 && minutesUntilPeak <= 180) {
-        return {
-          minutes: Math.round(minutesUntilPeak),
-          expectedCount: Math.round(maxCount)
-        };
-      }
-    }
-    
-    // Default prediction based on current trend (estimate 30% increase in next hour)
-    const estimatedPeak = Math.max(detectedCount, 10); // At least show 10
-    const estimatedIncrease = Math.round(estimatedPeak * 1.3);
-    
-    return {
-      minutes: 45,
-      expectedCount: estimatedIncrease
-    };
-  };
 
-  const prediction = getPrediction();
 
   return (
     <div className="live-view-container">
@@ -324,17 +289,19 @@ const LiveView = () => {
               )}
             </div>
 
-            {/* Prediction Statement */}
-            <div className="prediction-container">
-              <div className="prediction-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                </svg>
+            {/* High Crowd Recommendation */}
+            {crowdLevel.label === 'HIGH' && (
+              <div className="prediction-container">
+                <div className="prediction-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                  </svg>
+                </div>
+                <span className="prediction-text">
+                  As crowd density is high, nearby locations with lower crowd levels are recommended.
+                </span>
               </div>
-              <span className="prediction-text">
-                Prediction: Crowd expected to peak in {prediction.minutes} minutes (approx. {prediction.expectedCount} people).
-              </span>
-            </div>
+            )}
           </div>
 
           {/* Right Side - Detection Overview */}
@@ -361,7 +328,17 @@ const LiveView = () => {
 
             {/* Current Status */}
             <div className="overview-section">
-              <span className="section-label">Current Status</span>
+              <div className="section-label-row">
+                <span className="section-label">Current Status</span>
+                {crowdLevel.label === 'HIGH' && (
+                  <button className="view-heatmap-link" onClick={scrollToHiddenGems}>
+                    <svg className="warning-icon" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+                    </svg>
+                    <span>View HeatMap</span>
+                  </button>
+                )}
+              </div>
               <div className="status-gradient-container">
                 <div className="status-gradient-bar">
                   <div 
@@ -443,6 +420,9 @@ const LiveView = () => {
             </div>
           </div>
         </div>
+
+        {/* Hidden Gems Nearby Section */}
+        <Redirection ref={hiddenGemsRef} />
       </div>
     </div>
   );

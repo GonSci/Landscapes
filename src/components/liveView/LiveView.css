@@ -15,6 +15,7 @@
   margin: 0 0 0.5rem 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -252,12 +253,18 @@
   margin-bottom: 2rem;
 }
 
+.section-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
 .section-label {
   display: block;
   font-size: 0.875rem;
   font-weight: 600;
   color: #6b7280;
-  margin-bottom: 1rem;
 }
 
 /* Status Gradient */
@@ -306,6 +313,43 @@
 
 .status-label:last-child {
   color: #ef4444;
+}
+
+/* View HeatMap Link */
+.view-heatmap-link {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.view-heatmap-link:hover {
+  color: #dc2626;
+  text-decoration: underline;
+}
+
+.view-heatmap-link .warning-icon {
+  width: 18px;
+  height: 18px;
+  animation: warningPulse 2s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
 }
 
 /* Overview Bottom Section */

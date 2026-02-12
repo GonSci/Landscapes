@@ -14,6 +14,7 @@
       "alternatives": ["teachers-camp", "mines-view-park"],
       "peakHours": ["10:00-12:00", "14:00-17:00"],
       "averageWaitTime": 45,
+      "distance": 2.1,
       "facilities": ["Restrooms", "Food Stalls", "Parking", "Boat Rental"]
     },
     {
@@ -30,6 +31,7 @@
       "alternatives": ["sm-baguio", "harrison-road"],
       "peakHours": ["11:00-13:00", "18:00-20:00"],
       "averageWaitTime": 20,
+      "distance": 1.8,
       "facilities": ["Shops", "Restaurants", "ATMs", "Public Transport"]
     },
     {
@@ -46,6 +48,7 @@
       "alternatives": ["philippines-military-academy", "botanical-garden"],
       "peakHours": ["08:00-10:00", "15:00-17:00"],
       "averageWaitTime": 5,
+      "distance": 3.5,
       "facilities": ["Souvenir Shops", "Photo Spots", "Parking", "Food Vendors"]
     },
     {
@@ -62,6 +65,7 @@
       "alternatives": ["tam-awan-village", "bell-church"],
       "peakHours": ["09:00-11:00", "14:00-16:00"],
       "averageWaitTime": 15,
+      "distance": 4.7,
       "facilities": ["Strawberry Picking", "Fresh Produce", "Photo Areas", "Parking"]
     },
     {
@@ -78,6 +82,7 @@
       "alternatives": ["mansion-house", "wright-park"],
       "peakHours": ["10:00-12:00"],
       "averageWaitTime": 0,
+      "distance": 2.3,
       "facilities": ["Historical Sites", "Walking Paths", "Gardens", "Chapel"]
     },
     {
@@ -94,6 +99,7 @@
       "alternatives": ["porta-vaga-mall", "session-road"],
       "peakHours": ["12:00-14:00", "17:00-20:00"],
       "averageWaitTime": 30,
+      "distance": 2.9,
       "facilities": ["Shopping", "Dining", "Cinema", "Parking", "ATM"]
     },
     {
@@ -110,6 +116,7 @@
       "alternatives": ["lourdes-grotto", "bell-church"],
       "peakHours": ["06:00-08:00", "17:00-19:00"],
       "averageWaitTime": 0,
+      "distance": 1.5,
       "facilities": ["Prayer Area", "Candle Lighting", "Souvenir Shop"]
     },
     {
@@ -126,6 +133,7 @@
       "alternatives": ["burnham-park", "botanical-garden"],
       "peakHours": ["09:00-12:00", "14:00-16:00"],
       "averageWaitTime": 10,
+      "distance": 2.6,
       "facilities": ["Horse Riding", "Photo Spots", "Walking Paths", "Vendors"]
     }
   ],
