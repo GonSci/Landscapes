@@ -608,210 +608,121 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
         </div>
       </div>
 
-      {/* Badges Section */}
-      <div className="profile-section badges-section">
-        <div className="section-header">
-          <h4>🏆 Achievements</h4>
-        </div>
-        
-        <div className="badges-column">
-          <div className="badges-grid">
-            {badges.map(badge => (
-              <div 
-                key={badge.id} 
-                className={`badge-card ${badge.unlocked ? 'unlocked' : 'locked'}`}
-                title={badge.description}
-              >
-                <div className="badge-icon">{badge.icon}</div>
-                <div className="badge-info">
-                  <span className="badge-name">{badge.name}</span>
-                  {!badge.unlocked && (
-                    <div className="badge-progress">
-                      <div className="progress-bar">
-                        <div 
-                          className="progress-fill"
-                          style={{ width: `${(badge.current / badge.requirement) * 100}%` }}
-                        />
-                      </div>
-                      <span className="progress-text">{badge.current}/{badge.requirement}</span>
-                    </div>
-                  )}
-                </div>
-                {badge.unlocked && <div className="badge-checkmark">✓</div>}
+      {/* Travel Checklist Section */}
+      <div className="checklist-container">
+        <h4 className="checklist-title">✓ Travel Checklist</h4>
+        <button onClick={handleAddChecklistClick} className="add-checklist-btn">
+          <span className="btn-icon">+</span>
+          <span className="btn-text">Add Checklist Item</span>
+        </button>
+        {/* Display added checklists */}
+        <div className="checklist-items">
+          {userChecklists.map(item => (
+            <div key={item.id} className={`checklist-item ${item.completed ? 'completed' : ''} ${expandedChecklistId === item.id ? 'expanded' : ''}`}>
+              <div className="checklist-item-header">
+                <input
+                  type="checkbox"
+                  checked={item.completed}
+                  onChange={() => handleToggleChecklistItem(item.id)}
+                  className="checklist-checkbox"
+                />
+                <span className="checklist-icon">{item.icon}</span>
+                <span className="checklist-text">{item.name}</span>
+                <button
+                  onClick={() => handleToggleExpand(item.id)}
+                  className="checklist-expand-btn"
+                  title="Add notes"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => handleDeleteChecklistItem(item.id)}
+                  className="checklist-delete-btn"
+                  title="Delete this checklist item"
+                >
+                  🗑️
+                </button>
               </div>
-            ))}
-          </div>
-          <span className="badge-count">{unlockedBadges.length}/{badges.length}</span>
+              {expandedChecklistId === item.id && (
+                <div className="checklist-notes-wrapper">
+                  <textarea
+                    className="checklist-notes-input"
+                    placeholder="Add notes, reminders, or details..."
+                    value={item.note || ''}
+                    onChange={(e) => handleUpdateNote(item.id, e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
-        {/* Right side placeholder for future content */}
-        <div className="badges-right-column">
-          {/* Checklist Section */}
-          <div className="checklist-container">
-            <h4 className="checklist-title">✓ Travel Checklist</h4>
-            <button onClick={handleAddChecklistClick} className="add-checklist-btn">
-              <span className="btn-icon">+</span>
-              <span className="btn-text">Add Checklist Item</span>
-            </button>
-            {/* Display added checklists */}
-            <div className="checklist-items">
-              {userChecklists.map(item => (
-                <div key={item.id} className={`checklist-item ${item.completed ? 'completed' : ''} ${expandedChecklistId === item.id ? 'expanded' : ''}`}>
-                  <div className="checklist-item-header">
-                    <input
-                      type="checkbox"
-                      checked={item.completed}
-                      onChange={() => handleToggleChecklistItem(item.id)}
-                      className="checklist-checkbox"
-                    />
-                    <span className="checklist-icon">{item.icon}</span>
-                    <span className="checklist-text">{item.name}</span>
+        {/* Saved Templates Section - Combined Save/Load */}
+        <div className="templates-section">
+          <div className="templates-header">
+            <h5 className="templates-header-title">📦 Template Management</h5>
+            {userChecklists.length > 0 && (
+              <button onClick={handleOpenSaveModal} className="templates-action-btn save-btn">
+                <span className="btn-icon">💾</span>
+                <span className="btn-text">Save Current</span>
+              </button>
+            )}
+          </div>
+          
+          {savedChecklistTemplates.length > 0 ? (
+            <div className="templates-list">
+              {savedChecklistTemplates.map(template => (
+                <div key={template.id} className="template-item">
+                  <div className="template-info">
+                    <span className="template-name">{template.name}</span>
+                    <span className="template-meta">{template.items.length} item{template.items.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="template-actions">
                     <button
-                      onClick={() => handleToggleExpand(item.id)}
-                      className="checklist-expand-btn"
-                      title="Add notes"
+                      onClick={() => handleLoadTemplate(template)}
+                      className="templates-action-btn load-btn"
+                      title="Load this template"
                     >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+                      📥 Load
                     </button>
                     <button
-                      onClick={() => handleDeleteChecklistItem(item.id)}
-                      className="checklist-delete-btn"
-                      title="Delete this checklist item"
+                      onClick={() => handleDeleteTemplate(template.id)}
+                      className="templates-action-btn delete-btn"
+                      title="Delete this template"
                     >
                       🗑️
                     </button>
                   </div>
-                  {expandedChecklistId === item.id && (
-                    <div className="checklist-notes-wrapper">
-                      <textarea
-                        className="checklist-notes-input"
-                        placeholder="Add notes, reminders, or details..."
-                        value={item.note || ''}
-                        onChange={(e) => handleUpdateNote(item.id, e.target.value)}
-                      />
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="templates-empty">
+              <p>No saved templates yet. Create one to get started!</p>
+            </div>
+          )}
 
-            {/* Saved Templates Section - Combined Save/Load */}
-            <div className="templates-section">
-              <div className="templates-header">
-                <h5 className="templates-header-title">📦 Template Management</h5>
-                {userChecklists.length > 0 && (
-                  <button onClick={handleOpenSaveModal} className="templates-action-btn save-btn">
-                    <span className="btn-icon">💾</span>
-                    <span className="btn-text">Save Current</span>
-                  </button>
-                )}
-              </div>
-              
-              {savedChecklistTemplates.length > 0 ? (
-                <div className="templates-list">
-                  {savedChecklistTemplates.map(template => (
-                    <div key={template.id} className="template-item">
-                      <div className="template-info">
-                        <span className="template-name">{template.name}</span>
-                        <span className="template-meta">{template.items.length} item{template.items.length !== 1 ? 's' : ''}</span>
-                      </div>
-                      <div className="template-actions">
-                        <button
-                          onClick={() => handleLoadTemplate(template)}
-                          className="templates-action-btn load-btn"
-                          title="Load this template"
-                        >
-                          📥 Load
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTemplate(template.id)}
-                          className="templates-action-btn delete-btn"
-                          title="Delete this template"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="templates-empty">
-                  <p>No saved templates yet. Create one to get started!</p>
-                </div>
-              )}
-
-              {/* Preloaded Templates */}
-              <div className="preloaded-templates">
-                <h5 className="preloaded-title">🎯 Quick Start Templates</h5>
-                <div className="preloaded-grid">
-                  {preloadedTemplates.map(template => (
-                    <button
-                      key={template.id}
-                      onClick={() => handleLoadPreloadedTemplate(template)}
-                      className="preloaded-template-btn"
-                      title={`Load ${template.name} template`}
-                    >
-                      <span className="preloaded-icon">{template.icon}</span>
-                      <span className="preloaded-name">{template.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+          {/* Preloaded Templates */}
+          <div className="preloaded-templates">
+            <h5 className="preloaded-title">🎯 Quick Start Templates</h5>
+            <div className="preloaded-grid">
+              {preloadedTemplates.map(template => (
+                <button
+                  key={template.id}
+                  onClick={() => handleLoadPreloadedTemplate(template)}
+                  className="preloaded-template-btn"
+                  title={`Load ${template.name} template`}
+                >
+                  <span className="preloaded-icon">{template.icon}</span>
+                  <span className="preloaded-name">{template.name}</span>
+                </button>
+              ))}
             </div>
           </div>
-
-            {/* Quests & Vouchers Section */}
-            <div className="quests-section">
-                <h5 className="templates-header-title">🎯 Quests</h5>
-                <div className="quests-list">
-                  {quests.map(q => (
-                    <div key={q.id} className={`quest-card ${q.completed ? 'completed' : ''}`} title={q.description}>
-                      <div className="quest-info">
-                        <div className="quest-title">{q.title}</div>
-                        <div className="quest-desc">{q.description}</div>
-                      </div>
-                      <div className="quest-meta">
-                        {!q.completed ? (
-                          <div className="quest-progress">{q.requirement} {q.type === 'visited' ? 'visits' : q.type === 'wishlist' ? 'wishlist' : 'items'}</div>
-                        ) : (
-                          <div className="quest-done">Reward: {q.reward.amount} @ {q.reward.vendor}</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <h5 className="templates-header-title" style={{ marginTop: 12 }}>🎫 Vouchers</h5>
-                <div className="vouchers-list">
-                  {vouchers.length === 0 ? (
-                    <div className="templates-empty"><p>No vouchers yet — complete quests to earn rewards!</p></div>
-                  ) : (
-                    vouchers.map(v => (
-                      <div key={v.id} className={`voucher-card ${v.claimed ? 'claimed' : ''}`}>
-                        <div className="voucher-info">
-                          <div className="voucher-amount">{v.amount}</div>
-                          <div className="voucher-vendor">{v.vendor}</div>
-                          <div className="voucher-code">{v.code}</div>
-                        </div>
-                        <div className="voucher-actions">
-                          {!v.claimed ? (
-                            <button onClick={() => {
-                              setVouchers(prev => prev.map(x => x.id === v.id ? { ...x, claimed: true } : x));
-                            }} className="templates-action-btn load-btn">Claim</button>
-                          ) : (
-                            <button onClick={() => { navigator.clipboard && navigator.clipboard.writeText(v.code); }} className="templates-action-btn save-btn">Copy Code</button>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        
+        </div>
+      </div>
 
       {/* Add Checklist Modal */}
       {showAddChecklistModal && (
@@ -904,54 +815,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
         </div>
       )}
 
-      {/* Next Badge Hint - Moved below both sections */}
-      {nextBadge && (
-        <div className="next-badge-hint">
-          <span className="hint-icon">🎯</span>
-          <span className="hint-text">
-            Next: {nextBadge.name} - {nextBadge.description}
-          </span>
-        </div>
-      )}
 
-      {/* AI Assistant Button */}
-      <button onClick={onToggleAI} className="ai-toggle-btn">
-        <span className="btn-icon">🤖</span>
-        <span className="btn-text">AI Assistant</span>
-      </button>
-
-      {/* Places Lists */}
-      <div className="profile-section places-section">
-        <h4>✅ Places Visited</h4>
-        <div className="location-list">
-          {(!profile.beenThere || profile.beenThere.length === 0) ? (
-            <p className="empty-state">Start your journey!</p>
-          ) : (
-            profile.beenThere.map((locationId) => (
-              <div key={locationId} className="location-item visited">
-                <span className="location-icon">📍</span>
-                <span className="location-name">{locationId}</span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div className="profile-section places-section">
-        <h4>⭐ Bucket List</h4>
-        <div className="location-list">
-          {(!profile.wantToGo || profile.wantToGo.length === 0) ? (
-            <p className="empty-state">Add places to explore</p>
-          ) : (
-            profile.wantToGo.map((locationId) => (
-              <div key={locationId} className="location-item wishlist">
-                <span className="location-icon">🌟</span>
-                <span className="location-name">{locationId}</span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
     </div>
   );
 };
