@@ -411,6 +411,31 @@
   border-radius: 6px;
 }
 
+.crowd-level {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.crowd-level-low {
+  background-color: #10b981;
+  color: white;
+}
+
+.crowd-level-moderate {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.crowd-level-high {
+  background-color: #ef4444;
+  color: white;
+}
+
 .card-rating {
   font-size: 13px;
   font-weight: 600;
