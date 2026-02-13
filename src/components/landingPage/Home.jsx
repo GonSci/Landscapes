@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { Search, MapPin, Sparkles, Map, CheckCircle2, Target, Users, Star, ArrowRight, ChevronLeft, ChevronRight, Facebook, Twitter, Instagram, Mail, TrendingUp, Clock } from 'lucide-react';
 import locationsData from '../../data/philippines_locations.json';
-import FeaturedDestinations from '../explore/FeaturedDestinations';
+import FeaturedDestinations from './FeaturedDestinations';
 import './Home.css';
 
 const Home = ({ onNavigate, currentUser }) => {
@@ -51,221 +51,182 @@ const Home = ({ onNavigate, currentUser }) => {
   const travelersFavorites = [
     {
       id: 1,
-      title: "Island Hopping in El Nido",
-      category: "Beach Tours",
-      location: "Palawan",
+      title: "Burnham Park Relaxation",
+      category: "Park Tours",
+      location: "Baguio City",
       country: "Philippines",
-      image: "/assets/images/palawan.jpg",
-      description: "Explore crystal-clear lagoons, hidden beaches, and limestone cliffs in this tropical paradise.",
+      image: "/assets/featured_images/burnham-park.jpg",
+      description: "Central park with boating lagoon, gardens, and cool mountain breeze perfect for family picnics.",
       badge: "Most Favorite",
-      rating: 4.9,
-      tag: "Top Pick"
+      rating: 4.8,
+      tag: "Family Friendly"
     },
     {
       id: 2,
-      title: "Chocolate Hills Adventure",
-      category: "Nature Tours",
-      location: "Bohol",
+      title: "Mines View Park Scenery",
+      category: "Scenic Viewpoint",
+      location: "Baguio City",
       country: "Philippines",
-      image: "/assets/images/chocolate-hills.jpg",
-      description: "Discover the iconic cone-shaped hills and unique geological wonders of Bohol.",
-      badge: "Trending Now",
+      image: "/assets/featured_images/mines-view-park.jpg",
+      description: "Breathtaking viewpoint overlooking mining town, with souvenir shops and stunning mountain panoramas.",
+      badge: "Best View",
+      rating: 4.7,
+      tag: "Photo Spot"
+    },
+    {
+      id: 3,
+      title: "Session Road Shopping",
+      category: "City Experience",
+      location: "Baguio City",
+      country: "Philippines",
+      image: "/assets/featured_images/session-road.jpg",
+      description: "Main shopping and dining street with local shops, restaurants, and vibrant city atmosphere.",
+      badge: "Popular",
+      rating: 4.6,
+      tag: "Urban Explorer"
+    },
+    {
+      id: 4,
+      title: "Baguio Cathedral Visit",
+      category: "Heritage Sites",
+      location: "Baguio City",
+      country: "Philippines",
+      image: "/assets/featured_images/baguio-cathedral.jpg",
+      description: "Rose-tinted twin-spired Catholic cathedral with beautiful architecture and peaceful atmosphere.",
+      badge: "Cultural Gem",
+      rating: 4.8,
+      tag: "Spiritual"
+    },
+    {
+      id: 5,
+      title: "Strawberry Farm Picking",
+      category: "Farm Experience",
+      location: "Baguio City",
+      country: "Philippines",
+      image: "/assets/featured_images/strawberry-farm.jpg",
+      description: "Pick-your-own strawberries experience with fresh mountain air and authentic local farm products.",
+      badge: "Unique Experience",
       rating: 4.7,
       tag: "Nature Lover"
     },
     {
-      id: 3,
-      title: "Surfing in Cloud 9",
-      category: "Water Sports",
-      location: "Siargao",
-      country: "Philippines",
-      image: "/assets/images/siargao.jpg",
-      description: "Ride world-class waves and experience the ultimate surfing adventure in paradise.",
-      badge: "Adventure Pick",
-      rating: 4.8,
-      tag: "Thrill Seeker"
-    },
-    {
-      id: 4,
-      title: "Historic Vigan Tour",
-      category: "Heritage Sites",
-      location: "Ilocos Sur",
-      country: "Philippines",
-      image: "/assets/images/vigan.jpg",
-      description: "Step back in time exploring cobblestone streets and Spanish colonial architecture.",
-      badge: "Cultural Gem",
-      rating: 4.6,
-      tag: "History Buff"
-    },
-    {
-      id: 5,
-      title: "Boracay Sunset Experience",
-      category: "Beach Tours",
-      location: "Boracay",
-      country: "Philippines",
-      image: "/assets/images/boracay.jpg",
-      description: "Witness breathtaking sunsets on powdery white sand beaches and turquoise waters.",
-      badge: "Most Favorite",
-      rating: 4.9,
-      tag: "Beach Paradise"
-    },
-    {
       id: 6,
-      title: "Baguio Cool Escape",
-      category: "Mountain Tours",
-      location: "Baguio",
+      title: "Teachers Camp Heritage",
+      category: "Historical Tours",
+      location: "Baguio City",
       country: "Philippines",
-      image: "/assets/images/baguio.jpg",
-      description: "Escape to the mountains with cool weather, pine trees, and stunning highland views.",
-      badge: "Popular Choice",
-      rating: 4.6,
-      tag: "Weekend Getaway"
+      image: "/assets/featured_images/teachers-camp.jpg",
+      description: "Historical American-era training facility with pine tree surroundings and colonial architecture.",
+      badge: "History Buff",
+      rating: 4.5,
+      tag: "Educational"
     },
     {
       id: 7,
-      title: "Cebu City & Beaches",
-      category: "City Tours",
-      location: "Cebu",
+      title: "Wright Park Horseback Riding",
+      category: "Adventure Tours",
+      location: "Baguio City",
       country: "Philippines",
-      image: "/assets/images/cebu.jpg",
-      description: "Experience urban excitement combined with pristine beaches and island adventures.",
-      badge: "Popular",
-      rating: 4.9,
-      tag: "City Explorer"
+      image: "/assets/featured_images/wright-park.jpg",
+      description: "Horseback riding through pine tree-lined paths with photo opportunities and mountain views.",
+      badge: "Adventure Pick",
+      rating: 4.6,
+      tag: "Outdoor Fun"
     },
     {
       id: 8,
-      title: "Manila Heritage Walk",
-      category: "Cultural Tours",
-      location: "Manila",
+      title: "SM Baguio Shopping",
+      category: "Shopping Tours",
+      location: "Baguio City",
       country: "Philippines",
-      image: "/assets/images/manila.jpg",
-      description: "Explore centuries of history through ancient churches, forts, and cultural landmarks.",
-      badge: "Cultural Gem",
-      rating: 4.5,
-      tag: "Heritage Trail"
+      image: "/assets/featured_images/sm-baguio.jpg",
+      description: "Large shopping mall with various stores, dining options, and entertainment facilities.",
+      badge: "Convenient",
+      rating: 4.4,
+      tag: "Shopping"
     }
   ];
 
   const categories = [
-    { id: 'foods', name: 'Foods', icon: Star, count: '100+', color: '#f59e0b', image: '/assets/images/manila.jpg' },
-    { id: 'beaches', name: 'Beaches', icon: MapPin, count: '45+', color: '#667eea', image: '/assets/images/boracay.jpg' },
-    { id: 'cities', name: 'Cities', icon: Map, count: '25+', color: '#8b5cf6', image: '/assets/images/manila.jpg' },
-    { id: 'islands', name: 'Islands', icon: Sparkles, count: '50+', color: '#667eea', image: '/assets/images/palawan.jpg' },
-    { id: 'historical', name: 'Historical', icon: MapPin, count: '40+', color: '#764ba2', image: '/assets/images/vigan.jpg' },
-    { id: 'nature', name: 'Nature', icon: Target, count: '60+', color: '#8b5cf6', image: '/assets/images/chocolate-hills.jpg' }
-  ];
-
-  const whyChoose = [
-    {
-      icon: Sparkles,
-      title: 'AI Travel Assistant',
-      description: 'Get instant recommendations, cultural insights, and personalized travel tips powered by advanced AI. Your 24/7 local guide in every destination.',
-      color: '#667eea'
-    },
-    {
-      icon: TrendingUp,
-      title: 'Real-Time Crowd Patterns',
-      description: 'Know exactly when to go to avoid crowds or join the buzz! Our AI analyzes real crowd data to reveal the perfect time, day, or month to visit any destination.',
-      color: '#f59e0b'
-    },
-    {
-      icon: Map,
-      title: 'Interactive Philippine Map',
-      description: 'Explore 70+ destinations with a beautiful, interactive map. Click anywhere to discover hidden gems and unlock local secrets you won\'t find in guidebooks.',
-      color: '#764ba2'
-    },
-    {
-      icon: Clock,
-      title: 'Smart Itinerary Planner',
-      description: 'Select your dream destinations and watch AI craft the perfect route. Optimized travel times, strategic stops, and personalized schedules tailored to your pace.',
-      color: '#10b981'
-    },
-    {
-      icon: CheckCircle2,
-      title: 'Smart Travel Checklists',
-      description: 'Never forget anything again! AI-powered packing lists and travel prep guides customized for your destination, season, and activities. Travel stress-free.',
-      color: '#8b5cf6'
-    },
-    {
-      icon: Target,
-      title: 'Cultural Quests & Achievements',
-      description: 'Turn exploration into an adventure! Unlock achievements, earn badges, and complete quests to win free travel vouchers.',
-      color: '#667eea'
-    }
+    { id: 'foods', name: 'Foods', icon: Star, count: '100+', color: '#f59e0b', image: '/assets/featured_images/manila.jpg' },
+    { id: 'beaches', name: 'Beaches', icon: MapPin, count: '45+', color: '#667eea', image: '/assets/featured_images/boracay.jpg' },
+    { id: 'cities', name: 'Cities', icon: Map, count: '25+', color: '#8b5cf6', image: '/assets/featured_images/manila.jpg' },
+    { id: 'islands', name: 'Islands', icon: Sparkles, count: '50+', color: '#667eea', image: '/assets/featured_images/palawan.jpg' },
+    { id: 'historical', name: 'Historical', icon: MapPin, count: '40+', color: '#764ba2', image: '/assets/featured_images/vigan.jpg' },
+    { id: 'nature', name: 'Nature', icon: Target, count: '60+', color: '#8b5cf6', image: '/assets/featured_images/chocolate-hills.jpg' }
   ];
 
   const testimonials = [
     {
       name: "Maria Santos",
-      role: "Travel Blogger",
-      location: "Manila",
+      role: "Family Traveler",
+      location: "Baguio City",
       avatar: "MS",
       rating: 5,
-      text: "Landscapes transformed my travel planning! The AI assistant is like having a local friend in every destination. Absolutely love it!",
+      text: "The real-time crowd detection is a lifesaver! We avoided Burnham Park during peak hours and visited nearby hidden gems instead. Perfect for families who hate crowded places!",
       date: "2 weeks ago"
     },
     {
       name: "Juan Dela Cruz",
-      role: "Adventure Seeker",
-      location: "Cebu",
+      role: "Weekend Explorer",
+      location: "Baguio City",
       avatar: "JD",
       rating: 5,
-      text: "The interactive map is a game-changer. Found so many hidden spots I wouldn't have discovered otherwise. Highly recommended!",
-      date: "1 month ago"
+      text: "Tourist redirection feature saved my weekend! When Session Road was packed, the system suggested Teachers Camp - it was peaceful and beautiful. This is brilliant!",
+      date: "1 week ago"
     },
     {
       name: "Sarah Chen",
-      role: "Digital Nomad",
-      location: "Siargao",
+      role: "Solo Traveler",
+      location: "Baguio City",
       avatar: "SC",
       rating: 5,
-      text: "Premium tier is worth every peso. Unlimited AI queries saved me hours of research. The cultural quests are so fun!",
-      date: "3 weeks ago"
+      text: "As someone who hates crowds, the live crowd monitoring is exactly what I needed. The redirection suggestions helped me discover quieter spots I never knew existed!",
+      date: "3 days ago"
     },
     {
       name: "Miguel Torres",
-      role: "Family Traveler",
-      location: "Baguio",
+      role: "Tourist",
+      location: "Baguio City",
       avatar: "MT",
-      rating: 4,
-      text: "Perfect for planning family trips. The checklists ensure we never forget anything important. Kids love the quest system!",
+      rating: 5,
+      text: "Visited Baguio during peak season but never felt overwhelmed. Real-time alerts showed me when to visit each spot, and redirection to low-crowd areas made my trip stress-free!",
       date: "1 week ago"
     },
     {
       name: "Ana Reyes",
-      role: "Solo Explorer",
-      location: "Palawan",
+      role: "Photography Enthusiast",
+      location: "Baguio City",
       avatar: "AR",
       rating: 5,
-      text: "As a solo traveler, the safety tips and local insights were invaluable. Made me feel confident exploring on my own!",
+      text: "The crowd detection helped me find perfect photo opportunities without tourists in the background. Mines View Park at recommended times was absolutely serene!",
       date: "4 days ago"
     },
     {
       name: "David Kim",
-      role: "Food Enthusiast",
-      location: "Pampanga",
+      role: "Adventure Seeker",
+      location: "Baguio City",
       avatar: "DK",
       rating: 5,
-      text: "The food recommendations alone are worth it! Discovered authentic restaurants I never would have found. Amazing!",
+      text: "Tourist redirection is genius! Instead of waiting at crowded Strawberry Farm, I was directed to Wright Park. No crowds, better experience. Highly recommend!",
       date: "5 days ago"
     },
     {
       name: "Isabella Cruz",
-      role: "Photography Lover",
-      location: "Batanes",
+      role: "Local Resident",
+      location: "Baguio City",
       avatar: "IC",
       rating: 5,
-      text: "Found the most stunning photo spots thanks to Landscapes. The location insights helped me capture perfect shots!",
+      text: "Even as a local, the crowd monitoring helps me plan my outings. Avoiding high-density areas during peak hours has made exploring my own city so much better!",
       date: "1 week ago"
     },
     {
       name: "Rico Valdez",
       role: "Budget Traveler",
-      location: "Ilocos",
+      location: "Baguio City",
       avatar: "RV",
       rating: 4,
-      text: "Great for budget planning! The AI helped me create an amazing itinerary without breaking the bank. Very impressed!",
+      text: "Smart redirection saved me money too! No time wasted stuck in crowded areas and parking fees. The app directed me to free spots with less people. Perfect!",
       date: "2 weeks ago"
     }
   ];
@@ -276,8 +237,6 @@ const Home = ({ onNavigate, currentUser }) => {
       <FeaturedDestinations onNavigate={onNavigate} />
       <TravelersFavorites experiences={travelersFavorites} onNavigate={onNavigate} />
       <CategoriesSection categories={categories} activeCategory={activeCategory} setActiveCategory={setActiveCategory} onNavigate={onNavigate} />
-      <WhyChooseLandscapes features={whyChoose} />
-      <PricingPreview currentUser={currentUser} onNavigate={onNavigate} />
       <TestimonialsSection testimonials={testimonials} />
       <CTASection onNavigate={onNavigate} />
       <FooterSection />
@@ -327,8 +286,8 @@ function HeroSection({ searchQuery, setSearchQuery, onNavigate }) {
           transition={{ duration: 0.8 }}
           className="hero-text-klook"
         >
-          <h1 className="hero-title-klook">Discover the Best of the Philippines</h1>
-          <p className="hero-subtitle-klook">From pristine beaches to historic cities — unlock unforgettable experiences with AI-powered travel planning</p>
+          <h1 className="hero-title-klook">Discover the Best of Baguio City</h1>
+          <p className="hero-subtitle-klook">From chilly pine forests to vibrant art scenes — unlock unforgettable mountain getaways and local favorites.</p>
         </motion.div>
 
         <motion.div
@@ -342,7 +301,7 @@ function HeroSection({ searchQuery, setSearchQuery, onNavigate }) {
             <Search className="search-icon" size={24} />
             <input
               type="text"
-              placeholder="Local Cuisine, Beaches, or Activities"
+              placeholder="Parks, Sightseeing, or Local Cuisine"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setShowSearchDropdown(true)}
@@ -570,165 +529,6 @@ function TravelersFavorites({ experiences, onNavigate }) {
           <ArrowRight size={18} />
         </button>
       </motion.div>
-    </section>
-  );
-}
-
-// ===== WHY CHOOSE Landscapes   =====
-function WhyChooseLandscapes ({ features }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  return (
-    <section ref={ref} className="why-choose-section-klook">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ duration: 0.6 }}
-        className="section-header-klook"
-      >
-        <h2 className="section-title-klook">Why Choose ?</h2>
-        <p className="section-subtitle-klook">Travel smarter with AI-powered tools</p>
-      </motion.div>
-
-      <div className="features-grid-klook">
-        {features.map((feature, i) => {
-          const IconComponent = feature.icon;
-          return (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-              transition={{ delay: i * 0.12, duration: 0.6 }}
-              whileHover={{ y: -5 }}
-              className="feature-card-klook"
-            >
-              <div className="feature-icon-klook" style={{ color: feature.color }}>
-                <IconComponent size={56} strokeWidth={1.5} />
-              </div>
-              <h3 className="feature-title-klook">{feature.title}</h3>
-              <p className="feature-description-klook">{feature.description}</p>
-            </motion.div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-// ===== PRICING PREVIEW =====
-function PricingPreview({ currentUser, onNavigate }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const plans = [
-    {
-      name: 'Free',
-      price: '₱0',
-      period: 'forever',
-      features: [
-        { text: 'Interactive map browsing', included: true },
-        { text: 'Browse 70+ destinations', included: true },
-        { text: '5 AI queries per day', included: true },
-        { text: 'Basic quest access', included: true },
-        { text: 'Limited voucher rewards', included: true },
-        { text: 'Itinerary planning', included: false },
-        { text: 'Crowd insights', included: false },
-      ],
-      cta: 'Start Free',
-      primary: false
-    },
-    {
-      name: 'Basic',
-      price: '₱99',
-      period: 'month',
-      features: [
-        { text: 'Everything in Free', included: true },
-        { text: '50 AI queries per day', included: true },
-        { text: '10 itinerary plans per month', included: true },
-        { text: 'Weekly crowd insights', included: true },
-        { text: 'Standard quests & achievements', included: true },
-        { text: 'Limited voucher rewards', included: true },
-        { text: 'Real-time crowd alerts', included: false },
-        { text: 'Unlimited itineraries', included: false },
-        { text: 'Premium cultural guides', included: false },
-        { text: 'Priority support', included: false }
-      ],
-      cta: 'Go Basic',
-      primary: false
-    },
-    {
-      name: 'Premium',
-      price: '₱199',
-      period: 'month',
-      features: [
-        { text: 'Everything in Basic +', included: true },
-        { text: 'Unlimited AI queries & chat', included: true },
-        { text: 'Unlimited smart itinerary planning', included: true },
-        { text: 'Real-time crowd insights & alerts', included: true },
-        { text: 'Unlimited quests + voucher rewards', included: true },
-        { text: 'Exclusive cultural content & guides', included: true },
-        { text: 'Priority 24/7 support', included: true },
-        { text: 'Advanced travel analytics', included: true }
-      ],
-      cta: 'Go Premium',
-      primary: true,
-      badge: 'Best Value'
-    }
-  ];
-
-  return (
-    <section ref={ref} className="pricing-section-klook">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        transition={{ duration: 0.6 }}
-        className="section-header-klook"
-      >
-        <h2 className="section-title-klook">Choose Your Adventure</h2>
-        <p className="section-subtitle-klook">Free to explore, premium to unlock everything</p>
-      </motion.div>
-
-      <div className="pricing-grid-klook">
-        {plans.map((plan, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 30 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-            transition={{ delay: i * 0.15, duration: 0.6 }}
-            whileHover={{ y: -10, transition: { duration: 0.3 } }}
-            className={`pricing-card-klook ${plan.primary ? 'primary' : ''}`}
-          >
-            {plan.badge && <div className="pricing-badge">{plan.badge}</div>}
-            
-            <h3 className="pricing-plan-name">{plan.name}</h3>
-            <div className="pricing-price">
-              <span className="price-amount">{plan.price}</span>
-              <span className="price-period">/{plan.period}</span>
-            </div>
-
-            <ul className="pricing-features">
-              {plan.features.map((feature, j) => (
-                <li key={j} className={feature.included ? 'included' : 'excluded'}>
-                  {feature.included ? (
-                    <CheckCircle2 size={18} className="feature-icon" />
-                  ) : (
-                    <span className="feature-icon">×</span>
-                  )}
-                  {feature.text}
-                </li>
-              ))}
-            </ul>
-
-            <button
-              className={`pricing-cta-btn ${plan.primary ? 'primary' : ''}`}
-              onClick={() => window.open('#profile', '_blank')}
-            >
-              {plan.cta}
-            </button>
-          </motion.div>
-        ))}
-      </div>
     </section>
   );
 }
