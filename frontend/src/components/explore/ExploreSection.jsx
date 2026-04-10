@@ -7,14 +7,14 @@ const ExploreSection = ({ onLocationClick, onMarkLocation, userProfile }) => {
   const [selectedCrowdLevel, setSelectedCrowdLevel] = useState('All');
   
   const categories = [
-    { id: 'all', name: 'All Places', icon: '🌟' },
-    { id: 'park', name: 'Parks', icon: '🌳' },
-    { id: 'viewpoint', name: 'Viewpoints', icon: '🏔️' },
-    { id: 'street', name: 'Streets', icon: '🛣️' },
-    { id: 'mall', name: 'Shopping', icon: '🛍️' },
-    { id: 'religious', name: 'Religious', icon: '⛪' },
-    { id: 'farm', name: 'Farms', icon: '🍓' },
-    { id: 'historical', name: 'Historical', icon: '🏛️' }
+    { id: 'all', name: 'All Places'},
+    { id: 'park', name: 'Parks'},
+    { id: 'viewpoint', name: 'Viewpoints' },
+    { id: 'street', name: 'Streets'},
+    { id: 'mall', name: 'Shopping Malls'},
+    { id: 'religious', name: 'Religious'},
+    { id: 'farm', name: 'Farms'},
+    { id: 'historical', name: 'Historical' }
   ];
 
   const crowdLevelOptions = [
@@ -87,7 +87,7 @@ const ExploreSection = ({ onLocationClick, onMarkLocation, userProfile }) => {
     <div className="explore-section">
       {/* Header */}
       <div className="explore-header">
-        <h2 className="explore-title">🏔️ Explore Baguio City</h2>
+        <h2 className="explore-title">Explore Baguio City</h2>
         <p className="explore-subtitle">
           Discover Baguio's top attractions with real-time crowd monitoring - from scenic parks to historical sites
         </p>
@@ -101,7 +101,6 @@ const ExploreSection = ({ onLocationClick, onMarkLocation, userProfile }) => {
             className={`category-tab ${selectedCategory === cat.id ? 'active' : ''}`}
             onClick={() => setSelectedCategory(cat.id)}
           >
-            <span className="category-icon">{cat.icon}</span>
             <span className="category-name">{cat.name}</span>
           </button>
         ))}
@@ -166,12 +165,11 @@ const ExploreSection = ({ onLocationClick, onMarkLocation, userProfile }) => {
 
               {/* Crowd Info */}
               <div className="card-discovery-label">
-                👥 {location.detectedPeople}/{location.capacity} people • {location.ratingLabel}
+                {location.detectedPeople}/{location.capacity} people • {location.ratingLabel}
               </div>
 
               <div className="card-footer">
                 <span className="best-time">
-                  <span className="time-icon">📅</span>
                   {location.bestTime}
                 </span>
                 <div className="card-actions">

@@ -330,9 +330,9 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
       <div className="map-header">
         <div className="map-header-content">
           <div className="map-title-section">
-            <h2 className="map-title">🗺️ Explore Baguio City</h2>
+            <h2 className="map-title">Explore Baguio City</h2>
             <p className="map-instruction">
-              <strong>💡 Tip:</strong> Click the colored markers to discover featured destinations in Baguio City - the Summer Capital of the Philippines!
+              <strong>Tip:</strong> Click the colored markers to discover featured destinations in Baguio City - the Summer Capital of the Philippines!
             </p>
           </div>
         </div>
@@ -396,7 +396,7 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
         onClick={() => setShowFeatures(!showFeatures)}
         title={showFeatures ? 'Hide featured places' : 'Show featured places'}
       >
-        {showFeatures ? '👁️ Hide Featured' : '👁️‍🗨️ Show Featured'}
+        {showFeatures ? 'Hide Featured' : 'Show Featured'}
       </button>
     </div>
   );

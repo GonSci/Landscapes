@@ -509,7 +509,7 @@ const CommunityFeed = ({ currentUser }) => {
   return (
     <div className="community-feed">
       <div className="community-header">
-        <h1>🌏 Travel Community</h1>
+        <h1>Travel Community</h1>
         <p>Share your adventures and connect with fellow travelers</p>
       </div>
 
@@ -534,13 +534,13 @@ const CommunityFeed = ({ currentUser }) => {
           className={`tab-button ${activeTab === 'posts' ? 'active' : ''}`}
           onClick={() => setActiveTab('posts')}
         >
-          📝 Posts
+          Posts
         </button>
         <button 
           className={`tab-button ${activeTab === 'chat' ? 'active' : ''}`}
           onClick={() => setActiveTab('chat')}
         >
-          💬 Chat
+          Chat
         </button>
       </div>
 
@@ -549,7 +549,7 @@ const CommunityFeed = ({ currentUser }) => {
         <div className="posts-section">
           {currentUser && (
             <button className="create-post-btn" onClick={() => setShowCreatePost(true)}>
-              ✨ Share Your Travel Story
+              Share Your Travel Story
             </button>
           )}
 
