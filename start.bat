@@ -5,17 +5,19 @@ REM This script starts both frontend and backend servers
 echo 🇵🇭 Starting Travel AI Application...
 echo.
 
-REM Check if node_modules exists
-if not exist "node_modules\" (
+REM Check if frontend node_modules exists
+if not exist "frontend\node_modules\" (
     echo 📦 Installing frontend dependencies...
+    cd frontend
     call npm install
+    cd ..
     echo.
 )
 
 REM Check if Python virtual environment exists
-if not exist "server\venv\" (
+if not exist "backend\venv\" (
     echo 🐍 Creating Python virtual environment...
-    cd server
+    cd backend
     python -m venv venv
     call venv\Scripts\activate
     echo 📦 Installing Python dependencies...
@@ -25,13 +27,12 @@ if not exist "server\venv\" (
 )
 
 REM Check if .env file exists
-if not exist "server\.env" (
-    echo ⚠️  Warning: server\.env file not found!
+if not exist "backend\.env" (
+    echo ⚠️  Warning: backend\.env file not found!
     echo 📝 Creating .env file from template...
-    copy server\.env.example server\.env
+    copy backend\.env.example backend\.env
     echo.
-    echo ⚠️  IMPORTANT: Please edit server\.env and add your Hugging Face API key!
-    echo    Get your free API key from: https://huggingface.co/settings/tokens
+    echo ⚠️  IMPORTANT: Please review backend\.env and set any required values.
     echo.
     pause
 )
@@ -45,10 +46,11 @@ echo Press Ctrl+C to stop both servers
 echo.
 
 REM Start backend in new window
-start "Travel AI Backend" cmd /k "cd server && venv\Scripts\activate && python app.py"
+start "Travel AI Backend" cmd /k "cd backend && venv\Scripts\activate && python app.py"
 
 REM Wait a bit for backend to start
 timeout /t 2 /nobreak >nul
 
 REM Start frontend in current window
+cd frontend
 npm run dev

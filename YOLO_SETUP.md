@@ -13,7 +13,7 @@ This guide will help you set up real-time crowd detection using YOLOv8 for the L
 Navigate to the project directory and install the required Python packages:
 
 ```bash
-cd server
+cd backend
 pip install -r requirements.txt
 ```
 
@@ -28,11 +28,11 @@ This will install:
 
 ## Step 2: Place Your Demo Video
 
-1. Place your `demo_video.mp4` file in the `public/assets` folder:
+1. Place your `demo_video.mp4` file in the `frontend/public/assets` folder:
    ```
    Landscapes/
-   ├── public/
-   │   └── assets/
+   ├── frontend/
+   │   └── public/assets/
    │       └── demo_video.mp4  <-- Place video here
    ```
 
@@ -44,7 +44,7 @@ This will install:
 Open a new terminal and start the Flask server:
 
 ```bash
-cd server
+cd backend
 python app.py
 ```
 
@@ -57,7 +57,7 @@ Server running on http://localhost:5001
 ```
 
 **Troubleshooting:**
-- If you get "Port 5001 already in use", change the port in `server/app.py` (last line)
+- If you get "Port 5001 already in use", change the port in `backend/app.py` (last line)
 - On macOS, port 5001 may conflict with AirPlay Receiver - disable it in System Preferences
 
 ## Step 4: Start the React Frontend
@@ -68,7 +68,7 @@ In a separate terminal:
 npm run dev
 ```
 
-The app will open at `http://localhost:5173`
+The app will open at `http://localhost:3000`
 
 ## Step 5: Test the Live View Feature
 
@@ -111,7 +111,7 @@ The app will open at `http://localhost:5173`
 
 1. **Model Selection**: Using `yolov8n.pt` (nano) for fastest inference
    - For better accuracy, use `yolov8m.pt` or `yolov8x.pt` (slower)
-   - Update model name in `server/app.py` line 28
+   - Update model name in `backend/app.py`
 
 2. **Frame Sampling**: Currently processes every 10th frame (line 89 in LiveView.jsx)
    - Increase for faster processing but less frequent updates
@@ -124,7 +124,7 @@ The app will open at `http://localhost:5173`
 ## Troubleshooting
 
 ### "Video file not found" error:
-- Ensure `demo_video.mp4` is in `public/assets/` folder
+- Ensure `demo_video.mp4` is in `frontend/public/assets/` folder
 - Check file name spelling (case-sensitive on Linux/Mac)
 
 ### "Cannot connect to backend server":
@@ -153,7 +153,7 @@ The app will open at `http://localhost:5173`
 Run this test to verify everything works:
 
 ```bash
-# In server directory
+# In backend directory
 python -c "from ultralytics import YOLO; model = YOLO('yolov8n.pt'); print('YOLOv8 ready!')"
 ```
 

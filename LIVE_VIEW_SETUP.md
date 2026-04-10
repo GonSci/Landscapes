@@ -13,7 +13,7 @@ The Live View component now displays real-time YOLOv8 people detection with:
 
 ### 1. Install Backend Dependencies
 ```bash
-cd server
+cd backend
 pip3 install -r requirements.txt
 ```
 
@@ -26,12 +26,12 @@ This installs:
 
 ### 2. Verify Setup
 ```bash
-python3 server/test_yolo_setup.py
+python3 test_yolo_setup.py
 ```
 
 ### 3. Start Backend Server
 ```bash
-python3 server/app.py
+python3 app.py
 ```
 
 Server runs on `http://localhost:5001`
@@ -41,7 +41,7 @@ Server runs on `http://localhost:5001`
 npm run dev
 ```
 
-Frontend runs on `http://localhost:5173` (or next available port)
+Frontend runs on `http://localhost:3000` (or next available port)
 
 ### 5. Navigate to Live View
 Click "Live View" in navigation menu
@@ -203,14 +203,14 @@ Bottom left corner shows:
 curl http://localhost:5001/api/health
 
 # Start server if not running
-python3 server/app.py
+cd backend && python3 app.py
 ```
 
 ### Video Not Loading
 **Symptoms:** "Failed to load video"
 
 **Solution:**
-- Verify `demo_video.mp4` exists in `public/assets/`
+- Verify `demo_video.mp4` exists in `frontend/public/assets/`
 - Check file is valid MP4 format
 - Try different browser
 
@@ -245,7 +245,7 @@ python3 server/app.py
 
 **Solution:**
 ```bash
-cd server
+cd backend
 pip3 install -r requirements.txt --upgrade
 
 # Verify installation
@@ -328,7 +328,7 @@ const filteredDetections = data.detections.filter(
 ## Files Modified
 
 ### Frontend
-- `src/components/liveView/LiveView.jsx` - Main component with YOLOv8 integration
+- `frontend/src/components/liveView/LiveView.jsx` - Main component with YOLOv8 integration
   - Added annotated frame display
   - Feed toggle functionality
   - Real-time detection controls
@@ -336,7 +336,7 @@ const filteredDetections = data.detections.filter(
   - FPS display
 
 ### Backend (Already Done)
-- `server/app.py` - Enhanced with:
+- `backend/app.py` - Enhanced with:
   - Annotated frame generation
   - CCTV overlay drawing
   - Detection configuration endpoints
@@ -345,7 +345,6 @@ const filteredDetections = data.detections.filter(
 
 ### Documentation
 - `YOLO_DETECTION_GUIDE.md` - Comprehensive YOLOv8 guide
-- `README_DETECTION.md` - Quick reference
 - `LIVE_VIEW_SETUP.md` - This file
 
 ## Demo Commands
@@ -353,18 +352,18 @@ const filteredDetections = data.detections.filter(
 ### Test standalone detection
 ```bash
 # Webcam
-python3 server/yolo_realtime_detection.py --source webcam
+python3 backend/yolo_realtime_detection.py --source webcam
 
 # Video file
-python3 server/yolo_realtime_detection.py --source public/assets/demo_video.mp4
+python3 backend/yolo_realtime_detection.py --source frontend/public/assets/demo_video.mp4
 
 # Save output
-python3 server/yolo_realtime_detection.py --source demo_video.mp4 --output detected.mp4
+python3 backend/yolo_realtime_detection.py --source frontend/public/assets/demo_video.mp4 --output detected.mp4
 ```
 
 ### Run interactive demos
 ```bash
-python3 demo_detection.py
+python3 backend/demo_detection.py
 ```
 
 ### API testing

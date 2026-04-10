@@ -13,7 +13,7 @@ This implementation provides real-time people detection using YOLOv8 with:
 
 ### 1. Install Dependencies
 ```bash
-cd server
+cd backend
 pip install -r requirements.txt
 ```
 
@@ -40,22 +40,22 @@ This will:
 
 #### Process Webcam
 ```bash
-python server/yolo_realtime_detection.py --source webcam
+python yolo_realtime_detection.py --source webcam
 ```
 
 #### Process Video File
 ```bash
-python server/yolo_realtime_detection.py --source public/assets/demo_video.mp4
+python yolo_realtime_detection.py --source ../frontend/public/assets/demo_video.mp4
 ```
 
 #### Save Annotated Output
 ```bash
-python server/yolo_realtime_detection.py --source demo_video.mp4 --output detected.mp4
+python yolo_realtime_detection.py --source ../frontend/public/assets/demo_video.mp4 --output detected.mp4
 ```
 
 #### Custom Detection Parameters
 ```bash
-python server/yolo_realtime_detection.py \
+python yolo_realtime_detection.py \
   --source webcam \
   --conf 0.6 \
   --iou 0.5 \
@@ -64,7 +64,7 @@ python server/yolo_realtime_detection.py \
 
 #### All Options
 ```bash
-python server/yolo_realtime_detection.py --help
+python yolo_realtime_detection.py --help
 ```
 
 **Keyboard Controls:**
@@ -75,7 +75,7 @@ python server/yolo_realtime_detection.py --help
 
 #### Start Flask Server
 ```bash
-python server/app.py
+python app.py
 ```
 
 #### Initialize Detection (with config)
@@ -215,11 +215,11 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 ```
 
 ### Video File Not Found
-Place video file in `public/assets/demo_video.mp4` or specify full path.
+Place video file in `frontend/public/assets/demo_video.mp4` or specify full path.
 
 ### Import Errors
 ```bash
-pip install -r server/requirements.txt --upgrade
+pip install -r backend/requirements.txt --upgrade
 ```
 
 ### Webcam Access Denied
@@ -229,13 +229,13 @@ Check OS permissions for camera access in System Settings.
 
 ### Example 1: Quick Webcam Detection
 ```bash
-python server/yolo_realtime_detection.py --source webcam --conf 0.6
+python yolo_realtime_detection.py --source webcam --conf 0.6
 ```
 
 ### Example 2: Process Video and Save
 ```bash
-python server/yolo_realtime_detection.py \
-  --source public/assets/demo_video.mp4 \
+python yolo_realtime_detection.py \
+  --source ../frontend/public/assets/demo_video.mp4 \
   --output results/annotated_video.mp4 \
   --conf 0.5 \
   --iou 0.45
@@ -243,7 +243,7 @@ python server/yolo_realtime_detection.py \
 
 ### Example 3: High Accuracy Mode
 ```bash
-python server/yolo_realtime_detection.py \
+python yolo_realtime_detection.py \
   --source webcam \
   --conf 0.7 \
   --iou 0.3
@@ -251,8 +251,8 @@ python server/yolo_realtime_detection.py \
 
 ### Example 4: CPU-Only Processing
 ```bash
-python server/yolo_realtime_detection.py \
-  --source demo_video.mp4 \
+python yolo_realtime_detection.py \
+  --source ../frontend/public/assets/demo_video.mp4 \
   --no-gpu \
   --no-display \
   --output output.mp4
