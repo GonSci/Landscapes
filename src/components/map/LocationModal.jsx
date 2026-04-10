@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Clock, MapPin, Star, Phone, Globe, Navigation, Bookmark, Share2, X } from 'lucide-react';
 import './LocationModal.css';
 
-const LocationModal = ({ location, onClose, onMarkBeen, onMarkWant, onAskAI }) => {
+const LocationModal = ({ location, onClose, onMarkBeen, onMarkWant }) => {
   const [showCommunity, setShowCommunity] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [communityMessages, setCommunityMessages] = useState([]);
@@ -320,9 +320,6 @@ const LocationModal = ({ location, onClose, onMarkBeen, onMarkWant, onAskAI }) =
           </button>
           <button onClick={onMarkWant} className="btn btn-warning">
             ⭐ Want to Go
-          </button>
-          <button onClick={onAskAI} className="btn btn-primary">
-            🤖 Ask AI
           </button>
         </div>
       </div>

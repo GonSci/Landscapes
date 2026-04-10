@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import Navbar from './components/navbar/Navbar';
 import PhilippinesMap from './components/map/PhilippinesMap';
-import AIAssistant from './components/ai/AIAssistant';
 import UserProfile from './components/profile/UserProfile';
 import LocationModal from './components/map/LocationModal';
 import ExploreSection from './components/explore/ExploreSection';
-import FloatingAIButton from './components/ai/FloatingAIButton';
 import CommunityFeed from './components/community/CommunityFeed';
 import Home from './components/landingPage/Home';
 import LiveView from './components/liveView/LiveView';
@@ -32,7 +30,6 @@ function App() {
     savedTemplates: [],
     lastPreloadedTemplateId: null
   });
-  const [showAIChat, setShowAIChat] = useState(false);
   const [focusLocation, setFocusLocation] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -135,19 +132,9 @@ function App() {
     }
   };
 
-  const handleAskAI = () => {
-    setShowAIChat(true);
-    setShowModal(false);
-  };
-
   const handleNavigate = (page) => {
     setCurrentPage(page);
     window.location.hash = page;
-    setShowAIChat(false);
-  };
-
-  const toggleAIChat = () => {
-    setShowAIChat(!showAIChat);
   };
 
   const handleViewOnMap = (location) => {
@@ -252,21 +239,7 @@ function App() {
           onClose={() => setShowModal(false)}
           onMarkBeen={() => handleMarkLocation(null, 'been')}
           onMarkWant={() => handleMarkLocation(null, 'want')}
-          onAskAI={handleAskAI}
         />
-      )}
-
-      <FloatingAIButton onClick={toggleAIChat} isActive={showAIChat} />
-
-      {showAIChat && (
-        <div className="ai-overlay" onClick={() => setShowAIChat(false)}>
-          <div onClick={(e) => e.stopPropagation()}>
-            <AIAssistant
-              selectedLocation={selectedLocation}
-              onClose={() => setShowAIChat(false)}
-            />
-          </div>
-        </div>
       )}
     </div>
   );

@@ -132,45 +132,6 @@
   flex-direction: column;
 }
 
-/* AI Overlay - When opened from navbar */
-.ai-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  animation: fadeIn 0.3s ease-in;
-  padding: 20px;
-}
-
-.ai-overlay > div {
-  width: 100%;
-  max-width: 700px;
-  height: 80vh;
-  max-height: 700px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  border-radius: 16px;
-  overflow: hidden;
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
 /* Responsive Design */
 @media (max-width: 1200px) {
   .map-layout {
@@ -209,11 +170,6 @@
     height: calc(100vh - 120px);
     max-height: 600px;
   }
-
-  .ai-overlay > div {
-    max-width: 90%;
-    height: 90vh;
-  }
 }
 
 @media (max-width: 768px) {
@@ -242,18 +198,6 @@
     left: 0;
     width: 100%;
     max-width: 100%;
-    height: 100vh;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-
-  .ai-overlay {
-    padding: 0;
-  }
-
-  .ai-overlay > div {
-    max-width: 100%;
-    width: 100%;
     height: 100vh;
     max-height: 100vh;
     border-radius: 0;

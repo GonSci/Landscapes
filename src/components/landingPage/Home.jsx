@@ -148,12 +148,12 @@ const Home = ({ onNavigate, currentUser }) => {
   ];
 
   const categories = [
-    { id: 'foods', name: 'Foods', icon: Star, count: '100+', color: '#f59e0b', image: '/assets/featured_images/manila.jpg' },
-    { id: 'beaches', name: 'Beaches', icon: MapPin, count: '45+', color: '#667eea', image: '/assets/featured_images/boracay.jpg' },
-    { id: 'cities', name: 'Cities', icon: Map, count: '25+', color: '#8b5cf6', image: '/assets/featured_images/manila.jpg' },
-    { id: 'islands', name: 'Islands', icon: Sparkles, count: '50+', color: '#667eea', image: '/assets/featured_images/palawan.jpg' },
-    { id: 'historical', name: 'Historical', icon: MapPin, count: '40+', color: '#764ba2', image: '/assets/featured_images/vigan.jpg' },
-    { id: 'nature', name: 'Nature', icon: Target, count: '60+', color: '#8b5cf6', image: '/assets/featured_images/chocolate-hills.jpg' }
+    { id: 'parks', name: 'Parks & Gardens', icon: Sparkles, count: '15+', color: '#10b981', image: '/assets/featured_images/burnham-park.jpg' },
+    { id: 'scenic', name: 'Scenic Views', icon: MapPin, count: '20+', color: '#667eea', image: '/assets/featured_images/mines-view-park.jpg' },
+    { id: 'historical', name: 'Historical Sites', icon: Map, count: '12+', color: '#764ba2', image: '/assets/featured_images/baguio-cathedral.jpg' },
+    { id: 'food', name: 'Food & Markets', icon: Star, count: '30+', color: '#f59e0b', image: '/assets/featured_images/session-road.jpg' },
+    { id: 'nature', name: 'Nature Trails', icon: Target, count: '18+', color: '#059669', image: '/assets/featured_images/wright-park.jpg' },
+    { id: 'culture', name: 'Arts & Culture', icon: Sparkles, count: '10+', color: '#8b5cf6', image: '/assets/featured_images/teachers-camp.jpg' }
   ];
 
   const testimonials = [
@@ -621,7 +621,7 @@ function CTASection({ onNavigate }) {
       >
         <h2 className="cta-title-klook">Ready for Your Next Adventure?</h2>
         <p className="cta-subtitle-klook">
-          Join 50,000+ travelers discovering the Philippines with Landscapes
+          Join travelers discovering the beauty of Baguio with Landscapes
         </p>
         <button
           className="cta-button-klook"
