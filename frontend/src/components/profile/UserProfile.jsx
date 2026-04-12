@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import './UserProfile.css';
 import { db } from '../../firebase'; 
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
@@ -573,64 +572,97 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     prevQuestsRef.current = updated;
   }, [stats, userChecklists, quests]);
 
+  const modalActionBtnClass = 'cursor-pointer rounded-lg px-5 py-2.5 text-[0.9rem] font-bold uppercase tracking-[0.5px] transition-all duration-200';
+  const templateActionBaseClass = 'flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-[10px] py-1.5 text-[0.8rem] font-semibold transition-all duration-200';
+
   return (
-    <div className={`user-profile ${expanded ? 'expanded' : ''} ${compactMode ? 'compact' : ''}`}>
-      <div className="profile-header">
-        <div className="avatar">👤</div>
-        <div className="profile-info">
-          <h3>My Travel Journey</h3>
-          <p className="profile-subtitle">Track your adventures</p>
+    <div
+      className={`flex h-full flex-col gap-2 overflow-y-auto rounded-lg bg-white px-3 py-3 shadow-[0_6px_20px_rgba(16,24,40,0.06)] transition-[padding,box-shadow,border-radius] duration-200 [&::-webkit-scrollbar-thumb]:rounded-[3px] [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-slate-50 [&::-webkit-scrollbar]:w-1.5 ${compactMode ? 'border-r-0' : 'border-r border-[#e6eef8]'}`}
+    >
+      <div
+        className={`flex items-center gap-3 rounded-lg bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white ${compactMode ? 'px-3 py-2.5' : 'px-3 py-3.5'}`}
+      >
+        <div
+          className={`m-0 flex shrink-0 items-center justify-center rounded-xl border-2 border-white/90 bg-white text-[#667eea] shadow-[0_6px_18px_rgba(10,20,40,0.06)] ${compactMode ? 'h-10 w-10 text-[1.3rem]' : 'h-14 w-14 text-[1.6rem]'}`}
+        >
+          👤
+        </div>
+        <div className="flex-1">
+          <h3 className={`m-0 font-extrabold tracking-[-0.01em] ${compactMode ? 'text-[0.95rem]' : 'text-[1.05rem]'}`}>
+            My Travel Journey
+          </h3>
+          <p className={`m-0 mt-1 font-medium text-white/95 ${compactMode ? 'text-xs' : 'text-[0.9rem]'}`}>
+            Track your adventures
+          </p>
         </div>
       </div>
 
       {/* Stats Overview */}
-      <div className="stats-grid">
-        <div className="stat-card visited">
-          <div className="stat-icon">✓</div>
-          <div className="stat-content">
-            <span className="stat-number">{stats.visited}</span>
-            <span className="stat-label">Visited</span>
+      {!compactMode && (
+        <div className="grid grid-cols-3 gap-2.5 bg-transparent p-2.5">
+          <div className="relative flex flex-col items-center gap-1.5 overflow-hidden rounded-[10px] border border-[#eef3fb] bg-gradient-to-b from-white to-[#fbfdff] px-2 py-2.5 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(16,24,40,0.06)]">
+            <div className="text-2xl">✓</div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-[1.8rem] font-extrabold leading-none text-slate-900">{stats.visited}</span>
+              <span className="text-[0.75rem] font-bold uppercase tracking-[0.5px] text-slate-500">Visited</span>
+            </div>
+          </div>
+          <div className="relative flex flex-col items-center gap-1.5 overflow-hidden rounded-[10px] border border-[#eef3fb] bg-gradient-to-b from-white to-[#fbfdff] px-2 py-2.5 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(16,24,40,0.06)]">
+            <div className="text-2xl">♡</div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-[1.8rem] font-extrabold leading-none text-slate-900">{stats.wishlist}</span>
+              <span className="text-[0.75rem] font-bold uppercase tracking-[0.5px] text-slate-500">Wishlist</span>
+            </div>
+          </div>
+          <div className="relative flex flex-col items-center gap-1.5 overflow-hidden rounded-[10px] border border-[#eef3fb] bg-gradient-to-b from-white to-[#fbfdff] px-2 py-2.5 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(16,24,40,0.06)]">
+            <div className="text-2xl">🏝️</div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-[1.8rem] font-extrabold leading-none text-slate-900">{stats.regions}</span>
+              <span className="text-[0.75rem] font-bold uppercase tracking-[0.5px] text-slate-500">Regions</span>
+            </div>
           </div>
         </div>
-        <div className="stat-card wishlist">
-          <div className="stat-icon">♡</div>
-          <div className="stat-content">
-            <span className="stat-number">{stats.wishlist}</span>
-            <span className="stat-label">Wishlist</span>
-          </div>
-        </div>
-        <div className="stat-card regions">
-          <div className="stat-icon">🏝️</div>
-          <div className="stat-content">
-            <span className="stat-number">{stats.regions}</span>
-            <span className="stat-label">Regions</span>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Travel Checklist Section */}
-      <div className="checklist-container">
-        <h4 className="checklist-title">✓ Travel Checklist</h4>
-        <button onClick={handleAddChecklistClick} className="add-checklist-btn">
-          <span className="btn-icon">+</span>
-          <span className="btn-text">Add Checklist Item</span>
+      <div className="flex flex-col gap-0">
+        <h4
+          className={`m-0 grid items-center pt-px font-extrabold uppercase tracking-[0.5px] text-slate-900 ${compactMode ? 'mb-2.5 mt-3 text-[0.85rem]' : 'mb-4 text-[0.95rem]'} ${expanded ? 'mt-9' : ''}`}
+        >
+          ✓ Travel Checklist
+        </h4>
+        <button
+          onClick={handleAddChecklistClick}
+          className={`flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-dashed border-[#c4b5fd] bg-gradient-to-br from-[#ede9fe] to-[#f3e8ff] font-bold capitalize text-[#7c3aed] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#a78bfa] hover:from-[#ddd6fe] hover:to-[#e9d5ff] hover:shadow-[0_4px_12px_rgba(124,58,237,0.2)] active:translate-y-0 ${compactMode ? 'mx-2 w-[calc(100%-16px)] px-2.5 py-2 text-[0.8rem]' : 'w-[calc(100%-24px)] px-3 py-2.5 text-[0.9rem]'}`}
+        >
+          <span className="text-[1.2rem] font-extrabold">+</span>
+          <span className={`${compactMode ? 'text-[0.8rem]' : 'text-[0.85rem]'}`}>Add Checklist Item</span>
         </button>
         {/* Display added checklists */}
-        <div className="checklist-items">
+        <div className={`grid gap-2.5 ${compactMode ? 'ml-2 mt-1.5 w-[calc(100%-16px)] gap-2' : 'mt-2 max-w-[90%]'}`}>
           {userChecklists.map(item => (
-            <div key={item.id} className={`checklist-item ${item.completed ? 'completed' : ''} ${expandedChecklistId === item.id ? 'expanded' : ''}`}>
-              <div className="checklist-item-header">
+            <div
+              key={item.id}
+              className={`relative w-full max-w-[520px] overflow-hidden rounded-[10px] border-2 transition-all duration-300 ${item.completed ? 'border-green-300 bg-gradient-to-br from-green-50 to-green-100 before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 before:bg-gradient-to-b before:from-emerald-500 before:to-emerald-600' : 'border-slate-200 bg-[#fafafa]'}`}
+            >
+              <div className={`flex w-full items-center ${compactMode ? 'gap-2 px-2.5 py-2' : 'gap-3 px-3 py-2.5'}`}>
                 <input
                   type="checkbox"
                   checked={item.completed}
                   onChange={() => handleToggleChecklistItem(item.id)}
-                  className="checklist-checkbox"
+                  className={`shrink-0 cursor-pointer accent-[#667eea] ${compactMode ? 'h-4 w-4' : 'h-5 w-5'}`}
                 />
-                <span className="checklist-icon">{item.icon}</span>
-                <span className="checklist-text">{item.name}</span>
+                <span
+                  className={`flex shrink-0 items-center justify-center rounded-[10px] border-2 bg-white ${compactMode ? 'h-7 w-7 text-[1.1rem]' : 'h-10 w-10 text-[1.6rem]'} ${item.completed ? 'border-green-300' : 'border-slate-200'}`}
+                >
+                  {item.icon}
+                </span>
+                <span className={`font-bold ${compactMode ? 'text-[0.8rem]' : 'text-[0.9rem]'} ${item.completed ? 'text-green-800 line-through' : 'text-slate-900'}`}>
+                  {item.name}
+                </span>
                 <button
                   onClick={() => handleToggleExpand(item.id)}
-                  className="checklist-expand-btn"
+                  className={`ml-auto flex shrink-0 cursor-pointer items-center justify-center bg-transparent px-2 py-1 text-slate-600 transition-all duration-300 hover:text-slate-900 ${expandedChecklistId === item.id ? 'rotate-180' : 'rotate-0'}`}
                   title="Add notes"
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -639,16 +671,16 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
                 </button>
                 <button
                   onClick={() => handleDeleteChecklistItem(item.id)}
-                  className="checklist-delete-btn"
+                  className="cursor-pointer bg-transparent px-2 py-1 text-[1.1rem] opacity-60 transition-all duration-200 hover:scale-110 hover:opacity-100 active:scale-95"
                   title="Delete this checklist item"
                 >
                   🗑️
                 </button>
               </div>
               {expandedChecklistId === item.id && (
-                <div className="checklist-notes-wrapper">
+                <div className="w-full">
                   <textarea
-                    className="checklist-notes-input"
+                    className={`w-full resize-none border-0 border-t border-solid border-slate-200 bg-white p-3 font-inherit leading-[1.5] text-slate-900 placeholder:italic placeholder:text-slate-300 focus:bg-slate-50 focus:outline-none focus:border-t-[#667eea] ${compactMode ? 'min-h-[60px] text-[0.8rem] p-2' : 'min-h-20 text-[0.85rem]'}`}
                     placeholder="Add notes, reminders, or details..."
                     value={item.note || ''}
                     onChange={(e) => handleUpdateNote(item.id, e.target.value)}
@@ -660,36 +692,50 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
         </div>
 
         {/* Saved Templates Section - Combined Save/Load */}
-        <div className="templates-section">
-          <div className="templates-header">
-            <h5 className="templates-header-title">📦 Template Management</h5>
+        <div
+          className={`w-full max-w-[520px] rounded-[10px] border border-solid border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 transition-all duration-300 hover:border-slate-300 ${compactMode ? 'mx-2 my-2.5 w-[calc(100%-16px)] p-2.5' : 'mt-4 p-3.5'}`}
+        >
+          <div className="mb-3 flex items-center justify-between gap-2.5">
+            <h5 className={`m-0 flex items-center gap-1.5 font-bold text-slate-700 ${compactMode ? 'text-[0.8rem]' : 'text-[0.9rem]'}`}>
+              📦 Template Management
+            </h5>
             {userChecklists.length > 0 && (
-              <button onClick={handleOpenSaveModal} className="templates-action-btn save-btn">
-                <span className="btn-icon">💾</span>
-                <span className="btn-text">Save Current</span>
+              <button
+                onClick={handleOpenSaveModal}
+                className={`${templateActionBaseClass} bg-gradient-to-br from-emerald-500 to-emerald-600 px-2 py-1.5 text-white hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(16,185,129,0.3)] ${compactMode ? 'text-[0.7rem]' : 'text-[0.8rem]'}`}
+              >
+                <span className="text-[0.9rem]">💾</span>
+                <span>Save Current</span>
               </button>
             )}
           </div>
           
           {savedChecklistTemplates.length > 0 ? (
-            <div className="templates-list">
+            <div className="flex flex-col gap-2">
               {savedChecklistTemplates.map(template => (
-                <div key={template.id} className="template-item">
-                  <div className="template-info">
-                    <span className="template-name">{template.name}</span>
-                    <span className="template-meta">{template.items.length} item{template.items.length !== 1 ? 's' : ''}</span>
+                <div
+                  key={template.id}
+                  className={`flex items-center justify-between gap-2.5 rounded-lg border border-solid border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-[0_2px_4px_rgba(0,0,0,0.05)] ${compactMode ? 'p-2' : 'p-2.5'}`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className={`block break-words font-semibold text-slate-800 ${compactMode ? 'text-[0.8rem]' : 'text-[0.9rem]'}`}>
+                      {template.name}
+                    </span>
+                    <span className={`font-medium text-slate-400 ${compactMode ? 'text-[0.75rem]' : 'text-[0.8rem]'}`}>
+                      {template.items.length} item{template.items.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                  <div className="template-actions">
+                  <div className="flex shrink-0 gap-1.5">
                     <button
                       onClick={() => handleLoadTemplate(template)}
-                      className="templates-action-btn load-btn"
+                      className={`${templateActionBaseClass} bg-gradient-to-br from-sky-500 to-sky-600 text-white hover:scale-105 hover:shadow-[0_2px_6px_rgba(2,132,199,0.3)] ${compactMode ? 'px-2 py-1.5 text-[0.7rem]' : 'text-[0.8rem]'}`}
                       title="Load this template"
                     >
                       📥 Load
                     </button>
                     <button
                       onClick={() => handleDeleteTemplate(template.id)}
-                      className="templates-action-btn delete-btn"
+                      className={`${templateActionBaseClass} border border-solid border-slate-200 bg-[#f5f5f5] px-2 py-1.5 text-slate-500 hover:border-red-300 hover:bg-red-100 hover:text-red-600 ${compactMode ? 'text-[0.7rem]' : 'text-[0.8rem]'}`}
                       title="Delete this template"
                     >
                       🗑️
@@ -699,24 +745,28 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
               ))}
             </div>
           ) : (
-            <div className="templates-empty">
-              <p>No saved templates yet. Create one to get started!</p>
+            <div className="m-0 rounded-lg border border-dashed border-slate-300 bg-white p-4 text-center">
+              <p className="m-0 text-[0.85rem] font-medium text-slate-400">No saved templates yet. Create one to get started!</p>
             </div>
           )}
 
           {/* Preloaded Templates */}
-          <div className="preloaded-templates">
-            <h5 className="preloaded-title">🎯 Quick Start Templates</h5>
-            <div className="preloaded-grid">
+          <div className={`mt-3.5 border-t border-solid border-slate-300 pt-3 ${compactMode ? 'mt-2 pt-2' : ''}`}>
+            <h5 className={`m-0 mb-2.5 flex items-center gap-1 font-bold text-slate-600 ${compactMode ? 'mb-1.5 text-[0.8rem]' : 'text-[0.85rem]'}`}>
+              🎯 Quick Start Templates
+            </h5>
+            <div className={`grid grid-cols-2 ${compactMode ? 'gap-1.5' : 'gap-2'}`}>
               {preloadedTemplates.map(template => (
                 <button
                   key={template.id}
                   onClick={() => handleLoadPreloadedTemplate(template)}
-                  className="preloaded-template-btn"
+                  className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-solid border-slate-200 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-[#667eea] hover:bg-slate-50 hover:shadow-[0_4px_12px_rgba(102,126,234,0.15)] active:translate-y-0 ${compactMode ? 'gap-1 px-2 py-2.5' : 'px-2.5 py-3'}`}
                   title={`Load ${template.name} template`}
                 >
-                  <span className="preloaded-icon">{template.icon}</span>
-                  <span className="preloaded-name">{template.name}</span>
+                  <span className={`${compactMode ? 'text-[1.4rem]' : 'text-[1.8rem]'}`}>{template.icon}</span>
+                  <span className={`break-words text-center font-semibold leading-tight text-slate-700 ${compactMode ? 'text-[0.7rem]' : 'text-[0.8rem]'}`}>
+                    {template.name}
+                  </span>
                 </button>
               ))}
             </div>
@@ -726,16 +776,16 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
 
       {/* Add Checklist Modal */}
       {showAddChecklistModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Add Checklist Item</h3>
-              <button className="modal-close" onClick={handleCloseModal}>✕</button>
+        <div className="fixed inset-0 z-[1000] flex animate-[fadeIn_0.3s_ease] items-center justify-center bg-black/50 backdrop-blur-[3px]" onClick={handleCloseModal}>
+          <div className="w-[90%] max-w-[500px] animate-[slideUp_0.3s_ease] overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b-2 border-slate-200 bg-gradient-to-br from-[#667eea] to-[#764ba2] p-6 text-white">
+              <h3 className="m-0 text-xl font-extrabold">Add Checklist Item</h3>
+              <button className="flex h-8 w-8 cursor-pointer items-center justify-center bg-transparent p-0 text-2xl text-white transition-all duration-200 hover:scale-110" onClick={handleCloseModal}>✕</button>
             </div>
             
-            <div className="modal-body">
-              <div className="form-group">
-                <label htmlFor="checklist-name">Item Name</label>
+            <div className="p-6">
+              <div className="mb-5">
+                <label htmlFor="checklist-name" className="mb-2 block text-[0.95rem] font-bold uppercase tracking-[0.5px] text-slate-900">Item Name</label>
                 <input
                   type="text"
                   id="checklist-name"
@@ -743,17 +793,17 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
                   placeholder="Enter checklist item name"
                   value={checklistForm.name}
                   onChange={handleFormChange}
-                  className="form-input"
+                  className="box-border w-full rounded-[10px] border-2 border-slate-200 px-3.5 py-3 text-[0.95rem] transition-all duration-200 focus:border-[#667eea] focus:outline-none focus:ring-4 focus:ring-[#667eea]/10"
                 />
               </div>
 
-              <div className="form-group">
-                <label>Select Icon</label>
-                <div className="icon-picker">
+              <div className="mb-5">
+                <label className="mb-2 block text-[0.95rem] font-bold uppercase tracking-[0.5px] text-slate-900">Select Icon</label>
+                <div className="grid grid-cols-6 gap-2.5">
                   {iconOptions.map(icon => (
                     <button
                       key={icon}
-                      className={`icon-option ${checklistForm.icon === icon ? 'selected' : ''}`}
+                      className={`aspect-square cursor-pointer rounded-[10px] border-2 text-[1.8rem] transition-all duration-200 hover:scale-105 ${checklistForm.icon === icon ? 'border-[#667eea] bg-gradient-to-br from-[#667eea] to-[#764ba2] shadow-[0_4px_12px_rgba(102,126,234,0.3)]' : 'border-slate-200 bg-[#f5f3ff] hover:border-[#c4b5fd] hover:bg-[#f0e9ff]'}`}
                       onClick={() => handleIconSelect(icon)}
                       title={`Select ${icon}`}
                     >
@@ -763,9 +813,9 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button onClick={handleCloseModal} className="btn-cancel">Cancel</button>
-                <button onClick={handleAddChecklist} className="btn-add">Add Item</button>
+              <div className="-mx-6 -mb-6 flex justify-end gap-3 border-t-2 border-slate-200 px-6 py-4">
+                <button onClick={handleCloseModal} className={`${modalActionBtnClass} border-2 border-slate-200 bg-[#f5f3ff] text-[#667eea] hover:border-[#c4b5fd] hover:bg-[#f0e9ff]`}>Cancel</button>
+                <button onClick={handleAddChecklist} className={`${modalActionBtnClass} border-none bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(102,126,234,0.3)]`}>Add Item</button>
               </div>
             </div>
           </div>
@@ -774,41 +824,41 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
 
       {/* Save Template Modal */}
       {showSaveChecklistModal && (
-        <div className="modal-overlay" onClick={handleCloseSaveModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Save Checklist as Template</h3>
-              <button className="modal-close" onClick={handleCloseSaveModal}>✕</button>
+        <div className="fixed inset-0 z-[1000] flex animate-[fadeIn_0.3s_ease] items-center justify-center bg-black/50 backdrop-blur-[3px]" onClick={handleCloseSaveModal}>
+          <div className="w-[90%] max-w-[500px] animate-[slideUp_0.3s_ease] overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b-2 border-slate-200 bg-gradient-to-br from-[#667eea] to-[#764ba2] p-6 text-white">
+              <h3 className="m-0 text-xl font-extrabold">Save Checklist as Template</h3>
+              <button className="flex h-8 w-8 cursor-pointer items-center justify-center bg-transparent p-0 text-2xl text-white transition-all duration-200 hover:scale-110" onClick={handleCloseSaveModal}>✕</button>
             </div>
             
-            <div className="modal-body">
-              <div className="form-group">
-                <label htmlFor="template-name">Template Name</label>
+            <div className="p-6">
+              <div className="mb-5">
+                <label htmlFor="template-name" className="mb-2 block text-[0.95rem] font-bold uppercase tracking-[0.5px] text-slate-900">Template Name</label>
                 <input
                   type="text"
                   id="template-name"
                   placeholder="e.g., 'Beach Trip Essentials'"
                   value={saveChecklistName}
                   onChange={(e) => setSaveChecklistName(e.target.value)}
-                  className="form-input"
+                  className="box-border w-full rounded-[10px] border-2 border-slate-200 px-3.5 py-3 text-[0.95rem] transition-all duration-200 focus:border-[#667eea] focus:outline-none focus:ring-4 focus:ring-[#667eea]/10"
                 />
               </div>
 
-              <div className="template-preview">
-                <p className="preview-label">Items to save: {userChecklists.length}</p>
-                <ul className="preview-list">
+              <div className="rounded-lg border border-solid border-slate-200 bg-slate-50 p-3">
+                <p className="m-0 mb-2 text-sm font-bold text-slate-700">Items to save: {userChecklists.length}</p>
+                <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-700">
                   {userChecklists.slice(0, 5).map(item => (
                     <li key={item.id}>{item.icon} {item.name}</li>
                   ))}
                   {userChecklists.length > 5 && (
-                    <li className="more-items">... and {userChecklists.length - 5} more</li>
+                    <li className="text-slate-500">... and {userChecklists.length - 5} more</li>
                   )}
                 </ul>
               </div>
 
-              <div className="modal-footer">
-                <button onClick={handleCloseSaveModal} className="btn-cancel">Cancel</button>
-                <button onClick={handleSaveChecklist} className="btn-save">Save Template</button>
+              <div className="-mx-6 -mb-6 mt-5 flex justify-end gap-3 border-t-2 border-slate-200 px-6 py-4">
+                <button onClick={handleCloseSaveModal} className={`${modalActionBtnClass} border-2 border-slate-200 bg-[#f5f3ff] text-[#667eea] hover:border-[#c4b5fd] hover:bg-[#f0e9ff]`}>Cancel</button>
+                <button onClick={handleSaveChecklist} className={`${modalActionBtnClass} border-none bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(102,126,234,0.3)]`}>Save Template</button>
               </div>
             </div>
           </div>

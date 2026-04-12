@@ -1,12 +1,11 @@
 /**
- * CommunityFeed Component
+ * CommunityFeed Component - Tailwind CSS Version
  * 
  * Posts: Hardcoded sample data (local state, resets on refresh)
  * Chat: Real-time Firebase (fully functional)
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import './CommunityFeed.css';
 import { db } from '../../firebase';
 import { 
   collection, 
@@ -15,9 +14,10 @@ import {
   orderBy, 
   onSnapshot,
   doc,
-  getDocs,
+  updateDoc,
   serverTimestamp
 } from 'firebase/firestore';
+import { Plus, Send, X, Heart, MessageCircle, Share2, Edit2, Trash2 } from 'lucide-react';
 
 const CommunityFeed = ({ currentUser }) => {
   const [activeTab, setActiveTab] = useState('posts');
@@ -505,222 +505,176 @@ const CommunityFeed = ({ currentUser }) => {
   };
 
   // ⭐ NEW: Main return statement - This renders the entire CommunityFeed UI
-  // Without this, the component has logic but nothing displays on screen
   return (
-    <div className="community-feed">
-      <div className="community-header">
-        <h1>Travel Community</h1>
-        <p>Share your adventures and connect with fellow travelers</p>
+    <div className="w-full max-w-6xl mx-auto px-6 py-8 animate-fadeIn">
+      {/* Header Section */}
+      <div className="mb-8">
+        <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-purple mb-2">
+          Travel Community
+        </h1>
+        <p className="text-lg text-slate-600 font-medium">
+          Share your adventures and connect with fellow travelers
+        </p>
       </div>
 
+      {/* Login Prompt */}
       {!currentUser && (
-        <div className="login-prompt" style={{ 
-          padding: '20px', 
-          textAlign: 'center', 
-          backgroundColor: '#f0f4ff', 
-          borderRadius: '8px', 
-          margin: '20px 0',
-          border: '2px solid #667eea'
-        }}>
-          <p style={{ fontSize: '16px', color: '#667eea', fontWeight: '600' }}>
+        <div className="bg-indigo-50 border-2 border-purple-primary rounded-lg p-5 mb-8">
+          <p className="text-center text-purple-primary font-semibold text-base">
             👋 Please login to create posts and interact with the community!
           </p>
         </div>
       )}
 
-      {/* ⭐ Tabs to switch between Posts and Chat */}
-      <div className="community-tabs">
+      {/* Tabs */}
+      <div className="flex gap-0 mb-8 border-b-2 border-slate-200">
         <button 
-          className={`tab-button ${activeTab === 'posts' ? 'active' : ''}`}
+          className={`flex-1 px-6 py-4 text-center text-sm font-bold uppercase tracking-wider transition-all relative ${
+            activeTab === 'posts'
+              ? 'text-purple-primary'
+              : 'text-slate-600 hover:text-purple-primary'
+          }`}
           onClick={() => setActiveTab('posts')}
         >
           Posts
+          {activeTab === 'posts' && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-purple"></div>
+          )}
         </button>
         <button 
-          className={`tab-button ${activeTab === 'chat' ? 'active' : ''}`}
+          className={`flex-1 px-6 py-4 text-center text-sm font-bold uppercase tracking-wider transition-all relative ${
+            activeTab === 'chat'
+              ? 'text-purple-primary'
+              : 'text-slate-600 hover:text-purple-primary'
+          }`}
           onClick={() => setActiveTab('chat')}
         >
           Chat
+          {activeTab === 'chat' && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-purple"></div>
+          )}
         </button>
       </div>
 
-      {/* ⭐ Posts Tab Content */}
+      {/* Posts Tab */}
       {activeTab === 'posts' && (
-        <div className="posts-section">
+        <div className="space-y-6">
           {currentUser && (
-            <button className="create-post-btn" onClick={() => setShowCreatePost(true)}>
+            <button 
+              onClick={() => setShowCreatePost(true)}
+              className="w-full bg-gradient-purple hover:shadow-lg text-white font-bold py-5 px-7 rounded-2xl transition-all flex items-center justify-center gap-3 mb-6 hover:-translate-y-0.5"
+            >
+              <Plus size={20} />
               Share Your Travel Story
             </button>
           )}
 
-          {/* ⭐ NEW: Create Post Modal - This was completely missing! */}
-          {/* Without this modal, clicking "Share Your Travel Story" does nothing */}
+          {/* Create Post Modal */}
           {showCreatePost && (
             <div 
               onClick={() => setShowCreatePost(false)}
-              style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000
-              }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-5"
             >
               <div 
                 onClick={(e) => e.stopPropagation()}
-                style={{
-                  backgroundColor: 'white',
-                  padding: '24px',
-                  borderRadius: '12px',
-                  width: '600px',
-                  maxWidth: '90%',
-                  maxHeight: '80vh',
-                  overflowY: 'auto',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
-                }}
+                className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-modalSlideUp"
               >
-                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h2 style={{ margin: 0, fontSize: '24px', color: '#333' }}>Create New Post</h2>
+                {/* Modal Header */}
+                <div className="flex justify-between items-center p-7 border-b-2 border-slate-200">
+                  <h2 className="text-2xl font-black text-navy-900">Create New Post</h2>
                   <button 
                     onClick={() => {
                       setShowCreatePost(false);
                       setNewPost({ location: '', content: '', imageUrl: '' });
                     }}
                     disabled={isUploading}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontSize: '24px',
-                      cursor: isUploading ? 'not-allowed' : 'pointer',
-                      color: '#999',
-                      padding: '0',
-                      width: '30px',
-                      height: '30px'
-                    }}
+                    className="text-slate-600 hover:text-navy-900 text-2xl font-light transition-colors"
                   >
-                    ✕
+                    <X size={28} />
                   </button>
                 </div>
 
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                    📍 Location
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="Where did you go? (e.g., Boracay, Aklan)" 
-                    value={newPost.location} 
-                    onChange={(e) => setNewPost({ ...newPost, location: e.target.value })} 
-                    disabled={isUploading}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                    ✍️ Your Story
-                  </label>
-                  <textarea 
-                    placeholder="Share your experience..." 
-                    value={newPost.content} 
-                    onChange={(e) => setNewPost({ ...newPost, content: e.target.value })} 
-                    disabled={isUploading}
-                    rows="5"
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      resize: 'vertical',
-                      boxSizing: 'border-box',
-                      fontFamily: 'inherit'
-                    }}
-                  />
-                </div>
-
-                {/* ⭐ MODIFIED: Use image URL input instead of file upload */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#333' }}>
-                    🖼️ Image URL (Optional)
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="Paste image URL (e.g., https://images.unsplash.com/...)" 
-                    value={newPost.imageUrl || ''} 
-                    onChange={(e) => setNewPost({ ...newPost, imageUrl: e.target.value })} 
-                    disabled={isUploading}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  <p style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
-                    💡 Try <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" style={{ color: '#667eea' }}>Unsplash</a> or <a href="https://picsum.photos" target="_blank" rel="noopener noreferrer" style={{ color: '#667eea' }}>Lorem Picsum</a> for free images
-                  </p>
-                </div>
-
-                {newPost.imageUrl && (
-                  <div style={{ marginBottom: '16px' }}>
-                    <img 
-                      src={newPost.imageUrl} 
-                      alt="Preview" 
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextElementSibling.style.display = 'block';
-                      }}
-                      style={{ 
-                        width: '100%', 
-                        maxHeight: '200px', 
-                        objectFit: 'cover', 
-                        borderRadius: '8px',
-                        border: '2px solid #e0e0e0'
-                      }}
+                {/* Modal Body */}
+                <div className="p-7 space-y-5">
+                  {/* Location Input */}
+                  <div>
+                    <label className="block mb-2 font-bold text-navy-900">📍 Location</label>
+                    <input 
+                      type="text" 
+                      placeholder="Where did you go? (e.g., Boracay, Aklan)" 
+                      value={newPost.location} 
+                      onChange={(e) => setNewPost({ ...newPost, location: e.target.value })} 
+                      disabled={isUploading}
+                      className="w-full px-5 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-navy-900 focus:bg-white transition-all bg-slate-100"
                     />
-                    <p style={{ 
-                      display: 'none', 
-                      color: '#e74c3c', 
-                      fontSize: '12px', 
-                      marginTop: '6px' 
-                    }}>
-                      ❌ Failed to load image. Please check the URL.
+                  </div>
+
+                  {/* Content Textarea */}
+                  <div>
+                    <label className="block mb-2 font-bold text-navy-900">✍️ Your Story</label>
+                    <textarea 
+                      placeholder="Share your experience..." 
+                      value={newPost.content} 
+                      onChange={(e) => setNewPost({ ...newPost, content: e.target.value })} 
+                      disabled={isUploading}
+                      rows="5"
+                      className="w-full px-5 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-navy-900 focus:bg-white focus:shadow-md transition-all bg-slate-100 resize-none font-inherit"
+                    />
+                  </div>
+
+                  {/* Image URL Input */}
+                  <div>
+                    <label className="block mb-2 font-bold text-navy-900">🖼️ Image URL (Optional)</label>
+                    <input 
+                      type="text" 
+                      placeholder="Paste image URL (e.g., https://images.unsplash.com/...)" 
+                      value={newPost.imageUrl || ''} 
+                      onChange={(e) => setNewPost({ ...newPost, imageUrl: e.target.value })} 
+                      disabled={isUploading}
+                      className="w-full px-5 py-4 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-navy-900 focus:bg-white transition-all bg-slate-100"
+                    />
+                    <p className="text-xs text-slate-600 mt-1.5">
+                      💡 Try{' '}
+                      <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-purple-primary hover:underline">
+                        Unsplash
+                      </a>
+                      {' '}or{' '}
+                      <a href="https://picsum.photos" target="_blank" rel="noopener noreferrer" className="text-purple-primary hover:underline">
+                        Lorem Picsum
+                      </a>
+                      {' '}for free images
                     </p>
                   </div>
-                )}
 
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                  {/* Image Preview */}
+                  {newPost.imageUrl && (
+                    <div className="border-2 border-slate-200 rounded-xl overflow-hidden">
+                      <img 
+                        src={newPost.imageUrl} 
+                        alt="Preview" 
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling.style.display = 'block';
+                        }}
+                        className="w-full max-h-52 object-cover"
+                      />
+                      <p className="hidden text-red-600 text-xs p-3">
+                        ❌ Failed to load image. Please check the URL.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Actions */}
+                <div className="flex gap-3 justify-end p-7 border-t-2 border-slate-200">
                   <button 
                     onClick={handleCreatePost}
                     disabled={isUploading || !newPost.location.trim() || !newPost.content.trim()}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: (isUploading || !newPost.location.trim() || !newPost.content.trim()) ? '#ccc' : '#667eea',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: (isUploading || !newPost.location.trim() || !newPost.content.trim()) ? 'not-allowed' : 'pointer'
-                    }}
+                    className={`px-6 py-2.5 rounded-lg font-bold text-white transition-all ${
+                      isUploading || !newPost.location.trim() || !newPost.content.trim()
+                        ? 'bg-slate-300 cursor-not-allowed'
+                        : 'bg-purple-primary hover:bg-indigo-700 active:scale-95'
+                    }`}
                   >
                     {isUploading ? '⏳ Posting...' : '📤 Post'}
                   </button>
@@ -729,15 +683,14 @@ const CommunityFeed = ({ currentUser }) => {
             </div>
           )}
 
-          <div className="posts-list">
+          {/* Posts List */}
+          <div className="space-y-6">
             {posts.length === 0 ? (
-              <div className="empty-feed" style={{
-                padding: '60px 20px',
-                textAlign: 'center',
-                color: '#999'
-              }}>
-                <p style={{ fontSize: '48px', marginBottom: '10px' }}>📭</p>
-                <p style={{ fontSize: '18px' }}>No posts yet. Be the first to share your travel story!</p>
+              <div className="text-center py-16">
+                <p className="text-5xl mb-3">📭</p>
+                <p className="text-xl text-slate-600">
+                  No posts yet. Be the first to share your travel story!
+                </p>
               </div>
             ) : (
               posts.map(post => (
@@ -745,16 +698,16 @@ const CommunityFeed = ({ currentUser }) => {
                   key={post.id}
                   post={post}
                   currentUser={currentUser}
-                  onLike={handleLikePost} // ⭐ ADDED: Handler for liking posts
-                  onDelete={handleDeletePost} // ⭐ ADDED: Handler for deleting posts
-                  onEdit={setEditingPost} // ⭐ ADDED: Handler for editing posts
-                  onAddComment={handleAddComment} // ⭐ ADDED: Handler for adding comments
-                  onDeleteComment={handleDeleteComment} // ⭐ ADDED: Handler for deleting comments
-                  editingPost={editingPost} // ⭐ ADDED: Current post being edited
-                  onUpdatePost={handleUpdatePost} // ⭐ ADDED: Handler to save edited post
-                  onCancelEdit={() => setEditingPost(null)} // ⭐ ADDED: Handler to cancel editing
-                  replyingTo={replyingTo} // ⭐ ADDED: Current comment being replied to
-                  setReplyingTo={setReplyingTo} // ⭐ ADDED: Handler to set reply target
+                  onLike={handleLikePost}
+                  onDelete={handleDeletePost}
+                  onEdit={setEditingPost}
+                  onAddComment={handleAddComment}
+                  onDeleteComment={handleDeleteComment}
+                  editingPost={editingPost}
+                  onUpdatePost={handleUpdatePost}
+                  onCancelEdit={() => setEditingPost(null)}
+                  replyingTo={replyingTo}
+                  setReplyingTo={setReplyingTo}
                   formatTimestamp={(timestamp) => {
                     if (!timestamp) return 'Just now';
                     const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
@@ -775,67 +728,43 @@ const CommunityFeed = ({ currentUser }) => {
         </div>
       )}
 
-      {/* ⭐ Chat Tab Content - This is where messages should display */}
+      {/* Chat Tab */}
       {activeTab === 'chat' && (
-        <div className="chat-section" style={{ display: 'flex', height: '600px' }}>
-          {/* ⭐ Sidebar showing all available threads */}
-          <div className="thread-sidebar" style={{ 
-            width: '240px', 
-            borderRight: '1px solid #e0e0e0', 
-            padding: '12px',
-            overflowY: 'auto'
-          }}>
-            <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 'bold', color: '#667eea' }}>Channels</span>
-              {/* ⭐ NEW: Button to create new threads */}
+        <div className="flex gap-0 rounded-xl border-2 border-slate-200 overflow-hidden bg-white h-[600px]">
+          {/* Sidebar */}
+          <div className="w-60 border-r border-slate-200 p-3 overflow-y-auto bg-white">
+            <div className="flex justify-between items-center mb-3">
+              <span className="font-bold text-purple-primary">Channels</span>
               <button
                 onClick={() => setShowCreateThreadModal(true)}
                 disabled={!currentUser}
-                style={{
-                  padding: '4px 8px',
-                  backgroundColor: currentUser ? '#667eea' : '#ccc',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  cursor: currentUser ? 'pointer' : 'not-allowed',
-                  fontWeight: 'bold'
-                }}
+                className={`px-2 py-1 text-xs font-bold rounded transition-all ${
+                  currentUser
+                    ? 'bg-purple-primary text-white hover:bg-indigo-700'
+                    : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                }`}
                 title={currentUser ? 'Create new channel' : 'Login to create channels'}
               >
                 + New
               </button>
             </div>
             {threads.length === 0 ? (
-              <p style={{ color: '#999', fontSize: '14px', fontStyle: 'italic' }}>Loading threads...</p>
+              <p className="text-slate-600 text-sm italic">Loading threads...</p>
             ) : (
               threads.map(thread => (
                 <div
                   key={thread.id}
                   onClick={() => {
-                    // ⭐ FIXED: When clicking a thread, preserve existing messages or initialize with empty array
-                    // This prevents messages from disappearing when switching threads
                     setActiveThread({
                       ...thread,
-                      messages: activeThread?.id === thread.id ? activeThread.messages : [] // Keep current messages if same thread, else reset
+                      messages: activeThread?.id === thread.id ? activeThread.messages : []
                     });
                   }}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    marginBottom: '4px',
-                    backgroundColor: activeThread?.id === thread.id ? '#e8eaf6' : 'transparent',
-                    fontWeight: activeThread?.id === thread.id ? '600' : '400',
-                    color: activeThread?.id === thread.id ? '#667eea' : '#333',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
-                  onMouseLeave={(e) => {
-                    if (activeThread?.id !== thread.id) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
+                  className={`p-3 rounded-lg cursor-pointer mb-1 transition-all ${
+                    activeThread?.id === thread.id
+                      ? 'bg-slate-100 font-semibold text-purple-primary'
+                      : 'text-navy-900 hover:bg-slate-50'
+                  }`}
                 >
                   # {thread.name}
                 </div>
@@ -843,99 +772,67 @@ const CommunityFeed = ({ currentUser }) => {
             )}
           </div>
 
-          {/* ⭐ Main chat area showing messages */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col">
             {activeThread ? (
               <>
-                {/* ⭐ Chat header */}
-                <div style={{ 
-                  padding: '16px', 
-                  borderBottom: '1px solid #e0e0e0',
-                  fontWeight: 'bold',
-                  fontSize: '18px'
-                }}>
+                {/* Header */}
+                <div className="p-4 border-b border-slate-200 font-bold text-lg">
                   # {activeThread.name}
                 </div>
 
-                {/* ⭐ Messages display area - THIS IS THE KEY PART */}
-                <div style={{ 
-                  flex: 1, 
-                  overflowY: 'auto', 
-                  padding: '16px',
-                  backgroundColor: '#fafafa'
-                }}>
-                  {/* ⭐ Check if messages exist and render them */}
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-4">
                   {!activeThread.messages || activeThread.messages.length === 0 ? (
-                    <p style={{ color: '#999', fontStyle: 'italic', textAlign: 'center', marginTop: '40px' }}>
+                    <p className="text-slate-600 italic text-center mt-10">
                       No messages yet. Start the conversation!
                     </p>
                   ) : (
-                    // ⭐ Map through messages array and display each message
                     activeThread.messages.map(message => (
                       <div
                         key={message.id}
-                        style={{
-                          marginBottom: '16px',
-                          padding: '12px',
-                          backgroundColor: message.userId === currentUser?.uid ? '#e3f2fd' : 'white',
-                          borderRadius: '8px',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                          maxWidth: '80%',
-                          marginLeft: message.userId === currentUser?.uid ? 'auto' : '0',
-                          marginRight: message.userId === currentUser?.uid ? '0' : 'auto'
-                        }}
+                        className={`flex gap-3 ${
+                          message.userId === currentUser?.uid ? 'flex-row-reverse' : ''
+                        }`}
                       >
-                        <div style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          marginBottom: '4px',
-                          gap: '8px'
-                        }}>
-                          <span style={{ fontSize: '20px' }}>
-                            {message.userAvatar && message.userAvatar.startsWith('http') ? (
-                              <img 
-                                src={message.userAvatar} 
-                                alt={message.userName}
-                                style={{ 
-                                  width: '24px', 
-                                  height: '24px', 
-                                  borderRadius: '50%', 
-                                  objectFit: 'cover' 
-                                }}
-                              />
-                            ) : (
-                              message.userAvatar
-                            )}
-                          </span>
-                          <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#667eea' }}>
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-navy-900 text-white text-lg flex items-center justify-center">
+                          {message.userAvatar && message.userAvatar.startsWith('http') ? (
+                            <img 
+                              src={message.userAvatar} 
+                              alt={message.userName}
+                              className="w-full h-full rounded-lg object-cover"
+                            />
+                          ) : (
+                            message.userAvatar
+                          )}
+                        </div>
+                        <div className={message.userId === currentUser?.uid ? 'text-right' : ''}>
+                          <div className="text-sm font-semibold text-purple-primary mb-1">
                             {message.userName}
-                          </span>
-                          <span style={{ fontSize: '12px', color: '#999', marginLeft: 'auto' }}>
+                          </div>
+                          <div className={`inline-block px-4 py-2.5 rounded-xl border-2 ${
+                            message.userId === currentUser?.uid
+                              ? 'bg-navy-900 text-white border-navy-900'
+                              : 'bg-white text-navy-900 border-slate-200'
+                          }`}>
+                            {message.text}
+                          </div>
+                          <div className="text-xs text-slate-500 mt-1">
                             {message.createdAt ? (
                               message.createdAt.seconds ? 
                                 new Date(message.createdAt.seconds * 1000).toLocaleTimeString() : 
                                 'Just now'
                             ) : 'Just now'}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '14px', color: '#333', wordBreak: 'break-word' }}>
-                          {message.text}
+                          </div>
                         </div>
                       </div>
                     ))
                   )}
-                  {/* ⭐ Auto-scroll anchor */}
                   <div ref={chatEndRef} />
                 </div>
 
-                {/* ⭐ Message input area */}
-                <div style={{ 
-                  padding: '16px', 
-                  borderTop: '1px solid #e0e0e0',
-                  display: 'flex',
-                  gap: '8px',
-                  backgroundColor: 'white'
-                }}>
+                {/* Input Area */}
+                <div className="p-4 border-t border-slate-200 bg-white flex gap-3">
                   <input
                     type="text"
                     placeholder={`Message #${activeThread.name}`}
@@ -948,43 +845,23 @@ const CommunityFeed = ({ currentUser }) => {
                       }
                     }}
                     disabled={!currentUser}
-                    style={{
-                      flex: 1,
-                      padding: '10px 14px',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
+                    className="flex-1 px-4 py-2.5 border-2 border-slate-200 rounded-lg text-sm focus:outline-none focus:border-navy-900 disabled:bg-slate-100"
                   />
                   <button
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim() || !currentUser}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: !newMessage.trim() || !currentUser ? '#ccc' : '#667eea',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: !newMessage.trim() || !currentUser ? 'not-allowed' : 'pointer',
-                      transition: 'background-color 0.2s'
-                    }}
+                    className={`px-5 py-2.5 rounded-lg font-semibold text-white transition-all flex items-center gap-2 ${
+                      !newMessage.trim() || !currentUser
+                        ? 'bg-slate-300 cursor-not-allowed'
+                        : 'bg-navy-900 hover:bg-slate-800 active:scale-95'
+                    }`}
                   >
-                    Send ➤
+                    <Send size={16} />
                   </button>
                 </div>
               </>
             ) : (
-              <div style={{ 
-                flex: 1, 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                color: '#999',
-                fontSize: '16px'
-              }}>
+              <div className="flex-1 flex items-center justify-center text-slate-600">
                 Select a channel to start chatting
               </div>
             )}
@@ -992,36 +869,17 @@ const CommunityFeed = ({ currentUser }) => {
         </div>
       )}
 
-      {/* ⭐ NEW: Create Thread Modal */}
+      {/* Create Thread Modal */}
       {showCreateThreadModal && (
         <div 
           onClick={() => setShowCreateThreadModal(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-5"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: 'white',
-              padding: '24px',
-              borderRadius: '12px',
-              width: '400px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-            }}
+            className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-7"
           >
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', color: '#333' }}>
-              Create New Channel
-            </h3>
+            <h3 className="text-2xl font-bold text-navy-900 mb-4">Create New Channel</h3>
             <input
               type="text"
               placeholder="Enter channel name (e.g., Beach Trips)"
@@ -1032,50 +890,27 @@ const CommunityFeed = ({ currentUser }) => {
                   handleCreateThread();
                 }
               }}
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #e0e0e0',
-                borderRadius: '6px',
-                fontSize: '14px',
-                marginBottom: '16px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg text-sm focus:outline-none focus:border-navy-900 mb-5 bg-slate-50"
               autoFocus
             />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <div className="flex gap-3 justify-end">
               <button
                 onClick={() => {
                   setShowCreateThreadModal(false);
                   setNewThreadName('');
                 }}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#f5f5f5',
-                  color: '#333',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  fontWeight: '500'
-                }}
+                className="px-4 py-2 bg-slate-100 text-navy-900 rounded-lg font-medium hover:bg-slate-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateThread}
                 disabled={!newThreadName.trim()}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: newThreadName.trim() ? '#667eea' : '#ccc',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  cursor: newThreadName.trim() ? 'pointer' : 'not-allowed',
-                  fontWeight: '500'
-                }}
+                className={`px-4 py-2 rounded-lg font-medium text-white transition-all ${
+                  newThreadName.trim()
+                    ? 'bg-purple-primary hover:bg-indigo-700 active:scale-95'
+                    : 'bg-slate-300 cursor-not-allowed'
+                }`}
               >
                 Create Channel
               </button>
@@ -1087,200 +922,170 @@ const CommunityFeed = ({ currentUser }) => {
   );
 }; // ⭐ End of CommunityFeed component
 
-  const PostCard = ({
-    post,
-    currentUser,
-    onLike,
-    onDelete,
-    onEdit,
-    onAddComment,
-    onDeleteComment,
-    formatTimestamp,
-    editingPost,
-    onUpdatePost,
-    onCancelEdit,
-    replyingTo,
-    setReplyingTo
-  }) => {
-    const [showComments, setShowComments] = useState(false);
-    const [commentText, setCommentText] = useState('');
+// PostCard Component with Tailwind
+const PostCard = ({
+  post,
+  currentUser,
+  onLike,
+  onDelete,
+  onEdit,
+  onAddComment,
+  onDeleteComment,
+  formatTimestamp,
+  editingPost,
+  onUpdatePost,
+  onCancelEdit,
+  replyingTo,
+  setReplyingTo
+}) => {
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
 
-    const handleSubmitComment = () => {
-      onAddComment(post.id, commentText);
-      setCommentText('');
-    };
 
-    if (editingPost && editingPost.id === post.id) {
-      return (
-        <div className="post-card editing">
-          <div className="post-header">
-            <h3>Edit Post</h3>
-            <button className="cancel-edit-btn" onClick={onCancelEdit}>✕</button>
+  return (
+    <div className="bg-white border-2 border-slate-200 rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all animate-postSlideIn overflow-hidden">
+      {/* Post Header */}
+      <div className="p-6 flex justify-between items-start mb-5 border-b border-slate-100">
+        <div className="flex items-center gap-3.5">
+          <img
+            src={post.userPhoto}
+            alt={post.userName}
+            className="w-14 h-14 rounded-2xl bg-navy-900"
+          />
+          <div className="flex flex-col gap-1">
+            <div className="font-bold text-lg text-navy-900">{post.userName}</div>
+            <div className="text-sm text-slate-400 font-medium">{formatTimestamp(post.createdAt)}</div>
           </div>
-          <input
-            type="text"
-            placeholder="Location"
-            value={editingPost.location}
-            onChange={(e) => onEdit({ ...editingPost, location: e.target.value })}
-            className="post-input"
-          />
-          <textarea
-            placeholder="Content"
-            value={editingPost.content}
-            onChange={(e) => onEdit({ ...editingPost, content: e.target.value })}
-            className="post-textarea"
-            rows="4"
-          />
-          <button className="save-edit-btn" onClick={onUpdatePost}>Save Changes</button>
         </div>
-      );
-    }
-
-    return (
-      <div className="post-card">
-        <div className="post-header">
-          <div className="post-user-info">
-            <img
-              src={post.userPhoto || 'https://via.placeholder.com/40'}
-              alt={post.userName}
-              className="user-avatar"
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                objectFit: 'cover'
-              }}
-            />
-            <div className="user-details">
-              <span className="user-name">{post.userName}</span>
-              <span className="post-location" style={{ fontSize: '12px', color: '#667eea' }}>
-                📍 {post.location}
-              </span>
-              <span className="post-time">{formatTimestamp(post.createdAt)}</span>
-            </div>
-          </div>
-          {currentUser && post.userId === currentUser.uid && (
-            <div className="post-actions">
-              <button className="action-btn edit-btn" onClick={() => onEdit({ ...post })} title="Edit post">✏️</button>
-              <button className="action-btn delete-btn" onClick={() => onDelete(post.id)} title="Delete post">🗑️</button>
-            </div>
+        <div className="flex gap-2">
+          {currentUser?.uid === post.userId && (
+            <>
+              <button 
+                onClick={() => onEdit(post)}
+                className="w-10 h-10 bg-slate-100 border-2 border-slate-200 rounded-xl hover:bg-blue-50 hover:border-blue-400 flex items-center justify-center text-blue-500 transition-all"
+              >
+                <Edit2 size={18} />
+              </button>
+              <button 
+                onClick={() => onDelete(post.id)}
+                className="w-10 h-10 bg-slate-100 border-2 border-slate-200 rounded-xl hover:bg-red-50 hover:border-red-500 flex items-center justify-center text-red-500 transition-all"
+              >
+                <Trash2 size={18} />
+              </button>
+            </>
           )}
         </div>
+      </div>
 
-        <div className="post-content">
-          <p className="post-description">{post.content}</p>
-        
-          {post.imageUrls && post.imageUrls.length > 0 && (
-            <div className="post-image" style={{ marginTop: '10px' }}>
-              {(() => {
-                // Limit to 5 unique images for 5 posts
-                const localImages = [
-                  '/assets/images/boracay.jpg',
-                  '/assets/images/bohol.jpg',
-                  '/assets/images/siargao.jpg',
-                  '/assets/images/vigan.jpg',
-                  '/assets/images/mayon.jpg'
-                ];
-                // Use the post index (if available) or fallback to hash
-                let imgIdx = 0;
-                if (typeof post.index === 'number') {
-                  imgIdx = post.index % localImages.length;
-                } else if (post && post.id) {
-                  let hash = 0;
-                  for (let i = 0; i < String(post.id).length; i++) {
-                    hash = String(post.id).charCodeAt(i) + ((hash << 5) - hash);
-                  }
-                  imgIdx = Math.abs(hash) % localImages.length;
-                }
-                const src = localImages[imgIdx];
-                return (
-                  <img
-                    src={src}
-                    alt="Post image"
-                    style={{
-                      width: '100%',
-                      borderRadius: '8px',
-                      objectFit: 'cover',
-                      maxHeight: '300px'
-                    }}
-                  />
-                );
-              })()}
-            </div>
-          )}
-        </div>
-
-        <div className="post-footer">
-          <button
-            className={`post-footer-btn like-btn ${post.likedBy?.includes(currentUser?.uid) ? 'liked' : ''}`}
-            onClick={() => onLike(post.id)}
-            disabled={!currentUser}
-            style={{
-              color: post.likedBy?.includes(currentUser?.uid) ? '#e74c3c' : 'inherit'
-            }}
-          >
-            {post.likedBy?.includes(currentUser?.uid) ? '❤️' : '🤍'} {post.likes || 0}
-          </button>
-          <button className="post-footer-btn comment-btn" onClick={() => setShowComments(!showComments)}>
-            💬 {post.comments?.length || 0}
-          </button>
-          <button className="post-footer-btn share-btn">
-            <span className="btn-icon">🔗</span>
-            <span className="btn-text">Share</span>
-          </button>
-        </div>
-
-        {showComments && (
-          <div className="comments-section">
-            {post.comments && post.comments.map(comment => (
-              <div key={comment.id} className="comment">
-                <img
-                  className="comment-avatar"
-                  src={comment.userAvatar || 'https://via.placeholder.com/32'}
-                  alt={comment.userName}
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    marginRight: '8px'
-                  }}
-                />
-                <div className="comment-content">
-                  <div className="comment-header">
-                    <span className="comment-user">{comment.userName}</span>
-                    <span className="comment-time">{formatTimestamp(comment.timestamp)}</span>
-                    {currentUser && comment.userId === currentUser.uid && (
-                      <button className="delete-comment-btn" onClick={() => onDeleteComment(post.id, comment.id)}>✕</button>
-                    )}
-                  </div>
-                  <p className="comment-text">{comment.text}</p>
-                </div>
-              </div>
+      {/* Post Content */}
+      <div className="px-6 pb-6">
+        <h3 className="text-2xl font-black text-navy-900 mb-3">{post.location}</h3>
+        <p className="text-slate-700 leading-relaxed text-lg mb-5">{post.content}</p>
+        {post.imageUrls && post.imageUrls.length > 0 && (
+          <div className="mb-6 rounded-2xl overflow-hidden border-2 border-slate-200">
+            {post.imageUrls.map((img, idx) => (
+              <img 
+                key={idx}
+                src={img} 
+                alt="Post"
+                className="w-full max-h-96 object-cover"
+              />
             ))}
-            {currentUser && (
-              <div className="add-comment flex mt-2">
-                <input
-                  type="text"
-                  placeholder="Write a comment..."
-                  value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
-                  onKeyPress={e => e.key === 'Enter' && handleSubmitComment()}
-                  className="comment-input flex-1 p-2 border rounded"
-                />
-                <button
-                  onClick={handleSubmitComment}
-                  disabled={!commentText.trim()}
-                  className="add-comment-btn ml-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  ➤
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
-    );
-  }; // ⭐ FIXED: Added closing bracket for PostCard component - This closes the PostCard functional component
+
+      {/* Post Footer - Actions */}
+      <div className="border-t-2 border-slate-100 flex divide-x-2 divide-slate-100">
+        <button
+          onClick={() => onLike(post.id)}
+          className={`flex-1 py-4 flex items-center justify-center gap-2 font-bold text-sm uppercase tracking-wider transition-all ${
+            post.likedBy?.includes(currentUser?.uid)
+              ? 'bg-red-50 text-red-600 hover:bg-red-100'
+              : 'text-slate-600 hover:bg-red-50 hover:text-red-600'
+          }`}
+        >
+          <Heart size={20} fill={post.likedBy?.includes(currentUser?.uid) ? 'currentColor' : 'none'} />
+          {post.likes || 0}
+        </button>
+        <button
+          onClick={() => setShowComments(!showComments)}
+          className="flex-1 py-4 flex items-center justify-center gap-2 font-bold text-sm text-slate-600 uppercase tracking-wider hover:bg-blue-50 hover:text-blue-600 transition-all"
+        >
+          <MessageCircle size={20} />
+          {post.comments?.length || 0}
+        </button>
+        <button className="flex-1 py-4 flex items-center justify-center gap-2 font-bold text-sm text-slate-600 uppercase tracking-wider hover:bg-green-50 hover:text-green-600 transition-all">
+          <Share2 size={20} />
+          Share
+        </button>
+      </div>
+
+      {/* Comments Section */}
+      {showComments && (
+        <div className="p-6 bg-slate-50 border-t-2 border-slate-100 space-y-4">
+          {post.comments && post.comments.length > 0 && (
+            <div className="space-y-3">
+              {post.comments.map(comment => (
+                <div key={comment.id} className="bg-white p-4 rounded-xl border-2 border-slate-200 hover:border-slate-300 flex gap-3">
+                  <img
+                    src={comment.userAvatar}
+                    alt={comment.userName}
+                    className="w-10 h-10 rounded-lg bg-navy-900"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-navy-900 text-sm">{comment.userName}</span>
+                      <span className="text-xs text-slate-400">{formatTimestamp(comment.timestamp)}</span>
+                    </div>
+                    <p className="text-slate-700 text-sm">{comment.text}</p>
+                  </div>
+                  {currentUser?.uid === comment.userId && (
+                    <button
+                      onClick={() => onDeleteComment(post.id, comment.id)}
+                      className="text-slate-400 hover:text-red-500 transition-colors text-lg"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add Comment Input */}
+          {currentUser && (
+            <div className="flex gap-2 pt-3">
+              <input
+                type="text"
+                placeholder="Add a comment..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && commentText.trim()) {
+                    onAddComment(post.id, commentText);
+                    setCommentText('');
+                  }
+                }}
+                className="flex-1 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-navy-900 focus:bg-white transition-all bg-white"
+              />
+              <button
+                onClick={() => {
+                  if (commentText.trim()) {
+                    onAddComment(post.id, commentText);
+                    setCommentText('');
+                  }
+                }}
+                className="w-12 h-12 bg-navy-900 text-white rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center font-semibold"
+              >
+                →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default CommunityFeed;

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './LiveView.css';
 import Redirection from './Redirection';
 
 const API_URL = 'http://localhost:5001/api';
@@ -230,43 +229,49 @@ const LiveView = () => {
 
 
   return (
-    <div className="live-view-container">
-      <div className="live-view-header">
-        <h1 className="live-view-title">Live Crowd Monitoring - Baguio City</h1>
-        <p className="live-view-subtitle">Smart city monitoring for a safer, more organized Baguio.</p>
+    <div className="min-h-screen bg-[#f8f9fa] p-4 sm:p-6">
+      <div className="mb-8 text-center">
+        <h1 className="mb-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-3xl font-bold text-transparent sm:text-4xl">
+          Live Crowd Monitoring - Baguio City
+        </h1>
+        <p className="m-0 text-base text-slate-500 sm:text-lg">
+          Smart city monitoring for a safer, more organized Baguio.
+        </p>
       </div>
 
-      <div className="live-view-content">
-        <div className="main-grid">
+      <div className="mx-auto max-w-[1600px]">
+        <div className="grid grid-cols-1 gap-8 rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.1)] lg:grid-cols-[1.5fr_1fr] lg:p-8">
           {/* Left Side - Live Feed */}
-          <div className="live-feed-section">
-            <div className="panel-header">
-              <h2 className="panel-title">Live Feed</h2>
-              <span className="live-indicator">● LIVE</span>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="m-0 text-xl font-semibold text-slate-800">Live Feed</h2>
+              <span className="inline-flex items-center gap-2 rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white animate-pulseSlow">
+                ● LIVE
+              </span>
             </div>
-            <div className="video-feed">
+            <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
               {videoError ? (
-                <div className="video-error">
-                  <p>{videoError}</p>
-                  <p>Please ensure:</p>
-                  <ul>
-                    <li>Flask server is running (python server/app.py)</li>
-                    <li>demo_video.mp4 is in public/assets folder</li>
-                    <li>YOLOv8 dependencies are installed</li>
+                <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-700 p-8 text-white">
+                  <p className="my-2 text-center text-base">{videoError}</p>
+                  <p className="my-2 text-center text-base">Please ensure:</p>
+                  <ul className="my-4 list-none p-0 text-left">
+                    <li className="relative my-2 pl-6 before:absolute before:left-0 before:font-bold before:text-red-500 before:content-['•']">Flask server is running (python server/app.py)</li>
+                    <li className="relative my-2 pl-6 before:absolute before:left-0 before:font-bold before:text-red-500 before:content-['•']">demo_video.mp4 is in public/assets folder</li>
+                    <li className="relative my-2 pl-6 before:absolute before:left-0 before:font-bold before:text-red-500 before:content-['•']">YOLOv8 dependencies are installed</li>
                   </ul>
                 </div>
               ) : (
-                <div className="video-container">
+                <div className="relative h-full w-full">
                   {annotatedFrame ? (
                     <img
                       src={annotatedFrame}
                       alt="YOLOv8 Detection Feed"
-                      className="video-element"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
                     <video
                       ref={videoRef}
-                      className="video-element"
+                      className="h-full w-full object-cover"
                       src="/assets/demo_video.mp4"
                       autoPlay
                       loop
@@ -291,13 +296,13 @@ const LiveView = () => {
 
             {/* High Crowd Recommendation */}
             {crowdLevel.label === 'HIGH' && (
-              <div className="prediction-container">
-                <div className="prediction-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
+              <div className="mt-4 flex items-center gap-4 rounded-lg bg-slate-100 px-5 py-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 text-white">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                   </svg>
                 </div>
-                <span className="prediction-text">
+                <span className="text-sm leading-6 text-slate-500 sm:text-[0.9375rem]">
                   As crowd density is high, nearby locations with lower crowd levels are recommended.
                 </span>
               </div>
@@ -305,93 +310,97 @@ const LiveView = () => {
           </div>
 
           {/* Right Side - Detection Overview */}
-          <div className="detection-overview-section">
-            <h2 className="section-title">Detection Overview</h2>
+          <div className="flex flex-col gap-6">
+            <h2 className="m-0 mb-2 text-2xl font-bold text-slate-500">Detection Overview</h2>
             
             {/* Date & Time and People Detected Row */}
-            <div className="overview-top-row">
+            <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Date & Time Card */}
-              <div className="overview-card">
-                <span className="card-label">Date & Time</span>
-                <div className="card-value-group">
-                  <span className="card-value primary">{formatDate()}</span>
-                  <span className="card-value secondary">{formatTime()}</span>
+              <div className="flex flex-col gap-4 rounded-lg bg-slate-100 p-6">
+                <span className="text-sm font-semibold text-slate-500">Date & Time</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-lg font-bold leading-tight text-[#667eea]">{formatDate()}</span>
+                  <span className="text-2xl font-bold leading-tight text-slate-800">{formatTime()}</span>
                 </div>
               </div>
 
               {/* People Detected Card */}
-              <div className="overview-card">
-                <span className="card-label">People Detected</span>
-                <span className="card-value count">{detectedCount}</span>
+              <div className="flex flex-col gap-4 rounded-lg bg-slate-100 p-6">
+                <span className="text-sm font-semibold text-slate-500">People Detected</span>
+                <span className="text-5xl font-bold leading-none text-[#667eea]">{detectedCount}</span>
               </div>
             </div>
 
             {/* Current Status */}
-            <div className="overview-section">
-              <div className="section-label-row">
-                <span className="section-label">Current Status</span>
+            <div className="mb-8">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <span className="block text-sm font-semibold text-slate-500">Current Status</span>
                 {crowdLevel.label === 'HIGH' && (
-                  <button className="view-heatmap-link" onClick={scrollToHiddenGems}>
-                    <svg className="warning-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 bg-transparent p-0 text-sm font-semibold text-red-500 transition-all hover:text-red-600 hover:underline"
+                    onClick={scrollToHiddenGems}
+                  >
+                    <svg className="h-[18px] w-[18px] animate-warningPulse" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
                     </svg>
                     <span>View HeatMap</span>
                   </button>
                 )}
               </div>
-              <div className="status-gradient-container">
-                <div className="status-gradient-bar">
+              <div className="w-full">
+                <div className="relative mb-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500">
                   <div 
-                    className="status-indicator" 
+                    className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#667eea] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-[left] duration-300" 
                     style={{ left: `${crowdLevel.percentage}%` }}
                   />
                 </div>
-                <div className="status-labels">
-                  <span className="status-label">LOW</span>
-                  <span className="status-label">MEDIUM</span>
-                  <span className="status-label">HIGH</span>
+                <div className="flex justify-between text-xs font-bold uppercase tracking-[0.5px] text-slate-500">
+                  <span className="text-emerald-500">LOW</span>
+                  <span className="text-amber-500">MEDIUM</span>
+                  <span className="text-red-500">HIGH</span>
                 </div>
               </div>
             </div>
 
             {/* Peak Time Analysis & Surveillance Logs */}
-            <div className="overview-bottom">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Peak Time Analysis */}
-              <div className="peak-time-section">
-                <h3 className="subsection-title">Peak Time Analysis</h3>
-                <div className="peak-chart-wrapper">
+              <div className="flex flex-col gap-4">
+                <h3 className="m-0 text-sm font-bold text-slate-500">Peak Time Analysis</h3>
+                <div className="flex items-stretch gap-2">
                   {/* Y-axis labels */}
-                  <div className="chart-y-axis">
+                  <div className="flex min-w-[30px] flex-col justify-between py-2">
                     {[20, 15, 10, 5, 0].map(val => (
-                      <span key={val} className="y-axis-label">{val}</span>
+                      <span key={val} className="text-right text-xs font-medium leading-none text-slate-500">{val}</span>
                     ))}
                   </div>
                   
                   {/* Chart area */}
-                  <div className="peak-chart">
+                  <div className="flex min-h-[180px] flex-1 items-end justify-between gap-2 bg-transparent p-2">
                     {getPeakTimeData().map((data, index) => {
                       const maxValue = 25; // Max value for chart scale
                       const percentage = data.value > 0 ? (data.value / maxValue) * 100 : 5;
                       const isHovered = hoveredBar === index;
                       return (
-                        <div key={index} className="chart-bar-group">
+                        <div key={index} className="flex h-full flex-1 flex-col items-center gap-2">
                           <div 
-                            className="chart-bar-container"
+                            className="relative flex flex-1 w-full cursor-pointer items-end justify-center"
                             onMouseEnter={() => setHoveredBar(index)}
                             onMouseLeave={() => setHoveredBar(null)}
                           >
                             <div 
-                              className={`chart-bar ${isHovered ? 'hovered' : ''}`}
+                              className={`min-h-[5px] w-full max-w-[60px] rounded-t-[4px] bg-[#667eea] transition-all duration-500 animate-barGrow ${isHovered ? 'scale-x-[1.05] bg-[#764ba2] shadow-[0_0_12px_rgba(102,126,234,0.5)]' : ''}`}
                               style={{ height: `${Math.min(percentage, 100)}%` }}
                             />
                             {isHovered && (
-                              <div className="chart-tooltip">
-                                <div className="tooltip-time">{`${data.hour}:00`}</div>
-                                <div className="tooltip-count">{data.value} {data.value === 1 ? 'person' : 'people'}</div>
+                              <div className="pointer-events-none absolute bottom-[calc(100%+0.5rem)] left-1/2 z-10 -translate-x-1/2 animate-tooltipFadeIn rounded-lg bg-slate-800 px-4 py-3 text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] whitespace-nowrap after:absolute after:left-1/2 after:top-full after:content-[''] after:-translate-x-1/2 after:border-[6px] after:border-transparent after:border-t-slate-800">
+                                <div className="mb-1 text-sm font-bold text-[#667eea]">{`${data.hour}:00`}</div>
+                                <div className="mb-1 text-lg font-bold text-white">{data.value} {data.value === 1 ? 'person' : 'people'}</div>
                               </div>
                             )}
                           </div>
-                          <span className="chart-bar-label">{`${data.hour}:00`}</span>
+                          <span className="pt-1 text-xs font-semibold whitespace-nowrap text-slate-500">{`${data.hour}:00`}</span>
                         </div>
                       );
                     })}
@@ -400,19 +409,19 @@ const LiveView = () => {
               </div>
 
               {/* Surveillance Logs */}
-              <div className="surveillance-logs-section">
-                <h3 className="subsection-title">Surveillance Logs</h3>
-                <div className="logs-container">
+              <div className="flex flex-col gap-4">
+                <h3 className="m-0 text-sm font-bold text-slate-500">Surveillance Logs</h3>
+                <div className="flex max-h-[180px] flex-col gap-2 overflow-y-auto pr-1">
                   {surveillanceLogs.length > 0 ? (
                     surveillanceLogs.map(log => (
-                      <div key={log.id} className="log-entry">
-                        <span className="log-time">{log.time}</span>
-                        <span className="log-text">Detected {log.count} people</span>
+                      <div key={log.id} className="flex flex-col gap-1 text-sm animate-slideIn">
+                        <span className="text-sm font-medium text-slate-500">{log.time}</span>
+                        <span className="text-sm font-normal text-slate-800">Detected {log.count} people</span>
                       </div>
                     ))
                   ) : (
-                    <div className="log-entry empty">
-                      <span className="log-message">Waiting for detections...</span>
+                    <div className="flex flex-col items-center gap-1 text-sm italic text-slate-400">
+                      <span className="text-sm italic text-slate-400">Waiting for detections...</span>
                     </div>
                   )}
                 </div>
@@ -424,7 +433,7 @@ const LiveView = () => {
         {/* Hidden Gems Nearby Section */}
         <Redirection ref={hiddenGemsRef} />
       </div>
-    </div>
+      </div>
   );
 };
 

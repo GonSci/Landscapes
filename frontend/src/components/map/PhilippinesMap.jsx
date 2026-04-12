@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import './PhilippinesMap.css';
 import philippinesData from '../../data/philippines_locations.json';
 
 const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
@@ -326,51 +325,51 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
   };
 
   return (
-    <div className="map-container">
-      <div className="map-header">
-        <div className="map-header-content">
-          <div className="map-title-section">
-            <h2 className="map-title">Explore Baguio City</h2>
-            <p className="map-instruction">
-              <strong>Tip:</strong> Click the colored markers to discover featured destinations in Baguio City - the Summer Capital of the Philippines!
+    <div className="flex flex-col h-full bg-gray-50 border-2 border-slate-200 border-l-0 overflow-hidden relative">
+      <div className="bg-white px-8 py-7 border-b-2 border-slate-200">
+        <div className="flex justify-between items-center gap-6 flex-wrap">
+          <div className="flex-1 min-w-80">
+            <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Explore Baguio City</h2>
+            <p className="m-0 p-0 bg-transparent text-slate-500 text-base leading-relaxed font-medium">
+              <strong className="font-bold text-slate-900">Tip:</strong> Click the colored markers to discover featured destinations in Baguio City - the Summer Capital of the Philippines!
             </p>
           </div>
         </div>
       </div>
       
-      <div className="map-legend">
-        <div className="legend-section">
-          <h4 className="legend-heading">Baguio Locations</h4>
-          <div className="legend-items">
-            <div className="legend-item">
-              <span className="legend-color" style={{ background: '#3b82f6' }}>📍</span>
+      <div className="flex gap-10 justify-start m-0 px-8 py-5 bg-white flex-wrap border-b-2 border-slate-200">
+        <div className="flex flex-col gap-3">
+          <h4 className="m-0 text-xs font-black text-slate-400 uppercase tracking-widest">Baguio Locations</h4>
+          <div className="flex gap-5 flex-wrap">
+            <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
+              <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#3b82f6' }}>📍</span>
               <span>Unvisited</span>
             </div>
-            <div className="legend-item">
-              <span className="legend-color" style={{ background: '#10b981' }}>📍</span>
+            <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
+              <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#10b981' }}>📍</span>
               <span>Been There</span>
             </div>
-            <div className="legend-item">
-              <span className="legend-color" style={{ background: '#f59e0b' }}>📍</span>
+            <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
+              <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#f59e0b' }}>📍</span>
               <span>Want to Go</span>
             </div>
           </div>
         </div>
         
         {showFeatures && (
-          <div className="legend-section">
-            <h4 className="legend-heading">Featured</h4>
-            <div className="legend-items">
-              <div className="legend-item">
-                <span className="legend-color" style={{ background: '#3b82f6' }}>🎯</span>
+          <div className="flex flex-col gap-3">
+            <h4 className="m-0 text-xs font-black text-slate-400 uppercase tracking-widest">Featured</h4>
+            <div className="flex gap-5 flex-wrap">
+              <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
+                <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#3b82f6' }}>🎯</span>
                 <span>Activities</span>
               </div>
-              <div className="legend-item">
-                <span className="legend-color" style={{ background: '#8b5cf6' }}>🏛</span>
+              <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
+                <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#8b5cf6' }}>🏛</span>
                 <span>Places</span>
               </div>
-              <div className="legend-item">
-                <span className="legend-color" style={{ background: '#f59e0b' }}>🍴</span>
+              <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
+                <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#f59e0b' }}>🍴</span>
                 <span>Food</span>
               </div>
             </div>
@@ -380,11 +379,11 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
 
       <div 
         ref={mapRef} 
-        className="leaflet-map"
-        style={{ height: '600px', width: '100%', borderRadius: '8px', cursor: 'pointer' }}
+        className="flex-1 min-h-96 bg-white overflow-hidden"
+        style={{ height: '600px', width: '100%', borderRadius: '0px', cursor: 'pointer' }}
       >
         {!mapLoaded && (
-          <div className="map-loading">
+          <div className="flex items-center justify-center h-full bg-white text-slate-400 text-base font-semibold uppercase tracking-widest">
             <p>🗺️ Loading interactive map of Baguio City...</p>
           </div>
         )}
@@ -392,7 +391,11 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
 
       {/* Toggle Features Button - Positioned over map */}
       <button 
-        className={`toggle-features-btn-map ${showFeatures ? 'active' : ''}`}
+        className={`absolute bottom-7 left-5 z-[1000] px-5 py-3 rounded-lg text-sm font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
+          showFeatures 
+            ? 'bg-gradient-to-r from-indigo-600 to-purple-700 border-2 border-indigo-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5' 
+            : 'bg-white border-2 border-slate-200 text-slate-500 shadow-lg hover:border-indigo-600 hover:text-indigo-600 hover:bg-blue-50 hover:-translate-y-0.5'
+        }`}
         onClick={() => setShowFeatures(!showFeatures)}
         title={showFeatures ? 'Hide featured places' : 'Show featured places'}
       >

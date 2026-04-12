@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Map } from 'lucide-react';
-import './MapPreview.css';
 import philippinesData from '../../data/philippines_locations.json';
 
 const MapPreview = ({ 
@@ -143,23 +142,23 @@ const MapPreview = ({
       initial={{ opacity: 0, x: 50 }}
       animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
       transition={{ duration: 0.6, delay: 0.2 }}
-      className="map-preview-container"
+      className="relative h-fit"
     >
       <div 
-        className="map-preview-wrapper"
+        className="sticky top-32 w-full h-screen bg-white rounded-3xl overflow-hidden shadow-md border-2 border-gray-200 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:border-indigo-600 hover:shadow-indigo-500/20"
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
         {/* Leaflet Map Container */}
         <div 
           ref={mapRef} 
-          className="leaflet-map-preview"
+          className="relative w-full h-full"
           style={{ height: '100%', width: '100%', borderRadius: '12px' }}
         >
           {!mapLoaded && (
-            <div className="map-loading-preview">
-              <div className="loading-spinner"></div>
-              <p>Loading map preview...</p>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-gray-100 gap-4">
+              <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin"></div>
+              <p className="text-gray-500 text-base font-medium">Loading map preview...</p>
             </div>
           )}
         </div>
@@ -172,7 +171,7 @@ const MapPreview = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="map-overlay"
+              className="absolute inset-0 bg-gradient-to-br from-indigo-600/92 to-purple-700/92 backdrop-blur-lg flex items-center justify-center z-[1000] cursor-pointer"
               onClick={onMapClick}
             >
               <motion.button
@@ -182,7 +181,7 @@ const MapPreview = ({
                 transition={{ delay: 0.1 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="map-cta-button"
+                className="flex items-center gap-3.5 px-10 py-5 bg-white text-indigo-600 border-none rounded-2xl text-xl font-bold shadow-2xl transition-all duration-300 hover:bg-blue-50 hover:-translate-y-0.5 hover:shadow-3xl"
               >
                 <Map size={24} />
                 <span>◇ Show Interactive Map ◇</span>
@@ -198,20 +197,16 @@ const MapPreview = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="selected-location-info"
+              className="absolute top-6 left-6 right-6 p-5 bg-white rounded-xl shadow-md z-20"
             >
-              <h4>{selectedLocation.name}</h4>
-              <p>{selectedLocation.region}</p>
+              <h4 className="text-lg font-bold text-gray-800 mb-1">{selectedLocation.name}</h4>
+              <p className="text-sm text-gray-500 m-0">{selectedLocation.region}</p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       {/* Mobile Map Button */}
-      <button className="mobile-map-button" onClick={onMapClick}>
-        <Map size={20} />
-        <span>Show Full Map</span>
-      </button>
     </motion.div>
   );
 };

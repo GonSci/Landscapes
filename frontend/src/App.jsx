@@ -167,7 +167,8 @@ function App() {
         currentUser={currentUser}
       />
 
-      <div className="app-content">
+      {/* Add padding-top to offset fixed navbar (approx 72px) */}
+      <div className="app-content pt-[72px]">
         {currentPage === 'home' && (
           <div className="page home-page">
             <Home onNavigate={handleNavigate} currentUser={currentUser} />
