@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import baguioData from '../../data/baguio_locations.json';
 
-const ExploreSection = ({ onLocationClick, onMarkLocation, userProfile }) => {
+const ExploreSection = ({ onLocationClick }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCrowdLevel, setSelectedCrowdLevel] = useState('All');
   
@@ -74,13 +74,7 @@ const ExploreSection = ({ onLocationClick, onMarkLocation, userProfile }) => {
     )
     .sort((a, b) => a.detectedPeople - b.detectedPeople); // Sort by crowd (low to high)
 
-  const isVisited = (locationId) => {
-    return userProfile?.beenThere?.includes(locationId) || false;
-  };
 
-  const isWishlist = (locationId) => {
-    return userProfile?.wantToGo?.includes(locationId) || false;
-  };
 
   return (
     <div className="min-h-[calc(100vh-100px)] bg-white px-3 py-5 text-slate-900 sm:px-4 md:px-5 md:py-8 lg:px-6 lg:py-10">
@@ -134,9 +128,7 @@ const ExploreSection = ({ onLocationClick, onMarkLocation, userProfile }) => {
         {filteredData.map(location => (
           <div
             key={location.id}
-            className={`group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-all duration-300 animate-slideInUp hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(0,0,0,0.3)] ${
-              isVisited(location.id) ? 'border-[3px] border-emerald-500' : ''
-            } ${isWishlist(location.id) ? 'border-[3px] border-amber-500' : ''}`}
+            className="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-all duration-300 animate-slideInUp hover:-translate-y-2 hover:shadow-[0_12px_32px_rgba(0,0,0,0.3)]"
             onClick={(e) => {
               e.stopPropagation();
               onLocationClick(location);
@@ -156,18 +148,7 @@ const ExploreSection = ({ onLocationClick, onMarkLocation, userProfile }) => {
             <div className="p-4 text-slate-900 sm:p-5">
               <div className="mb-2 flex items-start justify-between gap-3">
                 <h3 className="text-xl font-bold text-slate-900 sm:text-[22px]">{location.name}</h3>
-                <div className="flex flex-shrink-0 flex-col gap-1.5">
-                  {isVisited(location.id) && (
-                    <span className="rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.5px] text-white shadow-sm">
-                      ✓ Visited
-                    </span>
-                  )}
-                  {isWishlist(location.id) && (
-                    <span className="rounded-full bg-amber-500 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.5px] text-white shadow-sm">
-                      ♡ Wishlist
-                    </span>
-                  )}
-                </div>
+                {/* Removed visited/wishlist badges */}
               </div>
 
               <p className="mb-3 text-sm font-semibold text-[#667eea] sm:text-[14px]">📍 {location.region}</p>
@@ -204,26 +185,7 @@ const ExploreSection = ({ onLocationClick, onMarkLocation, userProfile }) => {
                   >
                     View Details
                   </button>
-                  <button
-                    type="button"
-                    className="min-w-[100px] flex-1 rounded-xl border-2 border-emerald-500 bg-white px-4 py-3 text-sm font-bold uppercase tracking-[0.5px] text-emerald-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-500 hover:text-white hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)]"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMarkLocation(location, 'been');
-                    }}
-                  >
-                    ✓ Been
-                  </button>
-                  <button
-                    type="button"
-                    className="min-w-[100px] flex-1 rounded-xl border-2 border-amber-500 bg-white px-4 py-3 text-sm font-bold uppercase tracking-[0.5px] text-amber-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-500 hover:text-white hover:shadow-[0_4px_12px_rgba(245,158,11,0.3)]"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMarkLocation(location, 'want');
-                    }}
-                  >
-                    ★ Want
-                  </button>
+                  {/* Removed Been and Want buttons */}
                 </div>
               </div>
             </div>

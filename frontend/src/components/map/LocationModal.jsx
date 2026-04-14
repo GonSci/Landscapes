@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Clock, MapPin, Star, Phone, Globe, Navigation, Bookmark, Share2, X } from 'lucide-react';
 
-const LocationModal = ({ location, onClose, onMarkBeen, onMarkWant }) => {
+const LocationModal = ({ location, onClose }) => {
   const [showCommunity, setShowCommunity] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [communityMessages, setCommunityMessages] = useState([]);
@@ -132,13 +132,13 @@ const LocationModal = ({ location, onClose, onMarkBeen, onMarkWant }) => {
             className={`flex-1 px-6 py-4 border-none bg-transparent text-base font-semibold text-gray-500 cursor-pointer transition-all relative flex items-center justify-center gap-2 border-b-4 border-transparent ${!showCommunity ? 'text-indigo-600 bg-white border-b-indigo-600' : 'hover:text-indigo-600 hover:bg-indigo-50'}`}
             onClick={() => setShowCommunity(false)}
           >
-            📍 Information
+            Information
           </button>
           <button 
             className={`flex-1 px-6 py-4 border-none bg-transparent text-base font-semibold text-gray-500 cursor-pointer transition-all relative flex items-center justify-center gap-2 border-b-4 border-transparent ${showCommunity ? 'text-indigo-600 bg-white border-b-indigo-600' : 'hover:text-indigo-600 hover:bg-indigo-50'}`}
             onClick={() => setShowCommunity(true)}
           >
-            💬 Community Chat
+            Community Chat
             <span className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white px-2 py-0.5 rounded-full text-xs font-bold min-w-6 text-center">{currentCommunity.length + communityMessages.length}</span>
           </button>
         </div>
@@ -314,14 +314,7 @@ const LocationModal = ({ location, onClose, onMarkBeen, onMarkWant }) => {
           )}
         </div>
 
-        <div className="flex gap-3 p-5 px-8 border-t-2 border-gray-200 bg-gray-50 rounded-none rounded-b-3xl flex-wrap">
-          <button onClick={onMarkBeen} className="flex-1 px-5 py-3.5 border-none rounded-2xl font-semibold cursor-pointer transition-all text-base flex items-center justify-center gap-1.5 shadow-md bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:-translate-y-0.5">
-            ✅ Been There
-          </button>
-          <button onClick={onMarkWant} className="flex-1 px-5 py-3.5 border-none rounded-2xl font-semibold cursor-pointer transition-all text-base flex items-center justify-center gap-1.5 shadow-md bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:shadow-lg hover:-translate-y-0.5">
-            ⭐ Want to Go
-          </button>
-        </div>
+        {/* Removed Been There and Want to Go buttons */}
       </div>
 
       {/* Item Detail Modal */}

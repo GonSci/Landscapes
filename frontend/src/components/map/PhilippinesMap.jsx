@@ -202,14 +202,8 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
       { lat: 16.4109, lng: 120.5926, type: 'place', name: 'Baguio Cathedral', city: 'Baguio', icon: '⛪' },
       { lat: 16.4170, lng: 120.5970, type: 'place', name: 'The Mansion', city: 'Baguio', icon: '🏛️' },
       { lat: 16.4185, lng: 120.5935, type: 'place', name: 'Wright Park', city: 'Baguio', icon: '🐴' },
-      { lat: 16.4210, lng: 120.5825, type: 'place', name: 'Camp John Hay', city: 'Baguio', icon: '🏕️' },
       { lat: 16.3980, lng: 120.5600, type: 'activity', name: 'Strawberry Farm', city: 'Baguio', icon: '🍓' },
-      { lat: 16.4155, lng: 120.5715, type: 'activity', name: 'Tree Top Adventure', city: 'Baguio', icon: '🌲' },
       { lat: 16.3895, lng: 120.6145, type: 'activity', name: 'Mines View Park', city: 'Baguio', icon: '🔭' },
-      { lat: 16.4023, lng: 120.5960, type: 'food', name: 'Good Shepherd', city: 'Baguio', icon: '🫙' },
-      { lat: 16.4050, lng: 120.5920, type: 'food', name: 'Hill Station', city: 'Baguio', icon: '☕' },
-      { lat: 16.4090, lng: 120.5940, type: 'food', name: 'Oh My Gulay!', city: 'Baguio', icon: '🥗' },
-      { lat: 16.4060, lng: 120.5905, type: 'food', name: 'Café by the Ruins', city: 'Baguio', icon: '🍽️' },
     ];
     
     // Add markers for each featured location
@@ -338,43 +332,8 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
       </div>
       
       <div className="flex gap-10 justify-start m-0 px-8 py-5 bg-white flex-wrap border-b-2 border-slate-200">
-        <div className="flex flex-col gap-3">
-          <h4 className="m-0 text-xs font-black text-slate-400 uppercase tracking-widest">Baguio Locations</h4>
-          <div className="flex gap-5 flex-wrap">
-            <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
-              <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#3b82f6' }}>📍</span>
-              <span>Unvisited</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
-              <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#10b981' }}>📍</span>
-              <span>Been There</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
-              <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#f59e0b' }}>📍</span>
-              <span>Want to Go</span>
-            </div>
-          </div>
-        </div>
-        
-        {showFeatures && (
-          <div className="flex flex-col gap-3">
-            <h4 className="m-0 text-xs font-black text-slate-400 uppercase tracking-widest">Featured</h4>
-            <div className="flex gap-5 flex-wrap">
-              <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
-                <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#3b82f6' }}>🎯</span>
-                <span>Activities</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
-                <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#8b5cf6' }}>🏛</span>
-                <span>Places</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-sm text-slate-900 font-bold uppercase tracking-widest transition-all hover:text-indigo-600">
-                <span className="w-8 h-8 rounded flex items-center justify-center shadow text-lg transition-all border-2 border-slate-200 bg-white hover:scale-110 hover:shadow-md hover:border-indigo-600" style={{ background: '#f59e0b' }}>🍴</span>
-                <span>Food</span>
-              </div>
-            </div>
-          </div>
-        )}
+        <h2>LAGAY DITO NG YOLOV8 OR REDIRECTION RELATED INFORMATION</h2>
+
       </div>
 
       <div 
@@ -388,19 +347,6 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
           </div>
         )}
       </div>
-
-      {/* Toggle Features Button - Positioned over map */}
-      <button 
-        className={`absolute bottom-7 left-5 z-[1000] px-5 py-3 rounded-lg text-sm font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
-          showFeatures 
-            ? 'bg-gradient-to-r from-indigo-600 to-purple-700 border-2 border-indigo-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5' 
-            : 'bg-white border-2 border-slate-200 text-slate-500 shadow-lg hover:border-indigo-600 hover:text-indigo-600 hover:bg-blue-50 hover:-translate-y-0.5'
-        }`}
-        onClick={() => setShowFeatures(!showFeatures)}
-        title={showFeatures ? 'Hide featured places' : 'Show featured places'}
-      >
-        {showFeatures ? 'Hide Featured' : 'Show Featured'}
-      </button>
     </div>
   );
 };
