@@ -2,6 +2,7 @@
 """
 YOLOv8 Real-Time People Detection
 Supports webcam, video files, and saves annotated output with CCTV overlay
+Features: CLAHE for fog/lighting normalization, Gaussian blur for privacy
 """
 
 import cv2
@@ -200,7 +201,89 @@ class RealtimeDetector:
         
         return frame
     
-    def process_video(self, source, output_path=None, display=True):
+    def apply_clahe(self, frame):
+        """
+        Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) to improve detection
+        in foggy or poorly lit conditions.
+        
+        Args:
+            frame: Input BGR frame
+            
+        Returns:
+            CLAHE-processed frame in BGR format
+        """
+        # Convert to LAB color space
+        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        
+        # Apply CLAHE to L channel
+        # clipLimit: threshold for contrast limiting (higher = more contrast)
+        # tileGridSize: size of grid for histogram equalization (smaller = more local)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        cl = clahe.apply(l)
+        
+        # Merge channels and convert back to BGR
+        limg = cv2.merge((cl, a, b))
+        enhanced = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+        
+        return enhanced
+
+    def apply_gaussian_blur(self, frame, detections, ksize=(51, 51)):
+        """
+        Apply Gaussian blur to detected person regions for privacy protection.
+        
+        Args:
+            frame: Input BGR frame
+            detections: List of detection dicts with 'bbox'
+            ksize: Kernel size for Gaussian blur (must be odd numbers)
+            
+        Returns:
+            Frame with blurred detected regions
+        """
+        blurred = frame.copy()
+        
+        for det in detections:
+            x1, y1, x2, y2 = det['bbox']
+            
+            # Ensure coordinates are within frame bounds
+            h, w = frame.shape[:2]
+            x1 = max(0, x1)
+            y1 = max(0, y1)
+            x2 = min(w, x2)
+            y2 = min(h, y2)
+            
+            # Get ROI (Region of Interest)
+            roi = blurred[y1:y2, x1:x2]
+            
+            if roi.size == 0:
+                continue
+            
+            roi_h, roi_w = roi.shape[:2]
+            
+            # Calculate appropriate kernel size
+            # Kernel must be odd and smaller than ROI dimensions
+            kernel_w = min(ksize[0], roi_w)
+            kernel_h = min(ksize[1], roi_h)
+            
+            # Make sure kernel is odd (required for Gaussian blur)
+            if kernel_w % 2 == 0:
+                kernel_w -= 1
+            if kernel_h % 2 == 0:
+                kernel_h -= 1
+            
+            # Minimum kernel size is 3x3
+            kernel_w = max(3, kernel_w)
+            kernel_h = max(3, kernel_h)
+            
+            blur_ksize = (kernel_w, kernel_h)
+            
+            # Apply Gaussian blur to ROI
+            roi_blur = cv2.GaussianBlur(roi, blur_ksize, 0)
+            blurred[y1:y2, x1:x2] = roi_blur
+        
+        return blurred
+
+    def process_video(self, source, output_path=None, display=True, enable_clahe=True, enable_blur=True):
         """
         Process video source with real-time detection
         
@@ -208,6 +291,8 @@ class RealtimeDetector:
             source: Video file path, webcam index (0), or None for default webcam
             output_path: Path to save annotated video (optional)
             display: Display video in window
+            enable_clahe: Enable CLAHE preprocessing for better detection
+            enable_blur: Enable Gaussian blur for privacy protection
         """
         # Open video source
         if source is None or source == 'webcam':
@@ -236,6 +321,8 @@ class RealtimeDetector:
         print(f"FPS: {fps_original:.1f}")
         if total_frames > 0:
             print(f"Total Frames: {total_frames}")
+        print(f"CLAHE Enhancement: {'ENABLED' if enable_clahe else 'DISABLED'}")
+        print(f"Privacy Blur: {'ENABLED' if enable_blur else 'DISABLED'}")
         print(f"{'='*60}\n")
         
         # Setup video writer if output path specified
@@ -253,48 +340,87 @@ class RealtimeDetector:
                 ret, frame = cap.read()
                 if not ret:
                     break
-                
+
                 frame_count += 1
                 
-                # Run detection
-                detections = self.detect_people(frame)
+                # Step 1: Apply CLAHE for better detection (if enabled)
+                if enable_clahe:
+                    frame_enhanced = self.apply_clahe(frame)
+                    
+                    # Save debug frame for first frame
+                    if frame_count == 1:
+                        cv2.imwrite('debug_frame_original.jpg', frame)
+                        cv2.imwrite('debug_frame_clahe.jpg', frame_enhanced)
+                        print('✓ Saved debug frames: debug_frame_original.jpg, debug_frame_clahe.jpg')
+                else:
+                    frame_enhanced = frame
+
+                # Step 2: Run detection on enhanced frame
+                detections = self.detect_people(frame_enhanced)
                 people_count = len(detections)
                 total_people += people_count
                 
-                # Draw detections
-                annotated_frame = self.draw_detections(frame, detections)
-                
-                # Draw CCTV overlay
+                # Step 3: Apply Gaussian blur to original frame for privacy (if enabled)
+                if enable_blur and people_count > 0:
+                    frame_display = self.apply_gaussian_blur(frame_enhanced, detections)
+                    
+                    # Save debug frame for first detection
+                    if frame_count == 1:
+                        cv2.imwrite('debug_frame_blurred.jpg', frame_display)
+                        print('✓ Saved debug frame: debug_frame_blurred.jpg')
+                        # Save CLAHE+Blur combined image
+                        if frame_count == 1:
+                            cv2.imwrite('debug_frame_clahe_blur.jpg', frame_display)
+                            print('Saved debug_frame_clahe_blur.jpg for CLAHE+Blur verification.')
+                else:
+                    frame_display = frame_enhanced
+
+                # Step 4: Draw bounding boxes on the processed frame
+                annotated_frame = self.draw_detections(frame_display, detections)
+
+                # Step 5: Draw CCTV overlay with stats
                 annotated_frame = self.draw_cctv_overlay(annotated_frame, people_count)
                 
+                # Add processing indicator
+                if enable_clahe or enable_blur:
+                    features = []
+                    if enable_clahe:
+                        features.append("CLAHE")
+                    if enable_blur:
+                        features.append("BLUR")
+                    
+                    indicator_text = f"[{'+'.join(features)}]"
+                    cv2.putText(annotated_frame, indicator_text, (10, height - 15), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+
                 # Save frame if writer is active
                 if writer:
                     writer.write(annotated_frame)
-                
+
                 # Display frame
                 if display:
                     cv2.imshow('YOLOv8 People Detection', annotated_frame)
-                    
+
                     # Check for key press
                     key = cv2.waitKey(1) & 0xFF
                     if key == ord('q'):
                         print("\n✓ Quit requested")
                         break
-                    elif key == ord('s') and not writer:
+                    elif key == ord('s'):
                         # Save current frame
                         save_path = f"detection_frame_{frame_count}.jpg"
                         cv2.imwrite(save_path, annotated_frame)
                         print(f"✓ Saved frame to: {save_path}")
-                
+
                 # Print progress for video files
                 if total_frames > 0 and frame_count % 30 == 0:
                     progress = (frame_count / total_frames) * 100
                     avg_people = total_people / frame_count
                     print(f"Progress: {progress:.1f}% | Frame: {frame_count}/{total_frames} | Avg People: {avg_people:.1f}")
-        
+
         except KeyboardInterrupt:
             print("\n✓ Interrupted by user")
-        
+
         finally:
             # Cleanup
             cap.release()
@@ -302,7 +428,7 @@ class RealtimeDetector:
                 writer.release()
             if display:
                 cv2.destroyAllWindows()
-            
+
             # Print summary
             print(f"\n{'='*60}")
             print("Detection Summary:")
@@ -317,11 +443,11 @@ class RealtimeDetector:
 def main():
     """Main function with argument parsing"""
     parser = argparse.ArgumentParser(
-        description='YOLOv8 Real-Time People Detection',
+        description='YOLOv8 Real-Time People Detection with CLAHE and Privacy Blur',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Use webcam
+  # Use webcam with all features
   python yolo_realtime_detection.py --source webcam
 
   # Process video file
@@ -329,6 +455,12 @@ Examples:
 
   # Process and save output
   python yolo_realtime_detection.py --source video.mp4 --output detected_video.mp4
+
+  # Disable CLAHE enhancement
+  python yolo_realtime_detection.py --source video.mp4 --no-clahe
+
+  # Disable privacy blur
+  python yolo_realtime_detection.py --source video.mp4 --no-blur
 
   # Use specific webcam device
   python yolo_realtime_detection.py --source 1
@@ -356,6 +488,10 @@ Controls:
                        help='Disable GPU even if available')
     parser.add_argument('--no-display', action='store_true',
                        help='Disable video display window')
+    parser.add_argument('--no-clahe', action='store_true',
+                       help='Disable CLAHE enhancement')
+    parser.add_argument('--no-blur', action='store_true',
+                       help='Disable privacy blur on detected people')
     
     args = parser.parse_args()
     
@@ -378,7 +514,9 @@ Controls:
     detector.process_video(
         source=source,
         output_path=args.output,
-        display=not args.no_display
+        display=not args.no_display,
+        enable_clahe=not args.no_clahe,
+        enable_blur=not args.no_blur
     )
 
 

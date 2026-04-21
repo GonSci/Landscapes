@@ -172,3 +172,15 @@ If you see "YOLOv8 ready!", you're all set!
 - **YOLOv8**: Ultralytics (https://github.com/ultralytics/ultralytics)
 - **Computer Vision**: OpenCV
 - **Deep Learning**: PyTorch
+
+
+
+---------------
+TEST MUNA (PA RUN TO SA BACKEND DIRECTORY "cd backend")
+run both CLAHE and blur from backend directory: python yolo_realtime_detection.py --source ../frontend/public/assets/demo_video.mp4
+
+disable CLAHE: python yolo_realtime_detection.py --source ../frontend/public/assets/demo_video.mp4 --no-clahe
+
+disable Gaussian blur: python yolo_realtime_detection.py --source ../frontend/public/assets/demo_video.mp4 --no-blur
+
+diable both: python yolo_realtime_detection.py --source ../frontend/public/assets/demo_video.mp4 --no-clahe --no-blur
