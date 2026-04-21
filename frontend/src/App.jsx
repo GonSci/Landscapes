@@ -181,7 +181,6 @@ function App() {
               <div className="map-sidebar">
                 <UserProfile 
                   profile={userProfile}
-                  onToggleAI={() => setShowAIChat(!showAIChat)}
                   compactMode={true}
                   currentUser={currentUser}
                 />
