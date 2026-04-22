@@ -14,11 +14,21 @@ const LiveView = () => {
   const [hourlyData, setHourlyData] = useState({});
   const [currentTime, setCurrentTime] = useState(new Date());
   const [hoveredBar, setHoveredBar] = useState(null);
+  const [claheEnabled, setClaheEnabled] = useState(true);
+  const [blurEnabled, setBlurEnabled]   = useState(true);
   
   const videoRef = useRef(null);
   const detectionIntervalRef = useRef(null);
   const currentFrameRef = useRef(0);
   const hiddenGemsRef = useRef(null);
+
+  const updateConfig = async (clahe, blur) => {
+    await fetch(`${API_URL}/yolo/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enable_clahe: clahe, enable_blur: blur })
+    });
+  };
 
   // Update current time every second
   useEffect(() => {
@@ -248,6 +258,24 @@ const LiveView = () => {
               <span className="inline-flex items-center gap-2 rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white animate-pulseSlow">
                 ● LIVE
               </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setClaheEnabled(p => !p); updateConfig(!claheEnabled, blurEnabled); }}
+                className={`rounded px-3 py-1 text-xs font-bold transition-colors ${
+                  claheEnabled ? 'bg-[#667eea] text-white' : 'bg-slate-200 text-slate-500'
+                }`}
+              >
+                CLAHE {claheEnabled ? 'ON' : 'OFF'}
+              </button>
+              <button
+                onClick={() => { setBlurEnabled(p => !p); updateConfig(claheEnabled, !blurEnabled); }}
+                className={`rounded px-3 py-1 text-xs font-bold transition-colors ${
+                  blurEnabled ? 'bg-[#667eea] text-white' : 'bg-slate-200 text-slate-500'
+                }`}
+              >
+                Privacy Blur {blurEnabled ? 'ON' : 'OFF'}
+              </button>
             </div>
             <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
               {videoError ? (
