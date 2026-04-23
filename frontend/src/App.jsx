@@ -8,6 +8,7 @@ import ExploreSection from './components/explore/ExploreSection';
 import CommunityFeed from './components/community/CommunityFeed';
 import Home from './components/landingPage/Home';
 import LiveView from './components/liveView/LiveView';
+import MapSidebar from './components/map/MapSidebar';
 
 // --> Firebase Imports <-- //
 import { auth, db } from './firebase';
@@ -21,6 +22,7 @@ function App() {
   };
 
   const [currentPage, setCurrentPage] = useState(getInitialPage());
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [userProfile, setUserProfile] = useState({
@@ -144,6 +146,11 @@ function App() {
     setTimeout(() => setFocusLocation(null), 3000);
   };
 
+  const handleSidebarItemClick = (location) => {
+    // Append a timestamp so React always sees this as a new object, forcing the map to react on every click
+    setFocusLocation({ ...location, t: Date.now() });
+  };
+
   if (loading) {
     return (
       <div className="App loading-screen">
@@ -178,19 +185,52 @@ function App() {
         {currentPage === 'map' && (
           <div className="page map-page">
             <div className="map-layout">
-              <div className="map-sidebar">
-                <UserProfile 
-                  profile={userProfile}
-                  compactMode={true}
-                  currentUser={currentUser}
-                />
-              </div>
+              {isSidebarOpen ? (
+                <div className="map-sidebar p-0 bg-white border-r border-slate-200">
+                  <MapSidebar 
+                    userProfile={userProfile}
+                    currentUser={currentUser}
+                    onLocationClick={handleSidebarItemClick}
+                    onSidebarToggle={() => setIsSidebarOpen(false)}
+                  />
+                </div>
+              ) : (
+                <div className="w-[56px] shrink-0 bg-white border-r border-slate-200 h-full hidden lg:flex flex-col items-center py-4 z-10 shadow-sm relative">
+                  <button 
+                    onClick={() => setIsSidebarOpen(true)}
+                    className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+                    title="Expand Sidebar"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  <div className="mt-8 text-slate-400 rotate-180 uppercase tracking-widest text-[10px] font-bold" style={{ writingMode: 'vertical-rl' }}>
+                    Explore Baguio
+                  </div>
+                </div>
+              )}
 
-              <div className="map-main">
+              <div className="map-main relative">
+                {/* Mobile-only floating toggle button */}
+                {!isSidebarOpen && (
+                  <button 
+                    onClick={() => setIsSidebarOpen(true)}
+                    className="flex lg:hidden absolute top-4 left-4 z-[400] bg-white p-2.5 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:bg-slate-50 transition-colors border border-slate-200 cursor-pointer items-center justify-center text-slate-700"
+                    title="Expand Sidebar"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
+                
                 <PhilippinesMap
                   onLocationClick={handleLocationClick}
                   userProfile={userProfile}
                   focusLocation={focusLocation}
+                  isSidebarOpen={isSidebarOpen}
+                  onViewLiveFeed={() => handleNavigate('liveview')}
                 />
               </div>
             </div>

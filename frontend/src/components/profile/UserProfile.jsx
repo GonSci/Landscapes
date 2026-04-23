@@ -629,7 +629,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
         <h4
           className={`m-0 grid items-center pt-px font-extrabold uppercase tracking-[0.5px] text-slate-900 ${compactMode ? 'mb-2.5 mt-3 text-[0.85rem]' : 'mb-4 text-[0.95rem]'} ${expanded ? 'mt-9' : ''}`}
         >
-          ✓ Travel Checklist
+          Travel Checklist
         </h4>
         <button
           onClick={handleAddChecklistClick}
@@ -697,7 +697,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
         >
           <div className="mb-3 flex items-center justify-between gap-2.5">
             <h5 className={`m-0 flex items-center gap-1.5 font-bold text-slate-700 ${compactMode ? 'text-[0.8rem]' : 'text-[0.9rem]'}`}>
-              📦 Template Management
+              Template Management
             </h5>
             {userChecklists.length > 0 && (
               <button
@@ -753,7 +753,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
           {/* Preloaded Templates */}
           <div className={`mt-3.5 border-t border-solid border-slate-300 pt-3 ${compactMode ? 'mt-2 pt-2' : ''}`}>
             <h5 className={`m-0 mb-2.5 flex items-center gap-1 font-bold text-slate-600 ${compactMode ? 'mb-1.5 text-[0.8rem]' : 'text-[0.85rem]'}`}>
-              🎯 Quick Start Templates
+              Quick Start Templates
             </h5>
             <div className={`grid grid-cols-2 ${compactMode ? 'gap-1.5' : 'gap-2'}`}>
               {preloadedTemplates.map(template => (

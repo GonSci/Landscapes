@@ -1,13 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import philippinesData from '../../data/philippines_locations.json';
 
-const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
+const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebarOpen, onViewLiveFeed }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
   const featureMarkersRef = useRef([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [showFeatures, setShowFeatures] = useState(true);
+
+  // Invalidate map size when sidebar toggles
+  useEffect(() => {
+    if (mapInstanceRef.current && window.L) {
+      const timer = setTimeout(() => {
+        mapInstanceRef.current.invalidateSize({ animate: true });
+      }, 300); // 300ms matches the CSS transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [isSidebarOpen]);
 
   useEffect(() => {
     // Load Leaflet CSS
@@ -41,7 +51,8 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
     if (!mapLoaded || !window.L || mapInstanceRef.current) return;
 
     // Initialize map centered on Baguio City
-    const map = window.L.map(mapRef.current).setView([16.4023, 120.5960], 13);
+    const map = window.L.map(mapRef.current, { zoomControl: false }).setView([16.4023, 120.5960], 13);
+    window.L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     // Add OpenStreetMap tiles
     window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -60,126 +71,53 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
       map.panInsideBounds(baguioBounds, { animate: false });
     });
 
+    // Zoom back out when a popup is closed (e.g. clicking the X)
+    map.on('popupclose', () => {
+      setTimeout(() => {
+        // Only zoom out if there isn't another popup immediately opening
+        // We robustly check if ANY of our feature markers still have an open popup
+        const isAnyOpen = featureMarkersRef.current.some(m => m.isPopupOpen && m.isPopupOpen());
+        if (!isAnyOpen && mapInstanceRef.current && mapInstanceRef.current.getZoom() > 13) {
+          mapInstanceRef.current.setView([16.4023, 120.5960], 13, { animate: true });
+        }
+      }, 50);
+    });
+
+    // Handle "View Live Feed" button clicks inside popups
+    map.on('popupopen', (e) => {
+      const btn = e.popup._contentNode?.querySelector('.live-feed-btn');
+      if (btn) {
+        btn.onclick = () => {
+          const locationName = btn.getAttribute('data-location');
+          if (onViewLiveFeed) onViewLiveFeed(locationName);
+        };
+      }
+    });
+
     mapInstanceRef.current = map;
 
     // Removed: Click handler for map exploration - users can only click on markers
 
-    // Filter to only show Baguio locations
-    const baguioLocations = philippinesData.locations.filter(location => 
-      location.region === 'Cordillera Administrative Region' || 
-      location.name.toLowerCase().includes('baguio')
-    );
-
-    // Add markers for Baguio locations only
-    baguioLocations.forEach((location) => {
-      const color = getLocationColor(location.id);
-      
-      // Create custom icon
-      const icon = window.L.divIcon({
-        className: 'custom-marker',
-        html: `
-          <div style="
-            background-color: ${color};
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            cursor: pointer;
-            transition: transform 0.2s;
-          "
-          onmouseover="this.style.transform='scale(1.2)'"
-          onmouseout="this.style.transform='scale(1)'">
-            📍
-          </div>
-        `,
-        iconSize: [35, 35],
-        iconAnchor: [17.5, 17.5],
-      });
-
-      const marker = window.L.marker([location.lat, location.lng], { icon })
-        .addTo(map)
-        .bindPopup(`
-          <div style="text-align: center;">
-            <h3 style="margin: 0 0 5px 0; color: #1f2937;">⭐ ${location.name}</h3>
-            <p style="margin: 0; color: #6b7280; font-size: 0.875rem;">${location.region}</p>
-          </div>
-        `)
-        .on('click', () => {
-          onLocationClick(location);
-        });
-
-      markersRef.current[location.id] = marker;
-    });
+    // Removed standard Baguio location pins as per user request
 
   }, [mapLoaded, onLocationClick]);
 
   // Focus on a specific location when requested
   useEffect(() => {
-    if (focusLocation && mapInstanceRef.current && window.L) {
-      // Clear existing feature markers
-      featureMarkersRef.current.forEach(marker => marker.remove());
-      featureMarkersRef.current = [];
+    if (focusLocation && mapInstanceRef.current && window.L && featureMarkersRef.current) {
+      // Find the marker that matches the coordinates
+      const targetMarker = featureMarkersRef.current.find(
+        m => m.getLatLng().lat === focusLocation.lat && m.getLatLng().lng === focusLocation.lng
+      );
       
-      // Zoom to location
-      mapInstanceRef.current.setView([focusLocation.lat, focusLocation.lng], 13, {
-        animate: true,
-        duration: 1
-      });
-      
-      // Add a pulsing marker for the focused location
-      const focusIcon = window.L.divIcon({
-        className: 'custom-marker',
-        html: `
-          <div style="
-            background-color: #ef4444;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: 4px solid white;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            cursor: pointer;
-            animation: pulseGlow 2s ease-in-out infinite;
-          ">
-            📍
-          </div>
-          <style>
-            @keyframes pulseGlow {
-              0%, 100% { 
-                transform: scale(1);
-                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
-              }
-              50% { 
-                transform: scale(1.15);
-                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.8);
-              }
-            }
-          </style>
-        `,
-        iconSize: [50, 50],
-        iconAnchor: [25, 25],
-      });
-      
-      const focusMarker = window.L.marker([focusLocation.lat, focusLocation.lng], { icon: focusIcon })
-        .addTo(mapInstanceRef.current)
-        .bindPopup(`
-          <div style="text-align: center; min-width: 200px;">
-            <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 1.1rem;">📍 ${focusLocation.name}</h3>
-            <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 0.9rem;">${focusLocation.region}</p>
-            <p style="margin: 0; color: #ef4444; font-size: 0.85rem; font-weight: 600;">📌 You are here!</p>
-          </div>
-        `)
-        .openPopup();
-      
-      featureMarkersRef.current.push(focusMarker);
+      if (targetMarker) {
+        // Zoom into the specific place
+        mapInstanceRef.current.setView(targetMarker.getLatLng(), 16, { animate: true });
+        // Open the tooltip after a small delay to avoid animation conflict with setView
+        setTimeout(() => {
+          targetMarker.openPopup();
+        }, 150);
+      }
     }
   }, [focusLocation]);
 
@@ -225,26 +163,24 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
         className: 'feature-marker',
         html: `
           <div style="
-            background: ${bgColor};
             width: 36px;
             height: 36px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: transform 0.2s ease;
+            transform-origin: bottom center;
           "
           onmouseover="this.style.transform='scale(1.2)'"
           onmouseout="this.style.transform='scale(1)'">
-            ${feature.icon}
+            <svg viewBox="0 0 24 24" width="36" height="36" style="filter: drop-shadow(0px 3px 2px rgba(0,0,0,0.3));">
+              <path fill="#ea4335" d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/>
+            </svg>
           </div>
         `,
         iconSize: [36, 36],
-        iconAnchor: [18, 18],
+        iconAnchor: [18, 36],
       });
       
       const marker = window.L.marker([feature.lat, feature.lng], { icon: featureIcon })
@@ -263,14 +199,28 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
               letter-spacing: 0.5px;
               margin-bottom: 8px;
             ">${label}</div>
-            <h4 style="margin: 0 0 4px 0; color: #1f2937; font-size: 0.95rem;">${feature.icon} ${feature.name}</h4>
-            <p style="margin: 0; color: #6b7280; font-size: 0.8rem;">📍 ${feature.city}</p>
+            <h4 style="margin: 0 0 4px 0; color: #1f2937; font-size: 0.95rem;">${feature.name}</h4>
+            <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 0.8rem;">📍 ${feature.city}</p>
+            <button class="live-feed-btn" data-location="${feature.name}" style="
+              display: flex; align-items: center; justify-content: center; gap: 6px;
+              background: #667eea; color: white; border: none; padding: 8px 12px; border-radius: 8px; 
+              font-size: 0.8rem; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s ease;
+              box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+            " onmouseover="this.style.background='#764ba2'; this.style.boxShadow='0 6px 16px rgba(118,75,162,0.4)';" onmouseout="this.style.background='#667eea'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.3)';">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m22 8-6 4 6 4V8Z"></path>
+                <rect width="14" height="12" x="2" y="6" rx="2" ry="2"></rect>
+              </svg>
+              View Live Feed
+            </button>
           </div>
-        `);
+        `, { autoPan: false });
       
       featureMarkersRef.current.push(marker);
     });
   }, [mapInstanceRef.current, window.L, showFeatures]);
+
+
 
   // Update marker colors when user profile changes
   useEffect(() => {
@@ -325,21 +275,17 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation }) => {
           <div className="flex-1 min-w-80">
             <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Explore Baguio City</h2>
             <p className="m-0 p-0 bg-transparent text-slate-500 text-base leading-relaxed font-medium">
-              <strong className="font-bold text-slate-900">Tip:</strong> Click the colored markers to discover featured destinations in Baguio City - the Summer Capital of the Philippines!
+              Click the colored markers to discover featured destinations in Baguio City - the Summer Capital of the Philippines!
             </p>
           </div>
         </div>
       </div>
       
-      <div className="flex gap-10 justify-start m-0 px-8 py-5 bg-white flex-wrap border-b-2 border-slate-200">
-        <h2>LAGAY DITO NG YOLOV8 OR REDIRECTION RELATED INFORMATION</h2>
-
-      </div>
 
       <div 
         ref={mapRef} 
         className="flex-1 min-h-96 bg-white overflow-hidden"
-        style={{ height: '600px', width: '100%', borderRadius: '0px', cursor: 'pointer' }}
+        style={{ height: '100%', width: '100%', borderRadius: '0px', cursor: 'pointer' }}
       >
         {!mapLoaded && (
           <div className="flex items-center justify-center h-full bg-white text-slate-400 text-base font-semibold uppercase tracking-widest">
