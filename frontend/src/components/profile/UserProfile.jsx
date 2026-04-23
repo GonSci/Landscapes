@@ -109,41 +109,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     }
   ];
 
-  // Quests and vouchers
-  const initialQuests = [
-    { id: 'q_visit_3', title: 'Discoverer', description: 'Visit 3 places to earn a voucher', type: 'visited', requirement: 3, reward: { type: 'voucher', amount: '5% off', vendor: 'Seaside Tours' } },
-    { id: 'q_wishlist_5', title: 'Dream Planner', description: 'Add 5 places to your wishlist', type: 'wishlist', requirement: 5, reward: { type: 'voucher', amount: '5% off', vendor: 'Bayfront Restaurant' } },
-    { id: 'q_checklist_3', title: 'Well Prepared', description: 'Complete 3 checklist items', type: 'checklistsCompleted', requirement: 3, reward: { type: 'voucher', amount: 'Free drink', vendor: 'Beachside Cafe' } }
-  ];
 
-  const [quests, setQuests] = useState(() => {
-    const saved = profile.quests || [];
-    return initialQuests.map(def => ({ ...def, completed: !!saved.find(s => s.id === def.id && s.completed) }));
-  });
-
-  const [vouchers, setVouchers] = useState(profile.vouchers || []);
-  // Keep a ref of previous quests to detect newly completed quests
-  const prevQuestsRef = useRef(quests);
-  // Track awarded quest ids to avoid in-flight duplicate issuance
-  const awardedQuestIdsRef = useRef(new Set());
-
-  // Helper: dedupe vouchers by questId, keeping the latest by issuedAt (or last in array)
-  // (Kept for initial voucher state, but not used repeatedly)
-  const dedupeVouchers = (vs = []) => {
-    const map = new Map();
-    vs.forEach(v => {
-      const key = v.questId || v.id || JSON.stringify(v);
-      const existing = map.get(key);
-      if (!existing) {
-        map.set(key, v);
-      } else {
-        const a = existing.issuedAt ? new Date(existing.issuedAt).getTime() : 0;
-        const b = v.issuedAt ? new Date(v.issuedAt).getTime() : 0;
-        if (b >= a) map.set(key, v);
-      }
-    });
-    return Array.from(map.values());
-  };
 
   // Save checklists to Firebase
   const saveChecklistsToFirebase = useCallback(async (checklists) => {
@@ -199,35 +165,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     }
   }, [currentUser]);
 
-  // Save quests to Firebase
-  const saveQuestsToFirebase = useCallback(async (questsToSave) => {
-    if (!currentUser) return;
-    try {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      await setDoc(userDocRef, {
-        quests: questsToSave,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-      console.log('✅ Quests saved to Firebase');
-    } catch (error) {
-      console.error('❌ Error saving quests:', error);
-    }
-  }, [currentUser]);
 
-  // Save vouchers to Firebase
-  const saveVouchersToFirebase = useCallback(async (vouchersToSave) => {
-    if (!currentUser) return;
-    try {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      await setDoc(userDocRef, {
-        vouchers: vouchersToSave,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-      console.log('✅ Vouchers saved to Firebase');
-    } catch (error) {
-      console.error('❌ Error saving vouchers:', error);
-    }
-  }, [currentUser]);
 
 
 
@@ -252,18 +190,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     }
   }, [lastPreloadedTemplateId, currentUser, saveLastPreloadedIdToFirebase]);
 
-  // Save quests and vouchers when they change
-  useEffect(() => {
-    if (currentUser) {
-      saveQuestsToFirebase(quests);
-    }
-  }, [quests, currentUser, saveQuestsToFirebase]);
 
-  useEffect(() => {
-    if (currentUser) {
-      saveVouchersToFirebase(vouchers);
-    }
-  }, [vouchers, currentUser, saveVouchersToFirebase]);
 
   // Always show profile prop data instantly for all UI (badges, map, etc.)
   useEffect(() => {
@@ -271,102 +198,11 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     setUserChecklists(profile.checklists || []);
     setSavedChecklistTemplates(profile.savedTemplates || []);
     setLastPreloadedTemplateId(profile.lastPreloadedTemplateId || null);
-    const savedQuests = profile.quests || [];
-    const syncedQuests = initialQuests.map(def => ({
-      ...def,
-      completed: !!savedQuests.find(s => s.id === def.id && s.completed)
-    }));
-    setQuests(syncedQuests);
-    setVouchers(dedupeVouchers(profile.vouchers || []));
-    prevQuestsRef.current = syncedQuests;
-    awardedQuestIdsRef.current = new Set((profile.vouchers || []).map(v => v.questId));
   }, [profile, currentUser]);
 
   // Remove duplicate/legacy Firestore fetch effect (now handled by reload on login)
 
-  // Calculate gamification stats
-  const stats = useMemo(() => {
-    const beenThere = profile.beenThere || [];
-    const wantToGo = profile.wantToGo || [];
 
-    const visitedCount = beenThere.length;
-    const wishlistCount = wantToGo.length;
-    
-    // Extract unique regions from visited places
-    const uniqueRegions = new Set(beenThere.map(id => {
-      // Extract region from location id (assuming format like "boracay-aklan")
-      const parts = id.split('-');
-      return parts[parts.length - 1];
-    }));
-    
-    return {
-      visited: visitedCount,
-      wishlist: wishlistCount,
-      regions: uniqueRegions.size,
-      totalInteractions: visitedCount + wishlistCount
-    };
-  }, [profile]);
-
-  // Define achievement badges
-  const badges = [
-    {
-      id: 'explorer',
-      name: 'Explorer',
-      icon: '🗺️',
-      description: 'Visit your first place',
-      requirement: 1,
-      current: stats.visited,
-      unlocked: stats.visited >= 1
-    },
-    {
-      id: 'adventurer',
-      name: 'Adventurer',
-      icon: '🎒',
-      description: 'Visit 3 different places',
-      requirement: 3,
-      current: stats.visited,
-      unlocked: stats.visited >= 3
-    },
-    {
-      id: 'traveler',
-      name: 'Traveler',
-      icon: '✈️',
-      description: 'Visit 5 different places',
-      requirement: 5,
-      current: stats.visited,
-      unlocked: stats.visited >= 5
-    },
-    {
-      id: 'globetrotter',
-      name: 'Globetrotter',
-      icon: '🌍',
-      description: 'Visit 10 different places',
-      requirement: 10,
-      current: stats.visited,
-      unlocked: stats.visited >= 10
-    },
-    {
-      id: 'regional',
-      name: 'Regional Explorer',
-      icon: '🏝️',
-      description: 'Visit 3 different regions',
-      requirement: 3,
-      current: stats.regions,
-      unlocked: stats.regions >= 3
-    },
-    {
-      id: 'wishlist-master',
-      name: 'Dream Planner',
-      icon: '⭐',
-      description: 'Add 5 places to wishlist',
-      requirement: 5,
-      current: stats.wishlist,
-      unlocked: stats.wishlist >= 5
-    }
-  ];
-
-  const unlockedBadges = badges.filter(b => b.unlocked);
-  const nextBadge = badges.find(b => !b.unlocked);
 
   // Icon options for checklist
   const iconOptions = ['✓', '📋', '📝', '✈️', '🎒', '🗺️', '📅', '🏨', '🎫', '📕', '🛡️', '⭐'];
@@ -512,66 +348,6 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     setLastPreloadedTemplateId(template.id);
   };
 
-  // Utility: generate simple voucher code
-  const generateVoucherCode = (prefix = 'V') => {
-    return prefix + Math.random().toString(36).slice(2, 8).toUpperCase();
-  };
-
-  // Award voucher for a completed quest (idempotent by questId)
-  const awardVoucherForQuest = (quest) => {
-    // Guard: don't issue if already awarded or in-flight
-    if (awardedQuestIdsRef.current.has(quest.id)) return;
-    // don't issue duplicate vouchers for same quest
-    const alreadyLocal = vouchers.find(v => v.questId === quest.id);
-    const alreadyInProfile = (profile.vouchers || []).find(v => v.questId === quest.id);
-    if (alreadyLocal || alreadyInProfile) {
-      awardedQuestIdsRef.current.add(quest.id);
-      return;
-    }
-
-    const newVoucher = {
-      id: Date.now() + Math.random(),
-      questId: quest.id,
-      vendor: quest.reward.vendor,
-      amount: quest.reward.amount,
-      code: generateVoucherCode('V'),
-      claimed: false,
-      issuedAt: new Date().toISOString()
-    };
-    setVouchers(prev => [newVoucher, ...prev]);
-    // mark as awarded immediately to prevent concurrent awards
-    awardedQuestIdsRef.current.add(quest.id);
-  };
-
-  // Watch for quest completion conditions (stats, wishlist, checklist completions)
-  useEffect(() => {
-    const checklistCompletedCount = userChecklists.filter(i => i.completed).length;
-
-    const updated = quests.map(q => {
-      const wasCompleted = prevQuestsRef.current?.find(x => x.id === q.id)?.completed;
-      let met = q.completed;
-      if (!q.completed) {
-        if (q.type === 'visited' && stats.visited >= q.requirement) met = true;
-        if (q.type === 'wishlist' && stats.wishlist >= q.requirement) met = true;
-        if (q.type === 'checklistsCompleted' && checklistCompletedCount >= q.requirement) met = true;
-      }
-      // If newly met (was not completed before, now met), award voucher
-      if (!wasCompleted && met) {
-        awardVoucherForQuest(q);
-      }
-      return { ...q, completed: met };
-    });
-
-    // Only update state if something changed
-    const changed = updated.some((u, i) => u.completed !== quests[i].completed);
-    if (changed) {
-      setQuests(updated);
-    }
-
-    // store for next comparison
-    prevQuestsRef.current = updated;
-  }, [stats, userChecklists, quests]);
-
   const modalActionBtnClass = 'cursor-pointer rounded-lg px-5 py-2.5 text-[0.9rem] font-bold uppercase tracking-[0.5px] transition-all duration-200';
   const templateActionBaseClass = 'flex items-center justify-center gap-1 whitespace-nowrap rounded-md px-[10px] py-1.5 text-[0.8rem] font-semibold transition-all duration-200';
 
@@ -597,32 +373,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
         </div>
       </div>
 
-      {/* Stats Overview */}
-      {!compactMode && (
-        <div className="grid grid-cols-3 gap-2.5 bg-transparent p-2.5">
-          <div className="relative flex flex-col items-center gap-1.5 overflow-hidden rounded-[10px] border border-[#eef3fb] bg-gradient-to-b from-white to-[#fbfdff] px-2 py-2.5 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(16,24,40,0.06)]">
-            <div className="text-2xl">✓</div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="text-[1.8rem] font-extrabold leading-none text-slate-900">{stats.visited}</span>
-              <span className="text-[0.75rem] font-bold uppercase tracking-[0.5px] text-slate-500">Visited</span>
-            </div>
-          </div>
-          <div className="relative flex flex-col items-center gap-1.5 overflow-hidden rounded-[10px] border border-[#eef3fb] bg-gradient-to-b from-white to-[#fbfdff] px-2 py-2.5 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(16,24,40,0.06)]">
-            <div className="text-2xl">♡</div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="text-[1.8rem] font-extrabold leading-none text-slate-900">{stats.wishlist}</span>
-              <span className="text-[0.75rem] font-bold uppercase tracking-[0.5px] text-slate-500">Wishlist</span>
-            </div>
-          </div>
-          <div className="relative flex flex-col items-center gap-1.5 overflow-hidden rounded-[10px] border border-[#eef3fb] bg-gradient-to-b from-white to-[#fbfdff] px-2 py-2.5 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(16,24,40,0.06)]">
-            <div className="text-2xl">🏝️</div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="text-[1.8rem] font-extrabold leading-none text-slate-900">{stats.regions}</span>
-              <span className="text-[0.75rem] font-bold uppercase tracking-[0.5px] text-slate-500">Regions</span>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Travel Checklist Section */}
       <div className="flex flex-col gap-0">

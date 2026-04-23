@@ -17,12 +17,26 @@ from ultralytics import YOLO
 import base64
 import json
 from threading import Lock
+import threading
 import time
+from datetime import datetime, timedelta
+
+from extensions import db
+from models import User, SurveillanceLog
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://landscapes_user:landscapes_pass123@localhost:5432/landscapes')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
 
 # ── Global state ──────────────────────────────────────────────────────────────
 yolo_model = None
@@ -271,24 +285,36 @@ def run_yolo_pipeline(frame, annotate=True, show_overlay=True):
 
 
 # ── Basic endpoints ────────────────────────────────────────────────────────────
-user_profiles = {}
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy', 'message': 'Travel AI API is running'})
 
-@app.route('/api/profile', methods=['GET', 'POST'])
-def user_profile():
-    try:
-        user_id = request.args.get('user_id', 'default_user')
-        if request.method == 'GET':
-            profile = user_profiles.get(user_id, {'beenThere': [], 'wantToGo': []})
-            return jsonify(profile)
-        data = request.json
-        user_profiles[user_id] = data
-        return jsonify({'message': 'Profile updated successfully', 'profile': data})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    if User.query.filter_by(email=email).first():
+        return jsonify({'error': 'Email already exists'}), 400
+    
+    new_user = User(
+        email=email,
+        password_hash=generate_password_hash(password)
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'message': 'User registered successfully', 'user': new_user.to_dict()})
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    user = User.query.filter_by(email=email).first()
+    if user and check_password_hash(user.password_hash, password):
+        return jsonify({'message': 'Login successful', 'user': user.to_dict()})
+    return jsonify({'error': 'Invalid credentials'}), 401
 
 @app.route('/api/locations', methods=['GET'])
 def get_locations():
@@ -605,7 +631,84 @@ def detection_config_endpoint():
     return jsonify({'message': 'Configuration updated', 'config': detection_config})
 
 
+@app.route('/api/live-count', methods=['GET'])
+def get_live_count():
+    with results_lock:
+        return jsonify({
+            'count': detection_results['count'],
+            'timestamp': detection_results['timestamp']
+        })
+
+@app.route('/api/logs/hourly', methods=['GET'])
+def get_hourly_logs():
+    logs = SurveillanceLog.query.order_by(SurveillanceLog.timestamp.desc()).limit(200).all()
+    hourly_data = {}
+    for log in logs:
+        hour_key = f"{log.timestamp.hour}:00"
+        if hour_key not in hourly_data or log.people_count > hourly_data[hour_key]:
+            hourly_data[hour_key] = log.people_count
+            
+    result = []
+    current_hour = datetime.now().hour
+    for i in range(4): # last 4 hours
+        h = (current_hour - i) % 24
+        h_key = f"{h}:00"
+        result.append({
+            'label': h_key,
+            'value': hourly_data.get(h_key, 0),
+            'hour': h
+        })
+    result.reverse() # chronological
+    return jsonify(result)
+
+@app.route('/api/logs/recent', methods=['GET'])
+def get_recent_logs():
+    logs = SurveillanceLog.query.order_by(SurveillanceLog.timestamp.desc()).limit(10).all()
+    return jsonify([
+        {
+            'id': log.id,
+            'time': log.timestamp.strftime("%I:%M:%S %p"),
+            'count': log.people_count
+        } for log in logs
+    ])
+
+last_log_time = time.time()
+
+def background_logger():
+    global last_log_time, detection_results
+    with app.app_context():
+        while True:
+            time.sleep(1) # check every second for High Density override or 60s timer
+            
+            with results_lock:
+                current_count = detection_results['count']
+                current_timestamp = detection_results['timestamp']
+            
+            # Check if model is actively running (timestamp updated in last 5 seconds)
+            if current_timestamp and (time.time() - current_timestamp) < 5:
+                now = time.time()
+                is_high_density = current_count >= 10
+                time_since_last_log = now - last_log_time
+                
+                # Log if it's been 60s, OR if we hit High Density and it's been at least 10s (debounce)
+                if time_since_last_log >= 60 or (is_high_density and time_since_last_log >= 10):
+                    try:
+                        log_entry = SurveillanceLog(
+                            people_count=current_count,
+                            location_name="Burnham Park" # Default for MVP
+                        )
+                        db.session.add(log_entry)
+                        db.session.commit()
+                        last_log_time = now
+                        print(f"Logged {current_count} people to DB (High Density Override: {is_high_density and time_since_last_log < 60})")
+                    except Exception as e:
+                        db.session.rollback()
+                        print(f"DB Log Error: {e}")
+
 if __name__ == '__main__':
+    print("Starting Background Logger...")
+    threading.Thread(target=background_logger, daemon=True).start()
+    
     print("Starting Travel AI Flask Server...")
     print("Server running on http://localhost:5001")
     app.run(debug=True, port=5001)

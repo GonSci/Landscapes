@@ -84,7 +84,35 @@ const LiveView = () => {
     };
   }, []);
 
-  const addSurveillanceLog = (count) => {
+  // Fetch historical logs on mount
+  useEffect(() => {
+    const fetchHistoricalLogs = async () => {
+      try {
+        const [recentRes, hourlyRes] = await Promise.all([
+          fetch(`${API_URL}/logs/recent`),
+          fetch(`${API_URL}/logs/hourly`)
+        ]);
+        if (recentRes.ok) {
+          const recent = await recentRes.json();
+          setSurveillanceLogs(recent);
+        }
+        if (hourlyRes.ok) {
+          const hourlyArray = await hourlyRes.json();
+          const newHourlyData = {};
+          hourlyArray.forEach(item => {
+            newHourlyData[item.label] = item.value;
+          });
+          setHourlyData(newHourlyData);
+        }
+      } catch (e) {
+        console.error("Error fetching historical logs", e);
+      }
+    };
+    fetchHistoricalLogs();
+  }, []);
+
+  // Helper to add visual-only logs instantly
+  const addLocalLog = (count) => {
     const now = new Date();
     const timeString = now.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
@@ -94,22 +122,58 @@ const LiveView = () => {
     });
     
     const newLog = {
-      id: Date.now(),
+      id: `local-${Date.now()}`,
       time: timeString,
-      count: count,
-      timestamp: now
+      count: count
     };
     
-    setSurveillanceLogs(prev => [newLog, ...prev].slice(0, 10)); // Keep last 10 logs
-    
-    // Update hourly data
-    const hour = now.getHours();
-    const hourKey = `${hour}:00`;
-    setHourlyData(prev => ({
-      ...prev,
-      [hourKey]: Math.max(prev[hourKey] || 0, count)
-    }));
+    setSurveillanceLogs(prev => [newLog, ...prev].slice(0, 10));
   };
+
+  // Poll live count and hourly logs
+  useEffect(() => {
+    if (!continuousDetection) return;
+    
+    const liveCountInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`${API_URL}/live-count`);
+        if (response.ok) {
+          const data = await response.json();
+          const newCount = data.count || 0;
+          
+          setDetectedCount(prevCount => {
+            if (prevCount !== newCount) {
+              addLocalLog(newCount);
+            }
+            return newCount;
+          });
+        }
+      } catch (e) {
+        console.error("Error fetching live count", e);
+      }
+    }, 1000);
+    
+    const historicalLogsInterval = setInterval(async () => {
+      try {
+        const hourlyRes = await fetch(`${API_URL}/logs/hourly`);
+        if (hourlyRes.ok) {
+          const hourlyArray = await hourlyRes.json();
+          const newHourlyData = {};
+          hourlyArray.forEach(item => {
+            newHourlyData[item.label] = item.value;
+          });
+          setHourlyData(newHourlyData);
+        }
+      } catch (e) {
+        console.error("Error fetching historical logs", e);
+      }
+    }, 60000); // refresh hourly data every minute
+    
+    return () => {
+      clearInterval(liveCountInterval);
+      clearInterval(historicalLogsInterval);
+    };
+  }, [continuousDetection]);
 
   const startContinuousDetection = () => {
     if (continuousDetection) return;
@@ -133,16 +197,6 @@ const LiveView = () => {
         const data = await response.json();
         
         if (response.ok) {
-          const currentCount = data.count || 0;
-          
-          // Update detections in real-time
-          setDetectedCount(currentCount);
-          
-          // Add surveillance log if count changed significantly
-          if (Math.abs(currentCount - detectedCount) >= 1) {
-            addSurveillanceLog(currentCount);
-          }
-          
           // Update annotated frame
           if (data.frame) {
             setAnnotatedFrame(`data:image/jpeg;base64,${data.frame}`);

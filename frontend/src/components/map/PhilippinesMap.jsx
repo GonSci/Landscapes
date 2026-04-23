@@ -222,51 +222,7 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
 
 
 
-  // Update marker colors when user profile changes
-  useEffect(() => {
-    if (!mapInstanceRef.current || !window.L) return;
 
-    philippinesData.locations.forEach((location) => {
-      const marker = markersRef.current[location.id];
-      if (marker) {
-        const color = getLocationColor(location.id);
-        
-        const icon = window.L.divIcon({
-          className: 'custom-marker',
-          html: `
-            <div style="
-              background-color: ${color};
-              width: 30px;
-              height: 30px;
-              border-radius: 50%;
-              border: 3px solid white;
-              box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 16px;
-              cursor: pointer;
-            ">
-              📍
-            </div>
-          `,
-          iconSize: [30, 30],
-          iconAnchor: [15, 15],
-        });
-        
-        marker.setIcon(icon);
-      }
-    });
-  }, [userProfile]);
-
-  const getLocationColor = (locationId) => {
-    if (userProfile.beenThere && userProfile.beenThere.includes(locationId)) {
-      return '#10b981'; // Green - Been there
-    } else if (userProfile.wantToGo && userProfile.wantToGo.includes(locationId)) {
-      return '#f59e0b'; // Orange - Want to go
-    }
-    return '#3b82f6'; // Blue - Default
-  };
 
   return (
     <div className="flex flex-col h-full bg-gray-50 border-2 border-slate-200 border-l-0 overflow-hidden relative">

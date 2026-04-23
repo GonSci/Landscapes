@@ -5,14 +5,11 @@ import PhilippinesMap from './components/map/PhilippinesMap';
 import UserProfile from './components/profile/UserProfile';
 import LocationModal from './components/map/LocationModal';
 import ExploreSection from './components/explore/ExploreSection';
-import CommunityFeed from './components/community/CommunityFeed';
 import Home from './components/landingPage/Home';
 import LiveView from './components/liveView/LiveView';
 import MapSidebar from './components/map/MapSidebar';
 
-// --> Firebase Imports <-- //
-import { auth, db } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 function App() {
@@ -26,8 +23,6 @@ function App() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [userProfile, setUserProfile] = useState({
-    beenThere: [],
-    wantToGo: [],
     checklists: [], 
     savedTemplates: [],
     lastPreloadedTemplateId: null
@@ -37,19 +32,24 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        try {
-          const userDocRef = doc(db, 'users', user.uid);
+    const checkSession = async () => {
+      try {
+        const storedUser = localStorage.getItem('travel_user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          setCurrentUser(user);
+          
+          // Only fetch preferences from Firebase using the email or uid
+          // We assume Firebase is still used for saving user profile configs like checklists for now,
+          // OR we could store it locally. For now, let's keep the existing logic but use user.uid
+          const uid = user.uid || user.id || user.email;
+          const userDocRef = doc(db, 'users', uid);
           const userDocSnap = await getDoc(userDocRef);
 
           if (userDocSnap.exists()) {
             setUserProfile(userDocSnap.data());
           } else {
             const newProfile = {
-              beenThere: [],
-              wantToGo: [],
               checklists: [],
               savedTemplates: [],
               lastPreloadedTemplateId: null,
@@ -58,33 +58,37 @@ function App() {
               photoURL: user.photoURL || '',
               createdAt: new Date().toISOString()
             };
-
             await setDoc(userDocRef, newProfile);
             setUserProfile(newProfile);
           }
-        } catch (error) {
-          console.error("Error fetching or creating user profile:", error);
+        } else {
+          setUserProfile({
+            checklists: [],
+            savedTemplates: [],
+            lastPreloadedTemplateId: null
+          });
         }
-      } else {
-        setUserProfile({
-          beenThere: [],
-          wantToGo: [],
-          checklists: [],
-          savedTemplates: [],
-          lastPreloadedTemplateId: null
-        });
+      } catch (error) {
+        console.error("Session check error:", error);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    };
+    
+    checkSession();
   }, []); 
+
+  const handleLogin = (user) => {
+    localStorage.setItem('travel_user', JSON.stringify(user));
+    setCurrentUser(user);
+    window.location.reload();
+  };
 
   const saveProfileToFirebase = async (newProfile) => {
     if (currentUser) {
       try {
-        const userDocRef = doc(db, 'users', currentUser.uid);
+        const uid = currentUser.uid || currentUser.id || currentUser.email;
+        const userDocRef = doc(db, 'users', uid);
 
         await setDoc(userDocRef, {
           ...newProfile,
@@ -109,30 +113,7 @@ function App() {
     }
   };
 
-  const handleMarkLocation = async (location, type) => {
-    const newProfile = { ...userProfile };
-    const locationId = location?.id || selectedLocation?.id;
-    
-    if (!locationId) return;
-    
-    if (type === 'been') {
-      if (!newProfile.beenThere.includes(locationId)) {
-        newProfile.beenThere.push(locationId);
-        newProfile.wantToGo = newProfile.wantToGo.filter(id => id !== locationId);
-      }
-    } else if (type === 'want') {
-      if (!newProfile.wantToGo.includes(locationId)) {
-        newProfile.wantToGo.push(locationId);
-      }
-    }
-    
-    setUserProfile(newProfile);
-    await saveProfileToFirebase(newProfile);
-    
-    if (!location) {
-      setShowModal(false);
-    }
-  };
+
 
   const handleNavigate = (page) => {
     setCurrentPage(page);
@@ -172,6 +153,7 @@ function App() {
         currentPage={currentPage}
         onNavigate={handleNavigate}
         currentUser={currentUser}
+        onLogin={handleLogin}
       />
 
       {/* Add padding-top to offset fixed navbar (approx 72px) */}
@@ -241,7 +223,6 @@ function App() {
           <div className="page explore-page">
             <ExploreSection 
               onLocationClick={handleLocationClick}
-              onMarkLocation={handleMarkLocation}
               userProfile={userProfile}
             />
           </div>
@@ -260,11 +241,7 @@ function App() {
           </div>
         )}
 
-        {currentPage === 'community' && (
-          <div className="page community-page">
-            <CommunityFeed currentUser={currentUser} />
-          </div>
-        )}
+
 
         {currentPage === 'liveview' && (
           <div className="page liveview-page">
@@ -277,8 +254,6 @@ function App() {
         <LocationModal
           location={selectedLocation}
           onClose={() => setShowModal(false)}
-          onMarkBeen={() => handleMarkLocation(null, 'been')}
-          onMarkWant={() => handleMarkLocation(null, 'want')}
         />
       )}
     </div>

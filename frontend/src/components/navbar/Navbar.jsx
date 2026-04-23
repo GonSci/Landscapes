@@ -12,13 +12,12 @@ const MenuIcon = ({ open }) => (
 );
 
 
-const Navbar = ({ currentPage, onNavigate, currentUser }) => {
+const Navbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuItems = [
     { id: 'map', label: 'Interactive Map', Icon: Map },
     { id: 'explore', label: 'Explore', Icon: Compass },
     { id: 'liveview', label: 'Live View', Icon: Video },
-    { id: 'community', label: 'Community', Icon: Globe },
     { id: 'profile', label: 'My Travels', Icon: User }
   ];
 
@@ -60,7 +59,7 @@ const Navbar = ({ currentPage, onNavigate, currentUser }) => {
           </button>
         ))}
         <div className="mt-4">
-          <LoginButton currentUser={currentUser} onNavigate={onNavigate} />
+          <LoginButton currentUser={currentUser} onNavigate={onNavigate} onLogin={onLogin} />
         </div>
       </nav>
     </div>
@@ -130,7 +129,7 @@ const Navbar = ({ currentPage, onNavigate, currentUser }) => {
           </div>
           {/* Desktop login button */}
           <div className="hidden md:flex items-center justify-end">
-            <LoginButton currentUser={currentUser} onNavigate={onNavigate} />
+            <LoginButton currentUser={currentUser} onNavigate={onNavigate} onLogin={onLogin} />
           </div>
         </div>
       </div>

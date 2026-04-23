@@ -29,6 +29,7 @@ Install these first:
 - Git
 - Node.js 18+ (includes npm)
 - Python 3.10+
+- PostgreSQL (running locally)
 
 Check versions:
 
@@ -59,6 +60,7 @@ python3 -m venv venv
 source venv/bin/activate
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
+python3 create_db.py
 python3 app.py
 ```
 
@@ -70,6 +72,7 @@ py -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+python create_db.py
 python app.py
 ```
 
@@ -81,8 +84,29 @@ py -m venv venv
 venv\Scripts\activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+python create_db.py
 python app.py
 ```
+
+### PostgreSQL Database Setup
+
+The backend now uses PostgreSQL for authentication and persistent surveillance logging. You must install and run PostgreSQL locally.
+
+1. Install PostgreSQL (macOS: `brew install postgresql@14`, Windows: Download from EnterpriseDB).
+2. Start the PostgreSQL service.
+3. Create the database and user with the following `psql` commands:
+   ```sql
+   CREATE DATABASE landscapes;
+   CREATE USER landscapes_user WITH ENCRYPTED PASSWORD 'landscapes_pass123';
+   GRANT ALL PRIVILEGES ON DATABASE landscapes TO landscapes_user;
+   -- Important for PostgreSQL 15+
+   ALTER DATABASE landscapes OWNER TO landscapes_user;
+   ```
+4. Run the database initialization script before starting `app.py`:
+   ```bash
+   python create_db.py
+   ```
+*(Note: If you run into schema issues later, you can use `python fix_db.py` to recreate tables.)*
 
 Expected backend URL:
 
@@ -212,6 +236,7 @@ npm install
 cd backend
 source venv/bin/activate    # Windows: venv\Scripts\activate
 python3 -m pip install -r requirements.txt
+python3 create_db.py        # Update database schema if needed
 ```
 
 Then run backend and frontend again.
