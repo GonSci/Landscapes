@@ -4,22 +4,22 @@ import UserProfile from '../profile/UserProfile';
 const locationMarketplace = {
   baguio: {
     activities: [
-      { id: 1, name: 'Strawberry Picking', lat: 16.3980, lng: 120.5600, crowdLevel: 'Low', rating: 4.8, reviews: 892, image: '/assets/featured_images/strawberry-farm.jpg', emoji: '🍓', description: 'Pick fresh strawberries at La Trinidad', business: 'Strawberry Farms', bestTime: '6:00 AM - 4:00 PM' },
-      { id: 2, name: 'Burnham Park Boat Ride', lat: 16.4120, lng: 120.5930, crowdLevel: 'Moderate', rating: 4.6, reviews: 456, image: '/assets/featured_images/burnham-park.jpg', emoji: '🚣', description: 'Scenic lake paddleboat ride', business: 'Burnham Park Admin', bestTime: '8:00 AM - 6:00 PM' },
-      { id: 3, name: 'Tam-Awan Village Tour', lat: 16.4250, lng: 120.5800, crowdLevel: 'High', rating: 4.7, reviews: 234, image: '/assets/featured_images/teachers-camp.jpg', emoji: '🏘️', description: 'Cordillera cultural village', business: 'Tam-Awan Village', bestTime: '9:00 AM - 6:00 PM' },
-      { id: 4, name: 'Mines View Park', lat: 16.3895, lng: 120.6145, crowdLevel: 'Low', rating: 4.7, reviews: 1234, image: '/assets/featured_images/mines-view-park.jpg', emoji: '📷', description: 'Mountain views & souvenir shops', business: 'Baguio Tourism', bestTime: '6:00 AM - 6:00 PM' }
+      { id: 1, name: 'Strawberry Picking', lat: 16.3980, lng: 120.5600, crowdLevel: 'Low', image: '/assets/featured_images/strawberry-farm.jpg', emoji: '🍓', description: 'Pick fresh strawberries at La Trinidad', business: 'Strawberry Farms', bestTime: '6:00 AM - 4:00 PM' },
+      { id: 2, name: 'Burnham Park Boat Ride', lat: 16.4120, lng: 120.5930, crowdLevel: 'Moderate', image: '/assets/featured_images/burnham-park.jpg', emoji: '🚣', description: 'Scenic lake paddleboat ride', business: 'Burnham Park Admin', bestTime: '8:00 AM - 6:00 PM' },
+      { id: 3, name: 'Tam-Awan Village Tour', lat: 16.4250, lng: 120.5800, crowdLevel: 'High', image: '/assets/featured_images/teachers-camp.jpg', emoji: '🏘️', description: 'Cordillera cultural village', business: 'Tam-Awan Village', bestTime: '9:00 AM - 6:00 PM' },
+      { id: 4, name: 'Mines View Park', lat: 16.3895, lng: 120.6145, crowdLevel: 'Low', image: '/assets/featured_images/mines-view-park.jpg', emoji: '📷', description: 'Mountain views & souvenir shops', business: 'Baguio Tourism', bestTime: '6:00 AM - 6:00 PM' }
     ],
     places: [
-      { id: 1, name: 'The Mansion', lat: 16.4170, lng: 120.5970, crowdLevel: 'Moderate', rating: 4.8, reviews: 678, image: '/assets/featured_images/wright-park.jpg', emoji: '🏛️', description: 'Official summer residence of President', business: 'Philippine Gov', bestTime: '7:00 AM - 5:00 PM' },
-      { id: 2, name: 'Botanical Garden', lat: 16.4140, lng: 120.6050, crowdLevel: 'High', rating: 4.6, reviews: 567, image: '/assets/images/baguio.jpg', emoji: '🏺', description: 'Peaceful garden with Igorot sculptures', business: 'Baguio Parks', bestTime: '6:00 AM - 6:00 PM' },
-      { id: 3, name: 'Session Road', lat: 16.4050, lng: 120.5900, crowdLevel: 'High', rating: 4.7, reviews: 2341, image: '/assets/featured_images/session-road.jpg', emoji: '🛍️', description: 'Main shopping & dining street', business: 'Session Road Assoc.', bestTime: '9:00 AM - 10:00 PM' },
-      { id: 4, name: 'Baguio Cathedral', lat: 16.4109, lng: 120.5926, crowdLevel: 'Low', rating: 4.8, reviews: 456, image: '/assets/featured_images/baguio-cathedral.jpg', emoji: '⛪', description: 'Historic church with prayer bell', business: 'Baguio Cathedral', bestTime: '6:00 AM - 7:00 PM' }
+      { id: 1, name: 'The Mansion', lat: 16.4170, lng: 120.5970, crowdLevel: 'Moderate', image: '/assets/featured_images/wright-park.jpg', emoji: '🏛️', description: 'Official summer residence of President', business: 'Philippine Gov', bestTime: '7:00 AM - 5:00 PM' },
+      { id: 2, name: 'Botanical Garden', lat: 16.4140, lng: 120.6050, crowdLevel: 'High', image: '/assets/images/baguio.jpg', emoji: '🏺', description: 'Peaceful garden with Igorot sculptures', business: 'Baguio Parks', bestTime: '6:00 AM - 6:00 PM' },
+      { id: 3, name: 'Session Road', lat: 16.4050, lng: 120.5900, crowdLevel: 'High', image: '/assets/featured_images/session-road.jpg', emoji: '🛍️', description: 'Main shopping & dining street', business: 'Session Road Assoc.', bestTime: '9:00 AM - 10:00 PM' },
+      { id: 4, name: 'Baguio Cathedral', lat: 16.4109, lng: 120.5926, crowdLevel: 'Low', image: '/assets/featured_images/baguio-cathedral.jpg', emoji: '⛪', description: 'Historic church with prayer bell', business: 'Baguio Cathedral', bestTime: '6:00 AM - 7:00 PM' }
     ],
     food: [
-      { id: 1, name: 'Good Shepherd Convent', lat: 16.4020, lng: 120.6100, crowdLevel: 'Low', rating: 4.9, reviews: 3456, image: '/assets/images/philippines-placeholder.jpg', emoji: '🪧', description: 'Famous ube jam & strawberry jam', business: 'Good Shepherd', bestTime: '8:00 AM - 5:00 PM' },
-      { id: 2, name: 'Hill Station', lat: 16.4080, lng: 120.5960, crowdLevel: 'Low', rating: 4.8, reviews: 892, image: '/assets/images/baguio.jpg', emoji: '🍽️', description: 'Fine dining with mountain views', business: 'Hill Station Rest.', bestTime: '11:00 AM - 2:00 PM, 6:00 PM - 10:00 PM' },
-      { id: 3, name: 'Vizco\'s', lat: 16.4060, lng: 120.5910, crowdLevel: 'Moderate', rating: 4.7, reviews: 1234, image: '/assets/featured_images/session-road.jpg', emoji: '🍰', description: 'Strawberry shortcake & pastries', business: 'Vizco\'s Bakery', bestTime: '8:00 AM - 8:00 PM' },
-      { id: 4, name: 'Strawberry Taho Vendors', lat: 16.4120, lng: 120.5930, crowdLevel: 'Low', rating: 4.9, reviews: 567, image: '/assets/featured_images/strawberry-farm.jpg', emoji: '🥛', description: 'Fresh strawberry taho at parks', business: 'Various Vendors', bestTime: '6:00 AM - 10:00 AM' }
+      { id: 1, name: 'Good Shepherd Convent', lat: 16.4020, lng: 120.6100, crowdLevel: 'Low', image: '/assets/images/philippines-placeholder.jpg', emoji: '🪧', description: 'Famous ube jam & strawberry jam', business: 'Good Shepherd', bestTime: '8:00 AM - 5:00 PM' },
+      { id: 2, name: 'Hill Station', lat: 16.4080, lng: 120.5960, crowdLevel: 'Low', image: '/assets/images/baguio.jpg', emoji: '🍽️', description: 'Fine dining with mountain views', business: 'Hill Station Rest.', bestTime: '11:00 AM - 2:00 PM, 6:00 PM - 10:00 PM' },
+      { id: 3, name: 'Vizco\'s', lat: 16.4060, lng: 120.5910, crowdLevel: 'Moderate', image: '/assets/featured_images/session-road.jpg', emoji: '🍰', description: 'Strawberry shortcake & pastries', business: 'Vizco\'s Bakery', bestTime: '8:00 AM - 8:00 PM' },
+      { id: 4, name: 'Strawberry Taho Vendors', lat: 16.4120, lng: 120.5930, crowdLevel: 'Low', image: '/assets/featured_images/strawberry-farm.jpg', emoji: '🥛', description: 'Fresh strawberry taho at parks', business: 'Various Vendors', bestTime: '6:00 AM - 10:00 AM' }
     ]
   },
 };
@@ -122,11 +122,6 @@ const MapSidebar = ({ userProfile, currentUser, onLocationClick, onSidebarToggle
                    <div className="flex-1 min-w-0 flex flex-col py-0.5">
                      <div className="flex justify-between items-start gap-2 mb-0.5">
                        <h3 className="font-semibold text-slate-900 truncate text-[14px] leading-snug">{item.name}</h3>
-                       <div className="flex items-center gap-0.5 shrink-0">
-                         <svg className="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                         <span className="text-[11px] font-bold text-slate-700">{item.rating}</span>
-                         <span className="text-[10px] font-medium text-slate-400">({item.reviews})</span>
-                       </div>
                      </div>
                      <p className="text-[12px] text-slate-500 line-clamp-2 leading-relaxed mb-1.5">{item.description}</p>
                      
