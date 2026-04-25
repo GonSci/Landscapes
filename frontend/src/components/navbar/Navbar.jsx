@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import LoginButton from '../profile/LoginButton'; // New import para sa login button
-import { Map, Compass, Globe, User, Video } from 'lucide-react';
+import { Map, Compass, Globe, User, LayoutDashboard } from 'lucide-react';
 
 // Simple hamburger icon
 const MenuIcon = ({ open }) => (
@@ -17,7 +17,7 @@ const Navbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
   const menuItems = [
     { id: 'map', label: 'Interactive Map', Icon: Map },
     { id: 'explore', label: 'Explore', Icon: Compass },
-    { id: 'liveview', label: 'Live View', Icon: Video },
+    { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
     //{ id: 'profile', label: 'My Travels', Icon: User } HIDE MUNA
   ];
 

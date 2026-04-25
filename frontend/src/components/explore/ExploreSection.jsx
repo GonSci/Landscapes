@@ -168,7 +168,7 @@ const ExploreSection = ({ onNavigate }) => {
               className="group cursor-pointer overflow-hidden rounded-3xl border border-white/5 bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-500 animate-slideInUp hover:-translate-y-2 hover:border-white/10 hover:bg-white/[0.08]"
               onClick={(e) => {
                 e.stopPropagation();
-                onNavigate('liveview');
+                      onNavigate('dashboard');
               }}
             >
               <div className="relative h-48 overflow-hidden sm:h-52 lg:h-[240px]">
@@ -234,7 +234,7 @@ const ExploreSection = ({ onNavigate }) => {
                     className="w-full rounded-2xl bg-gradient-to-r from-[#667eea] to-[#764ba2] py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/40"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onNavigate('liveview');
+                            onNavigate('dashboard');
                     }}
                   >
                     View Live Feed

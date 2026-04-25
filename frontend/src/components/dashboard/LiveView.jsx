@@ -377,24 +377,15 @@ const LiveView = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] p-4 sm:p-6 text-white font-sans selection:bg-[#667eea]/30">
-      <div className="mb-10 text-center animate-fadeInDown">
-        <h1 className="mb-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-4xl font-black text-transparent sm:text-5xl lg:text-6xl tracking-tight leading-tight">
-          Live Crowd Monitoring
-        </h1>
-        <p className="mx-auto max-w-2xl text-base text-slate-400 sm:text-lg font-medium opacity-80">
-          Smart city monitoring with real-time YOLOv8 detection.
-        </p>
-      </div>
-
-      <div className="mx-auto max-w-[1600px] animate-fadeInUp">
+    <div className="text-white font-sans selection:bg-[#667eea]/30">
+      <div className="animate-fadeInUp">
         <div className="grid grid-cols-1 gap-8 rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] lg:grid-cols-[1.5fr_1fr] lg:p-10">
           {/* Left Side - Live Feed */}
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between gap-3 px-2">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.8)]"></div>
-                <h2 className="m-0 text-2xl font-black tracking-tight text-white uppercase tracking-[2px] text-sm">System Live Feed</h2>
+                <h2 className="m-0 font-black tracking-[2px] text-white uppercase text-sm">System Live Feed</h2>
               </div>
               <span className="px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-[11px] font-black tracking-widest text-red-400">
                 STABLE CONNECTION
@@ -508,7 +499,7 @@ const LiveView = () => {
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-bold text-slate-300">{formatDate()}</span>
-                  <span className="text-3xl font-black tracking-tight text-white">{formatTime()}</span>
+                  <span className="text-2xl font-black tracking-tight text-white">{formatTime()}</span>
                 </div>
               </div>
 
@@ -519,7 +510,7 @@ const LiveView = () => {
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Detections</span>
                 </div>
                 <div className="flex items-end gap-2">
-                  <span className="text-5xl font-black tracking-tighter text-white leading-none">{detectedCount}</span>
+                  <span className="text-4xl font-black tracking-tighter text-white leading-none">{detectedCount}</span>
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 pb-1">PERSONS</span>
                 </div>
               </div>
@@ -645,7 +636,6 @@ const LiveView = () => {
         </div>
 
         {/* Hidden Gems Nearby Section */}
-        <Redirection ref={hiddenGemsRef} />
       </div>
       </div>
   );

@@ -34,7 +34,7 @@ const Redirection = React.forwardRef((props, ref) => {
     <div className="mx-auto mt-10 max-w-[1600px] scroll-mt-8 rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8" ref={ref}>
       <div className="flex flex-col gap-2 mb-8 text-center">
         <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Intelligent Recommendations</h2>
-        <h3 className="m-0 text-3xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
+        <h3 className="m-0 text-2xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
           Hidden Gems Nearby
         </h3>
       </div>

@@ -6,7 +6,7 @@ import UserProfile from './components/profile/UserProfile';
 import LocationModal from './components/map/LocationModal';
 import ExploreSection from './components/explore/ExploreSection';
 import Home from './components/landingPage/Home';
-import LiveView from './components/liveView/LiveView';
+import Dashboard from './components/dashboard/Dashboard';
 import MapSidebar from './components/map/MapSidebar';
 
 import { db } from './firebase';
@@ -15,7 +15,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 function App() {
   const getInitialPage = () => {
     const hash = window.location.hash.replace('#', '');
-    return hash || 'home';
+    return hash || 'map';
   };
 
   const [currentPage, setCurrentPage] = useState(getInitialPage());
@@ -212,7 +212,7 @@ function App() {
                   userProfile={userProfile}
                   focusLocation={focusLocation}
                   isSidebarOpen={isSidebarOpen}
-                  onViewLiveFeed={() => handleNavigate('liveview')}
+                  onViewLiveFeed={() => handleNavigate('dashboard')}
                 />
               </div>
             </div>
@@ -243,9 +243,9 @@ function App() {
 
 
 
-        {currentPage === 'liveview' && (
-          <div className="page liveview-page">
-            <LiveView />
+        {currentPage === 'dashboard' && (
+          <div className="page dashboard-page">
+            <Dashboard />
           </div>
         )}
       </div>

@@ -17,9 +17,9 @@ const CSRNet = () => {
             </svg>
             <div className="absolute inset-0 rounded-full border-2 border-indigo-500/30 border-t-transparent animate-spin-slow"></div>
           </div>
-          <p className="mb-2 text-xl font-black text-white tracking-tight">AI Density Mapping</p>
+          <p className="mb-2 text-xl font-black text-white tracking-tight">CSRNET</p>
           <p className="max-w-[200px] mx-auto text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
-            Real-time deep learning analysis coming soon
+            MALAPIT NA TONG CSRNET MAY BITAW TOH
           </p>
         </div>
       </div>
