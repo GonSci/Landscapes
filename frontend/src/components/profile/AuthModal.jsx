@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Lock, UserPlus } from 'lucide-react';
 
 const AuthModal = ({ onClose, onLoginSuccess }) => {
@@ -43,80 +44,99 @@ const AuthModal = ({ onClose, onLoginSuccess }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-xl animate-in fade-in duration-300" onClick={onClose}>
       <div 
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl animate-in slide-in-from-bottom-4"
+        className="w-full max-w-md overflow-hidden rounded-[32px] bg-[#0a0f1e]/80 border border-white/10 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300"
         onClick={e => e.stopPropagation()}
       >
-        <div className="relative bg-gradient-to-br from-[#667eea] to-[#764ba2] p-6 text-center text-white">
+        <div className="relative p-8 text-center">
           <button 
             onClick={onClose}
-            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/40"
+            className="absolute right-6 top-6 flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-slate-400 transition-all hover:bg-white/10 hover:text-white border border-white/5"
           >
             ✕
           </button>
-          <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-white shadow-inner backdrop-blur-md">
-            {isLogin ? <Lock size={32} /> : <UserPlus size={32} />}
+          
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-[0_0_30px_rgba(102,126,234,0.4)] animate-pulseSlow">
+            {isLogin ? <Lock size={36} /> : <UserPlus size={36} />}
           </div>
-          <h2 className="m-0 text-2xl font-bold">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
-          <p className="m-0 mt-1 text-sm text-indigo-100">
-            {isLogin ? 'Log in to access your travel journey' : 'Sign up to start tracking your travels'}
+          
+          <h2 className="m-0 text-3xl font-black text-white tracking-tight leading-tight">
+            {isLogin ? 'Welcome Back' : 'Join the Journey'}
+          </h2>
+          <p className="mx-auto mt-2 max-w-[280px] text-sm font-medium text-slate-400">
+            {isLogin ? 'Enter your credentials to continue your adventure.' : 'Create an account to start tracking your travels.'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="px-8 pb-10">
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">
-              {error}
+            <div className="mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 p-4 text-xs font-bold text-red-400 animate-slideIn">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path></svg>
+                {error}
+              </div>
             </div>
           )}
 
-          <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-slate-700">Email Address</label>
-            <input 
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 outline-none transition-colors focus:border-[#667eea]"
-              placeholder="you@example.com"
-            />
-          </div>
+          <div className="space-y-6">
+            <div className="relative group">
+              <label className="mb-2 block text-[10px] font-black uppercase tracking-[2px] text-slate-500 px-1">Email Address</label>
+              <div className="relative">
+                <input 
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full rounded-2xl border border-white/5 bg-white/5 px-5 py-4 text-sm text-white outline-none transition-all duration-300 focus:border-[#667eea]/50 focus:bg-white/[0.08] focus:shadow-[0_0_20px_rgba(102,126,234,0.15)] placeholder:text-slate-600"
+                  placeholder="you@example.com"
+                />
+              </div>
+            </div>
 
-          <div className="mb-6">
-            <label className="mb-1 block text-sm font-semibold text-slate-700">Password</label>
-            <input 
-              type="password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full rounded-xl border-2 border-slate-200 px-4 py-2.5 outline-none transition-colors focus:border-[#667eea]"
-              placeholder="••••••••"
-            />
-          </div>
+            <div className="relative group">
+              <label className="mb-2 block text-[10px] font-black uppercase tracking-[2px] text-slate-500 px-1">Password</label>
+              <div className="relative">
+                <input 
+                  type="password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-white/5 bg-white/5 px-5 py-4 text-sm text-white outline-none transition-all duration-300 focus:border-[#667eea]/50 focus:bg-white/[0.08] focus:shadow-[0_0_20px_rgba(102,126,234,0.15)] placeholder:text-slate-600"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
 
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-gradient-to-r from-[#667eea] to-[#764ba2] py-3 text-sm font-bold text-white shadow-md transition-transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0"
-          >
-            {loading ? 'Processing...' : (isLogin ? 'Log In' : 'Sign Up')}
-          </button>
-
-          <div className="mt-6 text-center text-sm text-slate-500">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button 
-              type="button"
-              onClick={() => { setIsLogin(!isLogin); setError(null); }}
-              className="font-bold text-[#667eea] hover:underline bg-transparent border-none cursor-pointer"
+              type="submit"
+              disabled={loading}
+              className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#667eea] to-[#764ba2] py-4 text-xs font-black uppercase tracking-[2px] text-white shadow-[0_10px_20px_rgba(102,126,234,0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_15px_30px_rgba(102,126,234,0.4)] active:scale-[0.98] disabled:opacity-50 group"
             >
-              {isLogin ? 'Sign up' : 'Log in'}
+              <span className="relative z-10">
+                {loading ? 'Authenticating...' : (isLogin ? 'Sign In' : 'Create Account')}
+              </span>
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full"></div>
             </button>
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-xs font-bold text-slate-500">
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <button 
+                type="button"
+                onClick={() => { setIsLogin(!isLogin); setError(null); }}
+                className="ml-1 text-[#667eea] transition-all hover:text-[#764ba2] hover:underline bg-transparent border-none cursor-pointer"
+              >
+                {isLogin ? 'Register Now' : 'Log In'}
+              </button>
+            </p>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

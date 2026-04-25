@@ -353,21 +353,16 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
 
   return (
     <div
-      className={`flex h-full flex-col gap-2 overflow-y-auto rounded-lg bg-white px-3 py-3 shadow-[0_6px_20px_rgba(16,24,40,0.06)] transition-[padding,box-shadow,border-radius] duration-200 [&::-webkit-scrollbar-thumb]:rounded-[3px] [&::-webkit-scrollbar-thumb]:bg-slate-300 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400 [&::-webkit-scrollbar-track]:bg-slate-50 [&::-webkit-scrollbar]:w-1.5 ${compactMode ? 'border-r-0' : 'border-r border-[#e6eef8]'}`}
+      className={`flex h-full flex-col gap-2 overflow-y-auto bg-[#0a0f1e]/80 backdrop-blur-2xl border-white/5 px-3 py-3 shadow-2xl transition-all duration-300 custom-scrollbar ${compactMode ? 'border-r-0' : 'border-r'}`}
     >
       <div
-        className={`flex items-center gap-3 rounded-lg bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white ${compactMode ? 'px-3 py-2.5' : 'px-3 py-3.5'}`}
+        className={`flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-white shadow-xl ${compactMode ? 'px-4 py-3' : 'px-5 py-4'}`}
       >
-        <div
-          className={`m-0 flex shrink-0 items-center justify-center rounded-xl border-2 border-white/90 bg-white text-[#667eea] shadow-[0_6px_18px_rgba(10,20,40,0.06)] ${compactMode ? 'h-10 w-10 text-[1.3rem]' : 'h-14 w-14 text-[1.6rem]'}`}
-        >
-          👤
-        </div>
         <div className="flex-1">
-          <h3 className={`m-0 font-extrabold tracking-[-0.01em] ${compactMode ? 'text-[0.95rem]' : 'text-[1.05rem]'}`}>
+          <h3 className={`m-0 font-black tracking-tight ${compactMode ? 'text-[0.95rem]' : 'text-[1.05rem]'}`}>
             My Travel Journey
           </h3>
-          <p className={`m-0 mt-1 font-medium text-white/95 ${compactMode ? 'text-xs' : 'text-[0.9rem]'}`}>
+          <p className={`m-0 mt-0.5 font-bold text-white/80 ${compactMode ? 'text-[10px] uppercase tracking-wider' : 'text-[0.8rem]'}`}>
             Track your adventures
           </p>
         </div>
@@ -376,25 +371,25 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
 
 
       {/* Travel Checklist Section */}
-      <div className="flex flex-col gap-0">
+      <div className="flex flex-col gap-0 px-1">
         <h4
-          className={`m-0 grid items-center pt-px font-extrabold uppercase tracking-[0.5px] text-slate-900 ${compactMode ? 'mb-2.5 mt-3 text-[0.85rem]' : 'mb-4 text-[0.95rem]'} ${expanded ? 'mt-9' : ''}`}
+          className={`m-0 grid items-center pt-px font-black uppercase tracking-widest text-slate-400 ${compactMode ? 'mb-3 mt-5 text-[10px]' : 'mb-5 text-[11px]'} ${expanded ? 'mt-9' : ''}`}
         >
           Travel Checklist
         </h4>
         <button
           onClick={handleAddChecklistClick}
-          className={`flex cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-dashed border-[#c4b5fd] bg-gradient-to-br from-[#ede9fe] to-[#f3e8ff] font-bold capitalize text-[#7c3aed] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#a78bfa] hover:from-[#ddd6fe] hover:to-[#e9d5ff] hover:shadow-[0_4px_12px_rgba(124,58,237,0.2)] active:translate-y-0 ${compactMode ? 'mx-2 w-[calc(100%-16px)] px-2.5 py-2 text-[0.8rem]' : 'w-[calc(100%-24px)] px-3 py-2.5 text-[0.9rem]'}`}
+          className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 font-black uppercase tracking-wider text-slate-300 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:border-white/20 hover:text-white hover:shadow-xl active:translate-y-0 ${compactMode ? 'mx-1 w-[calc(100%-8px)] px-2.5 py-3 text-[10px]' : 'w-full px-3 py-3.5 text-[11px]'}`}
         >
-          <span className="text-[1.2rem] font-extrabold">+</span>
-          <span className={`${compactMode ? 'text-[0.8rem]' : 'text-[0.85rem]'}`}>Add Checklist Item</span>
+          <span className="text-[1.1rem] font-black">+</span>
+          <span>Add Checklist Item</span>
         </button>
         {/* Display added checklists */}
-        <div className={`grid gap-2.5 ${compactMode ? 'ml-2 mt-1.5 w-[calc(100%-16px)] gap-2' : 'mt-2 max-w-[90%]'}`}>
+        <div className={`grid gap-3 ${compactMode ? 'mt-3 gap-2.5' : 'mt-4'}`}>
           {userChecklists.map(item => (
             <div
               key={item.id}
-              className={`relative w-full max-w-[520px] overflow-hidden rounded-[10px] border-2 transition-all duration-300 ${item.completed ? 'border-green-300 bg-gradient-to-br from-green-50 to-green-100 before:absolute before:bottom-0 before:left-0 before:top-0 before:w-1 before:bg-gradient-to-b before:from-emerald-500 before:to-emerald-600' : 'border-slate-200 bg-[#fafafa]'}`}
+              className={`relative w-full overflow-hidden rounded-xl border transition-all duration-300 ${item.completed ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/5 bg-white/5 hover:bg-white/[0.07] hover:border-white/10 shadow-lg'}`}
             >
               <div className={`flex w-full items-center ${compactMode ? 'gap-2 px-2.5 py-2' : 'gap-3 px-3 py-2.5'}`}>
                 <input
@@ -404,25 +399,25 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
                   className={`shrink-0 cursor-pointer accent-[#667eea] ${compactMode ? 'h-4 w-4' : 'h-5 w-5'}`}
                 />
                 <span
-                  className={`flex shrink-0 items-center justify-center rounded-[10px] border-2 bg-white ${compactMode ? 'h-7 w-7 text-[1.1rem]' : 'h-10 w-10 text-[1.6rem]'} ${item.completed ? 'border-green-300' : 'border-slate-200'}`}
+                  className={`flex shrink-0 items-center justify-center rounded-xl border bg-black/20 ${compactMode ? 'h-8 w-8 text-[1.1rem]' : 'h-10 w-10 text-[1.5rem]'} ${item.completed ? 'border-emerald-500/30 text-emerald-400' : 'border-white/10 text-slate-300'}`}
                 >
                   {item.icon}
                 </span>
-                <span className={`font-bold ${compactMode ? 'text-[0.8rem]' : 'text-[0.9rem]'} ${item.completed ? 'text-green-800 line-through' : 'text-slate-900'}`}>
+                <span className={`font-bold transition-all ${compactMode ? 'text-[0.8rem]' : 'text-[0.9rem]'} ${item.completed ? 'text-emerald-400/70 line-through' : 'text-slate-200'}`}>
                   {item.name}
                 </span>
                 <button
                   onClick={() => handleToggleExpand(item.id)}
-                  className={`ml-auto flex shrink-0 cursor-pointer items-center justify-center bg-transparent px-2 py-1 text-slate-600 transition-all duration-300 hover:text-slate-900 ${expandedChecklistId === item.id ? 'rotate-180' : 'rotate-0'}`}
+                  className={`ml-auto flex shrink-0 cursor-pointer items-center justify-center bg-transparent px-2 py-1 text-slate-500 transition-all duration-300 hover:text-white ${expandedChecklistId === item.id ? 'rotate-180' : 'rotate-0'}`}
                   title="Add notes"
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </button>
                 <button
                   onClick={() => handleDeleteChecklistItem(item.id)}
-                  className="cursor-pointer bg-transparent px-2 py-1 text-[1.1rem] opacity-60 transition-all duration-200 hover:scale-110 hover:opacity-100 active:scale-95"
+                  className="cursor-pointer bg-transparent px-2 py-1 text-[1.1rem] opacity-40 transition-all duration-200 hover:scale-110 hover:opacity-100 active:scale-95 grayscale"
                   title="Delete this checklist item"
                 >
                   🗑️
@@ -431,7 +426,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
               {expandedChecklistId === item.id && (
                 <div className="w-full">
                   <textarea
-                    className={`w-full resize-none border-0 border-t border-solid border-slate-200 bg-white p-3 font-inherit leading-[1.5] text-slate-900 placeholder:italic placeholder:text-slate-300 focus:bg-slate-50 focus:outline-none focus:border-t-[#667eea] ${compactMode ? 'min-h-[60px] text-[0.8rem] p-2' : 'min-h-20 text-[0.85rem]'}`}
+                    className={`w-full resize-none border-0 border-t border-white/5 bg-black/30 p-3 font-inherit leading-[1.5] text-slate-200 placeholder:italic placeholder:text-slate-500 focus:bg-black/50 focus:outline-none focus:border-t-[#667eea] ${compactMode ? 'min-h-[60px] text-[0.8rem] p-2.5' : 'min-h-20 text-[0.85rem]'}`}
                     placeholder="Add notes, reminders, or details..."
                     value={item.note || ''}
                     onChange={(e) => handleUpdateNote(item.id, e.target.value)}
@@ -444,19 +439,19 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
 
         {/* Saved Templates Section - Combined Save/Load */}
         <div
-          className={`w-full max-w-[520px] rounded-[10px] border border-solid border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 transition-all duration-300 hover:border-slate-300 ${compactMode ? 'mx-2 my-2.5 w-[calc(100%-16px)] p-2.5' : 'mt-4 p-3.5'}`}
+          className={`w-full rounded-xl border border-white/5 bg-white/5 transition-all duration-300 hover:border-white/10 shadow-2xl ${compactMode ? 'mt-6 p-3' : 'mt-8 p-4'}`}
         >
-          <div className="mb-3 flex items-center justify-between gap-2.5">
-            <h5 className={`m-0 flex items-center gap-1.5 font-bold text-slate-700 ${compactMode ? 'text-[0.8rem]' : 'text-[0.9rem]'}`}>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h5 className={`m-0 flex items-center gap-2 font-black uppercase tracking-widest text-slate-400 ${compactMode ? 'text-[10px]' : 'text-[11px]'}`}>
               Template Management
             </h5>
             {userChecklists.length > 0 && (
               <button
                 onClick={handleOpenSaveModal}
-                className={`${templateActionBaseClass} bg-gradient-to-br from-emerald-500 to-emerald-600 px-2 py-1.5 text-white hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(16,185,129,0.3)] ${compactMode ? 'text-[0.7rem]' : 'text-[0.8rem]'}`}
+                className={`${templateActionBaseClass} bg-gradient-to-br from-emerald-500 to-emerald-600 px-3 py-1.5 text-white shadow-lg shadow-emerald-500/20 hover:-translate-y-px hover:shadow-emerald-500/40 ${compactMode ? 'text-[9px]' : 'text-[10px] uppercase tracking-wider'}`}
               >
-                <span className="text-[0.9rem]">💾</span>
-                <span>Save Current</span>
+                <span className="text-[1rem]">💾</span>
+                <span>Save</span>
               </button>
             )}
           </div>
@@ -469,24 +464,24 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
                   className={`flex items-center justify-between gap-2.5 rounded-lg border border-solid border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:shadow-[0_2px_4px_rgba(0,0,0,0.05)] ${compactMode ? 'p-2' : 'p-2.5'}`}
                 >
                   <div className="min-w-0 flex-1">
-                    <span className={`block break-words font-semibold text-slate-800 ${compactMode ? 'text-[0.8rem]' : 'text-[0.9rem]'}`}>
+                    <span className={`block break-words font-black tracking-tight text-slate-200 ${compactMode ? 'text-[0.8rem]' : 'text-[0.9rem]'}`}>
                       {template.name}
                     </span>
-                    <span className={`font-medium text-slate-400 ${compactMode ? 'text-[0.75rem]' : 'text-[0.8rem]'}`}>
+                    <span className={`font-bold text-slate-500 ${compactMode ? 'text-[10px] uppercase tracking-widest' : 'text-[11px]'}`}>
                       {template.items.length} item{template.items.length !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <div className="flex shrink-0 gap-1.5">
                     <button
                       onClick={() => handleLoadTemplate(template)}
-                      className={`${templateActionBaseClass} bg-gradient-to-br from-sky-500 to-sky-600 text-white hover:scale-105 hover:shadow-[0_2px_6px_rgba(2,132,199,0.3)] ${compactMode ? 'px-2 py-1.5 text-[0.7rem]' : 'text-[0.8rem]'}`}
+                      className={`${templateActionBaseClass} bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-lg shadow-indigo-500/20 hover:scale-105 hover:shadow-indigo-500/40 ${compactMode ? 'px-3 py-1.5 text-[10px]' : 'px-4 py-2 text-[10px] uppercase tracking-wider'}`}
                       title="Load this template"
                     >
                       📥 Load
                     </button>
                     <button
                       onClick={() => handleDeleteTemplate(template.id)}
-                      className={`${templateActionBaseClass} border border-solid border-slate-200 bg-[#f5f5f5] px-2 py-1.5 text-slate-500 hover:border-red-300 hover:bg-red-100 hover:text-red-600 ${compactMode ? 'text-[0.7rem]' : 'text-[0.8rem]'}`}
+                      className={`${templateActionBaseClass} border border-white/10 bg-white/5 text-slate-500 hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400 ${compactMode ? 'px-2 py-1.5' : 'px-2.5 py-2'}`}
                       title="Delete this template"
                     >
                       🗑️
@@ -496,26 +491,26 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
               ))}
             </div>
           ) : (
-            <div className="m-0 rounded-lg border border-dashed border-slate-300 bg-white p-4 text-center">
-              <p className="m-0 text-[0.85rem] font-medium text-slate-400">No saved templates yet. Create one to get started!</p>
+            <div className="m-0 rounded-xl border border-dashed border-white/10 bg-black/20 p-5 text-center shadow-inner">
+              <p className="m-0 text-[0.8rem] font-bold text-slate-500 uppercase tracking-widest">No saved templates</p>
             </div>
           )}
 
           {/* Preloaded Templates */}
-          <div className={`mt-3.5 border-t border-solid border-slate-300 pt-3 ${compactMode ? 'mt-2 pt-2' : ''}`}>
-            <h5 className={`m-0 mb-2.5 flex items-center gap-1 font-bold text-slate-600 ${compactMode ? 'mb-1.5 text-[0.8rem]' : 'text-[0.85rem]'}`}>
+          <div className={`mt-6 border-t border-white/5 pt-5 ${compactMode ? 'mt-5 pt-4' : ''}`}>
+            <h5 className={`m-0 mb-4 flex items-center gap-2 font-black uppercase tracking-widest text-slate-500 ${compactMode ? 'text-[10px]' : 'text-[11px]'}`}>
               Quick Start Templates
             </h5>
-            <div className={`grid grid-cols-2 ${compactMode ? 'gap-1.5' : 'gap-2'}`}>
+            <div className={`grid grid-cols-2 ${compactMode ? 'gap-2' : 'gap-3'}`}>
               {preloadedTemplates.map(template => (
                 <button
                   key={template.id}
                   onClick={() => handleLoadPreloadedTemplate(template)}
-                  className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-solid border-slate-200 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-[#667eea] hover:bg-slate-50 hover:shadow-[0_4px_12px_rgba(102,126,234,0.15)] active:translate-y-0 ${compactMode ? 'gap-1 px-2 py-2.5' : 'px-2.5 py-3'}`}
+                  className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 hover:-translate-y-1 hover:border-[#667eea]/50 hover:bg-[#667eea]/10 hover:shadow-2xl hover:shadow-indigo-500/20 active:translate-y-0 ${compactMode ? 'px-2 py-3.5' : 'px-3 py-4'}`}
                   title={`Load ${template.name} template`}
                 >
                   <span className={`${compactMode ? 'text-[1.4rem]' : 'text-[1.8rem]'}`}>{template.icon}</span>
-                  <span className={`break-words text-center font-semibold leading-tight text-slate-700 ${compactMode ? 'text-[0.7rem]' : 'text-[0.8rem]'}`}>
+                  <span className={`break-words text-center font-black leading-tight text-slate-300 tracking-tight ${compactMode ? 'text-[0.75rem]' : 'text-[0.85rem]'}`}>
                     {template.name}
                   </span>
                 </button>
@@ -527,34 +522,34 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
 
       {/* Add Checklist Modal */}
       {showAddChecklistModal && (
-        <div className="fixed inset-0 z-[1000] flex animate-[fadeIn_0.3s_ease] items-center justify-center bg-black/50 backdrop-blur-[3px]" onClick={handleCloseModal}>
-          <div className="w-[90%] max-w-[500px] animate-[slideUp_0.3s_ease] overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b-2 border-slate-200 bg-gradient-to-br from-[#667eea] to-[#764ba2] p-6 text-white">
-              <h3 className="m-0 text-xl font-extrabold">Add Checklist Item</h3>
-              <button className="flex h-8 w-8 cursor-pointer items-center justify-center bg-transparent p-0 text-2xl text-white transition-all duration-200 hover:scale-110" onClick={handleCloseModal}>✕</button>
+        <div className="fixed inset-0 z-[3000] flex animate-in fade-in duration-300 items-center justify-center bg-black/80 backdrop-blur-xl" onClick={handleCloseModal}>
+          <div className="w-[90%] max-w-[460px] animate-in slide-in-from-bottom-8 duration-300 overflow-hidden rounded-3xl bg-[#0a0f1e]/95 border border-white/10 shadow-2xl backdrop-blur-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-white/10 bg-gradient-to-br from-[#667eea]/20 to-[#764ba2]/20 p-7 text-white">
+              <h3 className="m-0 text-xl font-black tracking-tight">Add Checklist Item</h3>
+              <button className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-white/5 border border-white/10 text-xl text-white transition-all duration-200 hover:bg-white/20 hover:rotate-90" onClick={handleCloseModal}>✕</button>
             </div>
             
-            <div className="p-6">
-              <div className="mb-5">
-                <label htmlFor="checklist-name" className="mb-2 block text-[0.95rem] font-bold uppercase tracking-[0.5px] text-slate-900">Item Name</label>
+            <div className="p-8">
+              <div className="mb-6">
+                <label htmlFor="checklist-name" className="mb-3 block text-[10px] font-black uppercase tracking-widest text-slate-400">Item Name</label>
                 <input
                   type="text"
                   id="checklist-name"
                   name="name"
-                  placeholder="Enter checklist item name"
+                  placeholder="What do you need to bring?"
                   value={checklistForm.name}
                   onChange={handleFormChange}
-                  className="box-border w-full rounded-[10px] border-2 border-slate-200 px-3.5 py-3 text-[0.95rem] transition-all duration-200 focus:border-[#667eea] focus:outline-none focus:ring-4 focus:ring-[#667eea]/10"
+                  className="box-border w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-[0.95rem] text-white transition-all duration-200 focus:bg-white/10 focus:border-[#667eea] focus:outline-none focus:shadow-[0_0_15px_rgba(102,126,234,0.2)]"
                 />
               </div>
 
-              <div className="mb-5">
-                <label className="mb-2 block text-[0.95rem] font-bold uppercase tracking-[0.5px] text-slate-900">Select Icon</label>
-                <div className="grid grid-cols-6 gap-2.5">
+              <div className="mb-8">
+                <label className="mb-3 block text-[10px] font-black uppercase tracking-widest text-slate-400">Select Icon</label>
+                <div className="grid grid-cols-6 gap-3">
                   {iconOptions.map(icon => (
                     <button
                       key={icon}
-                      className={`aspect-square cursor-pointer rounded-[10px] border-2 text-[1.8rem] transition-all duration-200 hover:scale-105 ${checklistForm.icon === icon ? 'border-[#667eea] bg-gradient-to-br from-[#667eea] to-[#764ba2] shadow-[0_4px_12px_rgba(102,126,234,0.3)]' : 'border-slate-200 bg-[#f5f3ff] hover:border-[#c4b5fd] hover:bg-[#f0e9ff]'}`}
+                      className={`aspect-square cursor-pointer rounded-xl border transition-all duration-200 flex items-center justify-center text-[1.5rem] hover:scale-110 ${checklistForm.icon === icon ? 'border-transparent bg-gradient-to-br from-[#667eea] to-[#764ba2] shadow-[0_4px_15px_rgba(102,126,234,0.4)] scale-110' : 'border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10'}`}
                       onClick={() => handleIconSelect(icon)}
                       title={`Select ${icon}`}
                     >
@@ -564,9 +559,9 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
                 </div>
               </div>
 
-              <div className="-mx-6 -mb-6 flex justify-end gap-3 border-t-2 border-slate-200 px-6 py-4">
-                <button onClick={handleCloseModal} className={`${modalActionBtnClass} border-2 border-slate-200 bg-[#f5f3ff] text-[#667eea] hover:border-[#c4b5fd] hover:bg-[#f0e9ff]`}>Cancel</button>
-                <button onClick={handleAddChecklist} className={`${modalActionBtnClass} border-none bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(102,126,234,0.3)]`}>Add Item</button>
+              <div className="-mx-8 -mb-8 flex justify-end gap-3 border-t border-white/10 px-8 py-6 bg-black/20">
+                <button onClick={handleCloseModal} className="px-6 py-3 rounded-xl border border-white/10 text-slate-400 font-bold text-xs uppercase tracking-widest hover:bg-white/5 hover:text-white transition-all">Cancel</button>
+                <button onClick={handleAddChecklist} className="px-6 py-3 rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all">Add Item</button>
               </div>
             </div>
           </div>
@@ -575,41 +570,44 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
 
       {/* Save Template Modal */}
       {showSaveChecklistModal && (
-        <div className="fixed inset-0 z-[1000] flex animate-[fadeIn_0.3s_ease] items-center justify-center bg-black/50 backdrop-blur-[3px]" onClick={handleCloseSaveModal}>
-          <div className="w-[90%] max-w-[500px] animate-[slideUp_0.3s_ease] overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b-2 border-slate-200 bg-gradient-to-br from-[#667eea] to-[#764ba2] p-6 text-white">
-              <h3 className="m-0 text-xl font-extrabold">Save Checklist as Template</h3>
-              <button className="flex h-8 w-8 cursor-pointer items-center justify-center bg-transparent p-0 text-2xl text-white transition-all duration-200 hover:scale-110" onClick={handleCloseSaveModal}>✕</button>
+        <div className="fixed inset-0 z-[3000] flex animate-in fade-in duration-300 items-center justify-center bg-black/80 backdrop-blur-xl" onClick={handleCloseSaveModal}>
+          <div className="w-[90%] max-w-[460px] animate-in slide-in-from-bottom-8 duration-300 overflow-hidden rounded-3xl bg-[#0a0f1e]/95 border border-white/10 shadow-2xl backdrop-blur-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-white/10 bg-gradient-to-br from-[#667eea]/20 to-[#764ba2]/20 p-7 text-white">
+              <h3 className="m-0 text-xl font-black tracking-tight">Save Template</h3>
+              <button className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-white/5 border border-white/10 text-xl text-white transition-all duration-200 hover:bg-white/20 hover:rotate-90" onClick={handleCloseSaveModal}>✕</button>
             </div>
             
-            <div className="p-6">
-              <div className="mb-5">
-                <label htmlFor="template-name" className="mb-2 block text-[0.95rem] font-bold uppercase tracking-[0.5px] text-slate-900">Template Name</label>
+            <div className="p-8">
+              <div className="mb-6">
+                <label htmlFor="template-name" className="mb-3 block text-[10px] font-black uppercase tracking-widest text-slate-400">Template Name</label>
                 <input
                   type="text"
                   id="template-name"
                   placeholder="e.g., 'Beach Trip Essentials'"
                   value={saveChecklistName}
                   onChange={(e) => setSaveChecklistName(e.target.value)}
-                  className="box-border w-full rounded-[10px] border-2 border-slate-200 px-3.5 py-3 text-[0.95rem] transition-all duration-200 focus:border-[#667eea] focus:outline-none focus:ring-4 focus:ring-[#667eea]/10"
+                  className="box-border w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-[0.95rem] text-white transition-all duration-200 focus:bg-white/10 focus:border-[#667eea] focus:outline-none focus:shadow-[0_0_15px_rgba(102,126,234,0.2)]"
                 />
               </div>
 
-              <div className="rounded-lg border border-solid border-slate-200 bg-slate-50 p-3">
-                <p className="m-0 mb-2 text-sm font-bold text-slate-700">Items to save: {userChecklists.length}</p>
-                <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-700">
-                  {userChecklists.slice(0, 5).map(item => (
-                    <li key={item.id}>{item.icon} {item.name}</li>
+              <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                <p className="m-0 mb-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Preview: {userChecklists.length} items</p>
+                <div className="grid gap-2">
+                  {userChecklists.slice(0, 3).map(item => (
+                    <div key={item.id} className="flex items-center gap-2 text-sm text-slate-300">
+                      <span className="shrink-0">{item.icon}</span>
+                      <span className="truncate">{item.name}</span>
+                    </div>
                   ))}
-                  {userChecklists.length > 5 && (
-                    <li className="text-slate-500">... and {userChecklists.length - 5} more</li>
+                  {userChecklists.length > 3 && (
+                    <p className="m-0 text-xs text-slate-500 italic mt-1">+ {userChecklists.length - 3} more items...</p>
                   )}
-                </ul>
+                </div>
               </div>
 
-              <div className="-mx-6 -mb-6 mt-5 flex justify-end gap-3 border-t-2 border-slate-200 px-6 py-4">
-                <button onClick={handleCloseSaveModal} className={`${modalActionBtnClass} border-2 border-slate-200 bg-[#f5f3ff] text-[#667eea] hover:border-[#c4b5fd] hover:bg-[#f0e9ff]`}>Cancel</button>
-                <button onClick={handleSaveChecklist} className={`${modalActionBtnClass} border-none bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(102,126,234,0.3)]`}>Save Template</button>
+              <div className="-mx-8 -mb-8 mt-8 flex justify-end gap-3 border-t border-white/10 px-8 py-6 bg-black/20">
+                <button onClick={handleCloseSaveModal} className="px-6 py-3 rounded-xl border border-white/10 text-slate-400 font-bold text-xs uppercase tracking-widest hover:bg-white/5 hover:text-white transition-all">Cancel</button>
+                <button onClick={handleSaveChecklist} className="px-6 py-3 rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all">Save Template</button>
               </div>
             </div>
           </div>

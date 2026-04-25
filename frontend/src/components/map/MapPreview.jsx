@@ -63,9 +63,9 @@ const MapPreview = ({
       touchZoom: false
     });
 
-    // Add OpenStreetMap tiles
-    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+    // Add Dark Matter tiles
+    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap contributors © CARTO',
       maxZoom: 18,
     }).addTo(map);
 
@@ -145,7 +145,7 @@ const MapPreview = ({
       className="relative h-fit"
     >
       <div 
-        className="sticky top-32 w-full h-screen bg-white rounded-3xl overflow-hidden shadow-md border-2 border-gray-200 transition-all duration-300 cursor-pointer hover:shadow-2xl hover:border-indigo-600 hover:shadow-indigo-500/20"
+        className="sticky top-32 w-full h-screen bg-[#0f172a] rounded-3xl overflow-hidden shadow-2xl border-2 border-white/5 transition-all duration-300 cursor-pointer hover:border-indigo-500/50 hover:shadow-indigo-500/20"
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
@@ -156,9 +156,9 @@ const MapPreview = ({
           style={{ height: '100%', width: '100%', borderRadius: '12px' }}
         >
           {!mapLoaded && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-gray-100 gap-4">
-              <div className="w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin"></div>
-              <p className="text-gray-500 text-base font-medium">Loading map preview...</p>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0f172a] gap-4">
+              <div className="w-12 h-12 border-4 border-white/5 border-t-indigo-500 rounded-full animate-spin"></div>
+              <p className="text-slate-500 text-base font-medium">Loading map preview...</p>
             </div>
           )}
         </div>

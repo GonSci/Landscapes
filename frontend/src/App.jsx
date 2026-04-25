@@ -168,7 +168,7 @@ function App() {
           <div className="page map-page">
             <div className="map-layout">
               {isSidebarOpen ? (
-                <div className="map-sidebar p-0 bg-white border-r border-slate-200">
+                <div className="map-sidebar p-0">
                   <MapSidebar 
                     userProfile={userProfile}
                     currentUser={currentUser}
@@ -177,17 +177,17 @@ function App() {
                   />
                 </div>
               ) : (
-                <div className="w-[56px] shrink-0 bg-white border-r border-slate-200 h-full hidden lg:flex flex-col items-center py-4 z-10 shadow-sm relative">
+                <div className="w-[56px] shrink-0 bg-slate-900/40 backdrop-blur-md border-r border-white/10 h-full hidden lg:flex flex-col items-center py-4 z-10 shadow-sm relative">
                   <button 
                     onClick={() => setIsSidebarOpen(true)}
-                    className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+                    className="p-2.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
                     title="Expand Sidebar"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                  <div className="mt-8 text-slate-400 rotate-180 uppercase tracking-widest text-[10px] font-bold" style={{ writingMode: 'vertical-rl' }}>
+                  <div className="mt-8 text-slate-500 rotate-180 uppercase tracking-widest text-[10px] font-bold" style={{ writingMode: 'vertical-rl' }}>
                     Explore Baguio
                   </div>
                 </div>
@@ -198,7 +198,7 @@ function App() {
                 {!isSidebarOpen && (
                   <button 
                     onClick={() => setIsSidebarOpen(true)}
-                    className="flex lg:hidden absolute top-4 left-4 z-[400] bg-white p-2.5 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:bg-slate-50 transition-colors border border-slate-200 cursor-pointer items-center justify-center text-slate-700"
+                    className="flex lg:hidden absolute top-4 left-4 z-[400] bg-slate-900/80 backdrop-blur-md p-2.5 rounded-xl shadow-xl hover:bg-slate-800 transition-colors border border-white/10 cursor-pointer items-center justify-center text-white"
                     title="Expand Sidebar"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,7 +222,7 @@ function App() {
         {currentPage === 'explore' && (
           <div className="page explore-page">
             <ExploreSection 
-              onLocationClick={handleLocationClick}
+              onNavigate={handleNavigate}
               userProfile={userProfile}
             />
           </div>

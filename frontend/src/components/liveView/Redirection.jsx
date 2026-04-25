@@ -31,10 +31,13 @@ const Redirection = React.forwardRef((props, ref) => {
   };
 
   return (
-    <div className="mx-auto mt-6 max-w-[1600px] scroll-mt-8 rounded-2xl bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,0.1)] sm:p-4" ref={ref}>
-      <h2 className="mb-5 block w-full text-center text-[1.25rem] font-bold bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent sm:mb-4 sm:text-[1.375rem] lg:text-[1.625rem]">
-        Hidden Gems Nearby
-      </h2>
+    <div className="mx-auto mt-10 max-w-[1600px] scroll-mt-8 rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8" ref={ref}>
+      <div className="flex flex-col gap-2 mb-8 text-center">
+        <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Intelligent Recommendations</h2>
+        <h3 className="m-0 text-3xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
+          Hidden Gems Nearby
+        </h3>
+      </div>
       
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.3fr_2fr] 2xl:grid-cols-[1.5fr_2fr]">
         {/* Left Side - CSRNET Density Mapping */}
@@ -59,7 +62,7 @@ const Redirection = React.forwardRef((props, ref) => {
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
               {baguioLocations.map((location) => (
                 <Marker 
@@ -110,57 +113,47 @@ const Redirection = React.forwardRef((props, ref) => {
 
           {/* Scrollable Location Cards */}
             <div className="overflow-hidden">
-              <div className="flex gap-4 overflow-x-auto pb-2 scroll-smooth">
+              <div className="flex gap-5 overflow-x-auto pb-4 scroll-smooth custom-scrollbar">
               {baguioLocations
                 .filter(loc => loc.currentCrowdLevel === 'low')
                 .map((location) => (
                   <div 
                     key={location.id} 
-                      className={`flex-[0_0_220px] overflow-hidden rounded-xl border-2 border-transparent bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-all duration-300 cursor-pointer sm:flex-[0_0_240px] lg:flex-[0_0_280px] ${hoveredLocation === location.id ? 'translate-y-[-4px] border-[#667eea] shadow-[0_8px_24px_rgba(102,126,234,0.25)]' : ''}`}
+                    className={`flex-[0_0_240px] overflow-hidden rounded-3xl border border-white/5 bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-500 cursor-pointer sm:flex-[0_0_260px] lg:flex-[0_0_300px] ${hoveredLocation === location.id ? 'translate-y-[-8px] border-[#667eea]/50 bg-white/10' : 'hover:bg-white/[0.07]'}`}
                     onMouseEnter={() => handleLocationHover(location.id)}
                     onMouseLeave={handleLocationHoverOut}
                   >
-                      <div className="relative h-[130px] overflow-hidden sm:h-[145px]">
+                    <div className="relative h-[140px] overflow-hidden sm:h-[160px]">
                       <img 
                         src={`/assets/featured_images/${location.id}.jpg`} 
                         alt={location.name}
-                          className="h-full w-full object-cover transition-transform duration-300"
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                         onError={(e) => {
                             e.currentTarget.src = '/assets/images/placeholder.jpg';
                         }}
                       />
-                        <div 
-                          className="absolute right-3 top-3 rounded-md bg-emerald-500/95 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm"
-                      >
-                        Low Crowd
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-transparent to-transparent opacity-60"></div>
+                      <div className="absolute right-4 top-4 rounded-xl bg-emerald-500 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/30 backdrop-blur-md">
+                        Safe / Low
                       </div>
                     </div>
-                      <div className="p-3 sm:p-3.5">
-                        <h4 className="mb-1 text-base font-semibold text-slate-800">
-                          {location.name}
-                        </h4>
-                        <p className="mb-3 line-clamp-2 overflow-hidden text-[0.8125rem] leading-5 text-slate-500">
-                          {location.description}
-                        </p>
-                        <div className="mb-2 flex flex-col gap-1.5 border-b border-slate-200 pb-2">
-                          <div className="flex items-center gap-1.5 text-[0.8125rem] text-slate-600">
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="h-[15px] w-[15px] text-[#667eea]">
-                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-                          </svg>
-                          <span>{location.detectedPeople} people</span>
+                    <div className="p-5">
+                      <h4 className="mb-2 text-lg font-black text-white tracking-tight">
+                        {location.name}
+                      </h4>
+                      <p className="mb-4 line-clamp-2 overflow-hidden text-[12px] leading-relaxed text-slate-400">
+                        {location.description}
+                      </p>
+                      
+                      <div className="space-y-3 pt-4 border-t border-white/5">
+                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                          <span className="text-slate-500">Live Traffic</span>
+                          <span className="text-emerald-400">{location.detectedPeople} People</span>
                         </div>
-                          <div className="flex items-center gap-1.5 text-[0.8125rem] text-slate-600">
-                            <svg viewBox="0 0 24 24" fill="currentColor" className="h-[15px] w-[15px] text-[#667eea]">
-                            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
-                          </svg>
-                          <span>~{location.averageWaitTime} min wait</span>
+                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                          <span className="text-slate-500">Proximity</span>
+                          <span className="text-slate-300">{location.distance} KM</span>
                         </div>
-                      </div>
-                        <div className="flex items-center gap-1.5 text-[0.8125rem] text-slate-500">
-                          <svg viewBox="0 0 24 24" fill="currentColor" className="h-[15px] w-[15px] text-amber-500">
-                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                        </svg>
-                        <span>Distance: {location.distance} km</span>
                       </div>
                     </div>
                   </div>

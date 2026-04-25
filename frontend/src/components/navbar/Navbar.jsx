@@ -18,13 +18,13 @@ const Navbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
     { id: 'map', label: 'Interactive Map', Icon: Map },
     { id: 'explore', label: 'Explore', Icon: Compass },
     { id: 'liveview', label: 'Live View', Icon: Video },
-    { id: 'profile', label: 'My Travels', Icon: User }
+    //{ id: 'profile', label: 'My Travels', Icon: User } HIDE MUNA
   ];
 
   // Offcanvas menu for mobile
   const OffcanvasMenu = () => (
     <div
-      className={`fixed top-0 left-0 z-[2000] h-full w-64 bg-gradient-to-br from-[#667eea] to-[#764ba2] shadow-lg transform transition-transform duration-300 ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      className={`fixed top-0 left-0 z-[2000] h-full w-64 bg-[#0a0f1e]/95 backdrop-blur-3xl shadow-2xl transform transition-transform duration-300 border-r border-white/5 ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}
       style={{ willChange: 'transform' }}
       role="dialog"
       aria-modal="true"
@@ -44,8 +44,8 @@ const Navbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
           <button
             key={item.id}
             type="button"
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-base font-medium text-white transition-colors duration-150 ${
-              currentPage === item.id ? 'bg-white/20' : 'hover:bg-white/10'
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-all duration-200 ${
+              currentPage === item.id ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
             onClick={() => {
               setMenuOpen(false);
@@ -58,8 +58,8 @@ const Navbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
             <span>{item.label}</span>
           </button>
         ))}
-        <div className="mt-4">
-          <LoginButton currentUser={currentUser} onNavigate={onNavigate} onLogin={onLogin} />
+        <div className="mt-6 pt-6 border-t border-white/5">
+          <LoginButton currentUser={currentUser} onNavigate={onNavigate} onLogin={onLogin} currentPage={currentPage} />
         </div>
       </nav>
     </div>
@@ -75,7 +75,7 @@ const Navbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
   );
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-[1000] border-b border-white/5 bg-gradient-to-br from-[#667eea] to-[#764ba2] py-2.5">
+    <nav className="fixed top-0 left-0 w-full z-[1000] border-b border-white/5 bg-[#0a0f1e]/90 backdrop-blur-2xl py-3 shadow-2xl">
       {menuOpen && <Overlay />}
       {menuOpen && <OffcanvasMenu />}
       <div className="mt-4 mb-4 mx-5 animate-slideDown md:mr-8">
@@ -101,15 +101,15 @@ const Navbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
           </div>
           {/* Desktop menu */}
           <div className="hidden md:block min-w-0" role="navigation" aria-label="Main navigation">
-            <div className="flex justify-center gap-2 px-1">
+            <div className="flex justify-center gap-3 px-1">
               {menuItems.map(item => (
                 <button
                   key={item.id}
                   type="button"
-                  className={`relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-[10px] border-none px-3 py-2 text-sm font-semibold text-white backdrop-blur-[6px] transition-[color,background-color,transform,box-shadow] duration-200 ease-out after:absolute after:-bottom-1.5 after:left-2.5 after:right-2.5 after:h-[3px] after:rounded-[3px] after:transition-[background,transform] after:duration-200 ${
+                  className={`relative inline-flex items-center gap-2 whitespace-nowrap rounded-xl border-none px-4 py-2.5 text-sm font-black transition-all duration-300 ease-out ${
                     currentPage === item.id
-                      ? 'bg-white !text-[#667EEA] shadow-[0_10px_26px_rgba(102,126,234,0.18)] after:bg-white/20'
-                      : 'bg-white/10 hover:-translate-y-0.5 hover:bg-white/20 hover:text-white hover:shadow-[0_6px_18px_rgba(0,0,0,0.18)] after:bg-transparent'
+                      ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-[0_4px_20px_rgba(102,126,234,0.4)] scale-[1.02]'
+                      : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white hover:-translate-y-0.5'
                   }`}
                   onClick={() => onNavigate(item.id)}
                   aria-current={currentPage === item.id ? 'page' : undefined}
@@ -117,10 +117,10 @@ const Navbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
                 >
                   {item.Icon && (
                     <span className="inline-flex items-center justify-center text-current" aria-hidden>
-                      <item.Icon size={16} />
+                      <item.Icon size={16} strokeWidth={2.5} />
                     </span>
                   )}
-                  <span className="inline-block overflow-hidden text-ellipsis whitespace-nowrap tracking-[0.2px]">
+                  <span className="inline-block overflow-hidden text-ellipsis whitespace-nowrap tracking-wide uppercase text-[11px]">
                     {item.label}
                   </span>
                 </button>
@@ -129,7 +129,7 @@ const Navbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
           </div>
           {/* Desktop login button */}
           <div className="hidden md:flex items-center justify-end">
-            <LoginButton currentUser={currentUser} onNavigate={onNavigate} onLogin={onLogin} />
+            <LoginButton currentUser={currentUser} onNavigate={onNavigate} onLogin={onLogin} currentPage={currentPage} />
           </div>
         </div>
       </div>

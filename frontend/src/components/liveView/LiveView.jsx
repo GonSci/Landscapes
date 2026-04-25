@@ -16,6 +16,8 @@ const LiveView = () => {
   const [hoveredBar, setHoveredBar] = useState(null);
   const [claheEnabled, setClaheEnabled] = useState(true);
   const [blurEnabled, setBlurEnabled]   = useState(true);
+  const [stableCrowdLevel, setStableCrowdLevel] = useState({ label: 'LOW', color: '#10b981', percentage: 33 });
+  const levelChangeTimerRef = useRef(null);
   
   const videoRef = useRef(null);
   const detectionIntervalRef = useRef(null);
@@ -264,6 +266,69 @@ const LiveView = () => {
 
   const crowdLevel = getCrowdLevel();
 
+  useEffect(() => {
+    if (crowdLevel.label !== stableCrowdLevel.label) {
+      if (levelChangeTimerRef.current) clearTimeout(levelChangeTimerRef.current);
+      
+      // PRIORITIZE HIGH: If detected level is HIGH, update immediately without delay
+      if (crowdLevel.label === 'HIGH') {
+        setStableCrowdLevel(crowdLevel);
+      } else {
+        // For LOW and MEDIUM, keep the 3s smoothing to prevent flickering
+        levelChangeTimerRef.current = setTimeout(() => {
+          setStableCrowdLevel(crowdLevel);
+        }, 3000);
+      }
+    } else {
+      if (levelChangeTimerRef.current) clearTimeout(levelChangeTimerRef.current);
+    }
+    
+    return () => {
+      if (levelChangeTimerRef.current) clearTimeout(levelChangeTimerRef.current);
+    };
+  }, [crowdLevel.label, stableCrowdLevel.label]);
+
+  // Helper to get recommendation details
+  const getRecommendation = () => {
+    switch (stableCrowdLevel.label) {
+      case 'HIGH':
+        return {
+          title: 'CRITICAL RECOMMENDATION',
+          text: 'Peak density reached. We recommend exploring nearby "Hidden Gems" with lower crowd levels for a better experience.',
+          color: 'red',
+          bg: 'bg-red-500/10',
+          border: 'border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]',
+          textMuted: 'text-red-500 animate-pulse font-black',
+          shadow: 'shadow-[0_0_25px_rgba(239,68,68,0.5)] animate-pulse',
+          icon: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        };
+      case 'MEDIUM':
+        return {
+          title: 'Active / Balanced',
+          text: 'The area is moderately active. It\'s a good time to visit if you enjoy a lively atmosphere without extreme crowding.',
+          color: 'amber',
+          bg: 'bg-amber-500/10',
+          border: 'border-amber-500/20',
+          textMuted: 'text-amber-400',
+          shadow: 'shadow-[0_0_20px_rgba(245,158,11,0.4)]',
+          icon: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        };
+      default:
+        return {
+          title: 'Optimal Access',
+          text: 'Low crowd density detected. This is the perfect time for a visit to enjoy full accessibility and a peaceful environment.',
+          color: 'emerald',
+          bg: 'bg-emerald-500/10',
+          border: 'border-emerald-500/20',
+          textMuted: 'text-emerald-400',
+          shadow: 'shadow-[0_0_20px_rgba(16,185,129,0.4)]',
+          icon: <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        };
+    }
+  };
+
+  const recommendation = getRecommendation();
+
   // Format date and time
   const formatDate = () => {
     return currentTime.toLocaleDateString('en-US', { 
@@ -312,54 +377,65 @@ const LiveView = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] p-4 sm:p-6">
-      <div className="mb-8 text-center">
-        <h1 className="mb-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-3xl font-bold text-transparent sm:text-4xl">
-          Live Crowd Monitoring - Baguio City
+    <div className="min-h-screen bg-[#0a0f1e] p-4 sm:p-6 text-white font-sans selection:bg-[#667eea]/30">
+      <div className="mb-10 text-center animate-fadeInDown">
+        <h1 className="mb-3 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-4xl font-black text-transparent sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+          Live Crowd Monitoring
         </h1>
-        <p className="m-0 text-base text-slate-500 sm:text-lg">
-          Smart city monitoring for a safer, more organized Baguio.
+        <p className="mx-auto max-w-2xl text-base text-slate-400 sm:text-lg font-medium opacity-80">
+          Smart city monitoring with real-time YOLOv8 detection.
         </p>
       </div>
 
-      <div className="mx-auto max-w-[1600px]">
-        <div className="grid grid-cols-1 gap-8 rounded-2xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.1)] lg:grid-cols-[1.5fr_1fr] lg:p-8">
+      <div className="mx-auto max-w-[1600px] animate-fadeInUp">
+        <div className="grid grid-cols-1 gap-8 rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] lg:grid-cols-[1.5fr_1fr] lg:p-10">
           {/* Left Side - Live Feed */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="m-0 text-xl font-semibold text-slate-800">Live Feed</h2>
-              <span className="inline-flex items-center gap-2 rounded-md bg-red-500 px-3 py-1.5 text-sm font-semibold text-white animate-pulseSlow">
-                ● LIVE
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between gap-3 px-2">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.8)]"></div>
+                <h2 className="m-0 text-2xl font-black tracking-tight text-white uppercase tracking-[2px] text-sm">System Live Feed</h2>
+              </div>
+              <span className="px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-[11px] font-black tracking-widest text-red-400">
+                STABLE CONNECTION
               </span>
             </div>
-            <div className="flex gap-2">
+            
+            <div className="flex gap-3 px-2">
               <button
                 onClick={() => { setClaheEnabled(p => !p); updateConfig(!claheEnabled, blurEnabled); }}
-                className={`rounded px-3 py-1 text-xs font-bold transition-colors ${
-                  claheEnabled ? 'bg-[#667eea] text-white' : 'bg-slate-200 text-slate-500'
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
+                  claheEnabled 
+                  ? 'bg-gradient-to-r from-[#667eea] to-[#764ba2] border-transparent text-white shadow-lg shadow-indigo-500/20' 
+                  : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                 }`}
               >
-                CLAHE {claheEnabled ? 'ON' : 'OFF'}
+                <span>CLAHE</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${claheEnabled ? 'bg-white shadow-[0_0_8px_white]' : 'bg-slate-600'}`}></span>
               </button>
               <button
                 onClick={() => { setBlurEnabled(p => !p); updateConfig(claheEnabled, !blurEnabled); }}
-                className={`rounded px-3 py-1 text-xs font-bold transition-colors ${
-                  blurEnabled ? 'bg-[#667eea] text-white' : 'bg-slate-200 text-slate-500'
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
+                  blurEnabled 
+                  ? 'bg-gradient-to-r from-[#667eea] to-[#764ba2] border-transparent text-white shadow-lg shadow-indigo-500/20' 
+                  : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                 }`}
               >
-                Privacy Blur {blurEnabled ? 'ON' : 'OFF'}
+                <span>Privacy Blur</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${blurEnabled ? 'bg-white shadow-[0_0_8px_white]' : 'bg-slate-600'}`}></span>
               </button>
             </div>
-            <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
+            <div className="relative aspect-video overflow-hidden rounded-3xl border-4 border-white/5 bg-black shadow-[0_0_40px_rgba(0,0,0,0.5)] group">
+              <div className="absolute inset-0 pointer-events-none border border-white/10 rounded-3xl z-10"></div>
               {videoError ? (
-                <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-700 p-8 text-white">
-                  <p className="my-2 text-center text-base">{videoError}</p>
-                  <p className="my-2 text-center text-base">Please ensure:</p>
-                  <ul className="my-4 list-none p-0 text-left">
-                    <li className="relative my-2 pl-6 before:absolute before:left-0 before:font-bold before:text-red-500 before:content-['•']">Flask server is running (python server/app.py)</li>
-                    <li className="relative my-2 pl-6 before:absolute before:left-0 before:font-bold before:text-red-500 before:content-['•']">demo_video.mp4 is in public/assets folder</li>
-                    <li className="relative my-2 pl-6 before:absolute before:left-0 before:font-bold before:text-red-500 before:content-['•']">YOLOv8 dependencies are installed</li>
-                  </ul>
+                <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-8 text-white">
+                  <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
+                    <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <p className="mb-2 text-center text-xl font-black uppercase tracking-widest text-red-500">System Error</p>
+                  <p className="text-center text-slate-400 font-medium">{videoError}</p>
                 </div>
               ) : (
                 <div className="relative h-full w-full">
@@ -391,117 +467,147 @@ const LiveView = () => {
                       }}
                     />
                   )}
+                  {/* Subtle overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-6 left-6 flex items-center gap-3">
+                    <div className="px-3 py-1.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-[2px]">
+                      CAM-01 / NORTH-WING
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* High Crowd Recommendation */}
-            {crowdLevel.label === 'HIGH' && (
-              <div className="mt-4 flex items-center gap-4 rounded-lg bg-slate-100 px-5 py-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500 text-white">
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                  </svg>
-                </div>
-                <span className="text-sm leading-6 text-slate-500 sm:text-[0.9375rem]">
-                  As crowd density is high, nearby locations with lower crowd levels are recommended.
-                </span>
+            {/* Persistent System Recommendation */}
+            <div className={`mt-4 flex items-center gap-5 rounded-3xl ${recommendation.bg} border ${recommendation.border} px-6 py-5 animate-slideIn transition-all duration-700`}>
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-${recommendation.color}-500 text-white ${recommendation.shadow}`}>
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+                  {recommendation.icon}
+                </svg>
               </div>
-            )}
+              <div className="flex flex-col gap-1">
+                <span className={`text-[11px] font-black uppercase tracking-widest ${recommendation.textMuted}`}>{recommendation.title}</span>
+                <p className="text-sm leading-relaxed text-slate-300">
+                  {recommendation.text}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Right Side - Detection Overview */}
-          <div className="flex flex-col gap-6">
-            <h2 className="m-0 mb-2 text-2xl font-bold text-slate-500">Detection Overview</h2>
+          <div className="flex flex-col gap-8">
+            <h2 className="m-0 text-[11px] font-black uppercase tracking-[3px] text-slate-500 px-2">Analysis Intelligence</h2>
             
-            {/* Date & Time and People Detected Row */}
-            <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Cards Row */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {/* Date & Time Card */}
-              <div className="flex flex-col gap-4 rounded-lg bg-slate-100 p-6">
-                <span className="text-sm font-semibold text-slate-500">Date & Time</span>
+              <div className="flex flex-col gap-4 rounded-3xl bg-white/5 border border-white/10 p-6 transition-all hover:bg-white/[0.08]">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#667eea]"></div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">System Temporal</span>
+                </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-lg font-bold leading-tight text-[#667eea]">{formatDate()}</span>
-                  <span className="text-2xl font-bold leading-tight text-slate-800">{formatTime()}</span>
+                  <span className="text-sm font-bold text-slate-300">{formatDate()}</span>
+                  <span className="text-3xl font-black tracking-tight text-white">{formatTime()}</span>
                 </div>
               </div>
 
               {/* People Detected Card */}
-              <div className="flex flex-col gap-4 rounded-lg bg-slate-100 p-6">
-                <span className="text-sm font-semibold text-slate-500">People Detected</span>
-                <span className="text-5xl font-bold leading-none text-[#667eea]">{detectedCount}</span>
+              <div className="flex flex-col gap-4 rounded-3xl bg-white/5 border border-white/10 p-6 transition-all hover:bg-white/[0.08]">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Detections</span>
+                </div>
+                <div className="flex items-end gap-2">
+                  <span className="text-5xl font-black tracking-tighter text-white leading-none">{detectedCount}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 pb-1">PERSONS</span>
+                </div>
               </div>
             </div>
 
             {/* Current Status */}
-            <div className="mb-8">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <span className="block text-sm font-semibold text-slate-500">Current Status</span>
+            <div className="px-2">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#667eea]"></div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Crowd Density Engine</span>
+                </div>
                 {crowdLevel.label === 'HIGH' && (
                   <button
                     type="button"
-                    className="flex items-center gap-1.5 bg-transparent p-0 text-sm font-semibold text-red-500 transition-all hover:text-red-600 hover:underline"
+                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-red-500 transition-all hover:text-red-400 group"
                     onClick={scrollToHiddenGems}
                   >
-                    <svg className="h-[18px] w-[18px] animate-warningPulse" viewBox="0 0 24 24" fill="currentColor">
+                    <svg className="h-4 w-4 animate-warningPulse" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
                     </svg>
-                    <span>View HeatMap</span>
+                    <span>View Map Analysis</span>
                   </button>
                 )}
               </div>
               <div className="w-full">
-                <div className="relative mb-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500">
+                <div className="relative mb-4 h-2.5 rounded-full bg-white/5 border border-white/5 overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 opacity-20"></div>
                   <div 
-                    className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#667eea] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-[left] duration-300" 
-                    style={{ left: `${crowdLevel.percentage}%` }}
-                  />
+                    className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] ${
+                      crowdLevel.label === 'HIGH' ? 'from-red-500 to-rose-600' : 
+                      crowdLevel.label === 'MEDIUM' ? 'from-amber-500 to-orange-600' : 
+                      'from-emerald-500 to-teal-600'
+                    }`}
+                    style={{ width: `${crowdLevel.percentage}%` }}
+                  >
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white shadow-[0_0_10px_white] scale-75 opacity-50"></div>
+                  </div>
                 </div>
-                <div className="flex justify-between text-xs font-bold uppercase tracking-[0.5px] text-slate-500">
-                  <span className="text-emerald-500">LOW</span>
-                  <span className="text-amber-500">MEDIUM</span>
-                  <span className="text-red-500">HIGH</span>
+                <div className="flex justify-between text-[9px] font-black uppercase tracking-[2px] text-slate-600">
+                  <span className={crowdLevel.label === 'LOW' ? 'text-emerald-500' : ''}>Safe / Low</span>
+                  <span className={crowdLevel.label === 'MEDIUM' ? 'text-amber-500' : ''}>Active / Medium</span>
+                  <span className={crowdLevel.label === 'HIGH' ? 'text-red-500' : ''}>Peak / High</span>
                 </div>
               </div>
             </div>
 
             {/* Peak Time Analysis & Surveillance Logs */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
               {/* Peak Time Analysis */}
-              <div className="flex flex-col gap-4">
-                <h3 className="m-0 text-sm font-bold text-slate-500">Peak Time Analysis</h3>
-                <div className="flex items-stretch gap-2">
+              <div className="flex flex-col gap-5">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#667eea]"></div>
+                  <h3 className="m-0 text-[10px] font-black uppercase tracking-widest text-slate-500">Peak Analysis</h3>
+                </div>
+                <div className="flex items-stretch gap-4">
                   {/* Y-axis labels */}
-                  <div className="flex min-w-[30px] flex-col justify-between py-2">
+                  <div className="flex min-w-[25px] flex-col justify-between py-1">
                     {[20, 15, 10, 5, 0].map(val => (
-                      <span key={val} className="text-right text-xs font-medium leading-none text-slate-500">{val}</span>
+                      <span key={val} className="text-right text-[9px] font-black text-slate-600">{val}</span>
                     ))}
                   </div>
                   
                   {/* Chart area */}
-                  <div className="flex min-h-[180px] flex-1 items-end justify-between gap-2 bg-transparent p-2">
+                  <div className="flex min-h-[320px] flex-1 items-end justify-between gap-3 bg-white/5 rounded-2xl p-6 border border-white/5">
                     {getPeakTimeData().map((data, index) => {
-                      const maxValue = 25; // Max value for chart scale
+                      const maxValue = 25; 
                       const percentage = data.value > 0 ? (data.value / maxValue) * 100 : 5;
                       const isHovered = hoveredBar === index;
                       return (
-                        <div key={index} className="flex h-full flex-1 flex-col items-center gap-2">
+                        <div key={index} className="flex h-full flex-1 flex-col items-center gap-3">
                           <div 
                             className="relative flex flex-1 w-full cursor-pointer items-end justify-center"
                             onMouseEnter={() => setHoveredBar(index)}
                             onMouseLeave={() => setHoveredBar(null)}
                           >
                             <div 
-                              className={`min-h-[5px] w-full max-w-[60px] rounded-t-[4px] bg-[#667eea] transition-all duration-500 animate-barGrow ${isHovered ? 'scale-x-[1.05] bg-[#764ba2] shadow-[0_0_12px_rgba(102,126,234,0.5)]' : ''}`}
+                              className={`min-h-[4px] w-full max-w-[32px] rounded-full bg-gradient-to-t from-[#667eea]/40 to-[#667eea] transition-all duration-700 ease-out animate-barGrow ${isHovered ? 'scale-x-[1.2] from-[#667eea] to-[#764ba2] shadow-[0_0_20px_rgba(102,126,234,0.6)]' : ''}`}
                               style={{ height: `${Math.min(percentage, 100)}%` }}
                             />
                             {isHovered && (
-                              <div className="pointer-events-none absolute bottom-[calc(100%+0.5rem)] left-1/2 z-10 -translate-x-1/2 animate-tooltipFadeIn rounded-lg bg-slate-800 px-4 py-3 text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] whitespace-nowrap after:absolute after:left-1/2 after:top-full after:content-[''] after:-translate-x-1/2 after:border-[6px] after:border-transparent after:border-t-slate-800">
-                                <div className="mb-1 text-sm font-bold text-[#667eea]">{`${data.hour}:00`}</div>
-                                <div className="mb-1 text-lg font-bold text-white">{data.value} {data.value === 1 ? 'person' : 'people'}</div>
+                              <div className="pointer-events-none absolute bottom-[calc(100%+0.75rem)] left-1/2 z-20 -translate-x-1/2 animate-tooltipFadeIn rounded-xl bg-slate-900/90 backdrop-blur-xl border border-white/10 px-4 py-3 text-white shadow-2xl whitespace-nowrap">
+                                <div className="text-[9px] font-black uppercase tracking-widest text-[#667eea] mb-1">{data.hour}:00</div>
+                                <div className="text-lg font-black">{data.value} People</div>
                               </div>
                             )}
                           </div>
-                          <span className="pt-1 text-xs font-semibold whitespace-nowrap text-slate-500">{`${data.hour}:00`}</span>
+                          <span className="text-[9px] font-black text-slate-500 tracking-tighter">{data.hour}:00</span>
                         </div>
                       );
                     })}
@@ -510,19 +616,26 @@ const LiveView = () => {
               </div>
 
               {/* Surveillance Logs */}
-              <div className="flex flex-col gap-4">
-                <h3 className="m-0 text-sm font-bold text-slate-500">Surveillance Logs</h3>
-                <div className="flex max-h-[180px] flex-col gap-2 overflow-y-auto pr-1">
+              <div className="flex flex-col gap-5">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#667eea]"></div>
+                  <h3 className="m-0 text-[10px] font-black uppercase tracking-widest text-slate-500">Live Activity Log</h3>
+                </div>
+                <div className="flex max-h-[320px] flex-col gap-3 overflow-y-auto pr-2 custom-scrollbar">
                   {surveillanceLogs.length > 0 ? (
-                    surveillanceLogs.map(log => (
-                      <div key={log.id} className="flex flex-col gap-1 text-sm animate-slideIn">
-                        <span className="text-sm font-medium text-slate-500">{log.time}</span>
-                        <span className="text-sm font-normal text-slate-800">Detected {log.count} people</span>
+                    surveillanceLogs.map((log, i) => (
+                      <div key={log.id} className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 animate-slideIn" style={{ animationDelay: `${i * 50}ms` }}>
+                        <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">{log.time}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-black text-white">{log.count}</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Detected</span>
+                        </div>
                       </div>
                     ))
                   ) : (
-                    <div className="flex flex-col items-center gap-1 text-sm italic text-slate-400">
-                      <span className="text-sm italic text-slate-400">Waiting for detections...</span>
+                    <div className="flex flex-col items-center justify-center h-full py-10 opacity-30">
+                      <div className="w-8 h-8 rounded-full border-2 border-slate-500 border-t-transparent animate-spin mb-3"></div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Syncing Feed...</span>
                     </div>
                   )}
                 </div>

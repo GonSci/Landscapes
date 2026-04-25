@@ -117,119 +117,110 @@ const LocationModal = ({ location, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-lg flex items-center justify-center z-[1000] p-5 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl border-2 border-slate-200 animate-in slide-in-from-bottom-5" onClick={(e) => e.stopPropagation()}>
-        <button className="absolute top-5 right-5 bg-white border-2 border-slate-200 w-11 h-11 rounded-xl font-light text-2xl cursor-pointer flex items-center justify-center shadow-none z-10 text-slate-500 transition-all hover:bg-slate-900 hover:border-slate-900 hover:rotate-90 hover:text-white" onClick={onClose}>✕</button>
+    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center z-[1000] p-5 animate-in fade-in duration-300" onClick={onClose}>
+      <div className="bg-[#0a0f1e]/90 border border-white/10 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl animate-in slide-in-from-bottom-8 backdrop-blur-2xl" onClick={(e) => e.stopPropagation()}>
+        <button className="absolute top-6 right-6 bg-white/5 border border-white/10 w-10 h-10 rounded-xl font-light text-xl cursor-pointer flex items-center justify-center z-20 text-slate-400 transition-all hover:bg-white/20 hover:text-white hover:rotate-90 shadow-lg" onClick={onClose}>✕</button>
         
-        <div className="flex flex-col justify-between items-center p-7 px-8 border-b-2 border-gray-200 bg-gradient-to-r from-indigo-600/5 to-purple-700/5">
-          <h2 className="m-0 text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-700 bg-clip-text text-transparent">{location.name}</h2>
-          <div className="inline-flex items-center gap-1.5 p-0 bg-transparent text-slate-500 rounded-none text-base font-black m-0 shadow-none leading-tight tracking-tight">{location.region}</div>
+        <div className="flex flex-col justify-between items-center p-8 px-10 border-b border-white/5 bg-gradient-to-r from-indigo-500/10 to-purple-600/10">
+          <h2 className="m-0 text-3xl font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight">{location.name}</h2>
+          <div className="inline-flex items-center gap-1.5 mt-1 text-slate-400 text-sm font-bold tracking-widest uppercase">{location.region}</div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-0 bg-gray-50 border-b-2 border-gray-200 px-8">
+        <div className="flex gap-0 bg-black/40 border-b border-white/10 px-8">
           <button 
-            className={`flex-1 px-6 py-4 border-none bg-transparent text-base font-semibold text-gray-500 cursor-pointer transition-all relative flex items-center justify-center gap-2 border-b-4 border-transparent ${!showCommunity ? 'text-indigo-600 bg-white border-b-indigo-600' : 'hover:text-indigo-600 hover:bg-indigo-50'}`}
+            className={`flex-1 px-6 py-4 border-none bg-transparent text-sm font-bold transition-all relative flex items-center justify-center gap-2 border-b-2 ${!showCommunity ? 'text-white border-b-[#667eea] bg-white/5 shadow-[inset_0_-10px_20px_-10px_rgba(102,126,234,0.2)]' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border-transparent'}`}
             onClick={() => setShowCommunity(false)}
           >
             Information
           </button>
           <button 
-            className={`flex-1 px-6 py-4 border-none bg-transparent text-base font-semibold text-gray-500 cursor-pointer transition-all relative flex items-center justify-center gap-2 border-b-4 border-transparent ${showCommunity ? 'text-indigo-600 bg-white border-b-indigo-600' : 'hover:text-indigo-600 hover:bg-indigo-50'}`}
+            className={`flex-1 px-6 py-4 border-none bg-transparent text-sm font-bold transition-all relative flex items-center justify-center gap-2 border-b-2 ${showCommunity ? 'text-white border-b-[#667eea] bg-white/5 shadow-[inset_0_-10px_20px_-10px_rgba(102,126,234,0.2)]' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border-transparent'}`}
             onClick={() => setShowCommunity(true)}
           >
             Community Chat
-            <span className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white px-2 py-0.5 rounded-full text-xs font-bold min-w-6 text-center">{currentCommunity.length + communityMessages.length}</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black min-w-5 text-center shadow-lg transition-all ${showCommunity ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-indigo-500/30' : 'bg-slate-700 text-slate-300'}`}>{currentCommunity.length + communityMessages.length}</span>
           </button>
         </div>
 
         <div className="p-0 px-8 pb-6">
           {/* Information Tab */}
           {!showCommunity && (
-            <div className="animate-in fade-in duration-400">
-              <div className="w-full h-70 rounded-2xl overflow-hidden mb-6 bg-gradient-to-br from-gray-100 to-gray-200 shadow-md">
+            <div className="animate-in fade-in duration-500">
+              <div className="w-full h-72 rounded-2xl overflow-hidden mb-6 border border-white/5 shadow-2xl mt-6">
                 <img 
                   src={location.image || '/assets/images/philippines-placeholder.jpg'} 
                   alt={location.name}
-                  className="w-full h-full object-cover transition-transform hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                   onError={(e) => {
                     e.target.src = '/assets/images/philippines-placeholder.jpg';
                   }}
                 />
               </div>
 
-              <p className="text-gray-600 leading-relaxed mb-6 text-base">
+              <p className="text-slate-300 leading-relaxed mb-8 text-[15px] font-medium">
                 {location.description || 'Discover this beautiful location in the Philippines!'}
               </p>
 
               {/* Marketplace Categories */}
-              <div className="mt-6">
-                <div className="flex gap-2 mb-5 bg-gray-50 p-1.5 rounded-xl">
+              <div className="mt-8">
+                <div className="flex gap-2 mb-6 bg-black/40 p-1.5 rounded-2xl border border-white/10 shadow-inner">
                   <button 
-                    className={`flex-1 flex flex-col items-center gap-1 px-4 py-3 border-none bg-transparent rounded-2xl cursor-pointer transition-all font-semibold text-gray-500 ${activeCategory === 'activities' ? 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md' : 'hover:bg-indigo-100/50 hover:text-indigo-600'}`}
+                    className={`flex-1 flex flex-col items-center gap-1.5 px-4 py-3.5 border-none bg-transparent rounded-xl cursor-pointer transition-all font-bold text-slate-400 ${activeCategory === 'activities' ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-lg shadow-indigo-500/25 ring-1 ring-white/20' : 'hover:bg-white/5 hover:text-slate-200'}`}
                     onClick={() => setActiveCategory('activities')}
                   >
                     <span className="text-2xl">🎯</span>
-                    <span className="text-xs">Activities</span>
+                    <span className="text-[11px] uppercase tracking-wider">Activities</span>
                   </button>
                   <button 
-                    className={`flex-1 flex flex-col items-center gap-1 px-4 py-3 border-none bg-transparent rounded-2xl cursor-pointer transition-all font-semibold text-gray-500 ${activeCategory === 'places' ? 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md' : 'hover:bg-indigo-100/50 hover:text-indigo-600'}`}
+                    className={`flex-1 flex flex-col items-center gap-1.5 px-4 py-3.5 border-none bg-transparent rounded-xl cursor-pointer transition-all font-bold text-slate-400 ${activeCategory === 'places' ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-lg shadow-indigo-500/25 ring-1 ring-white/20' : 'hover:bg-white/5 hover:text-slate-200'}`}
                     onClick={() => setActiveCategory('places')}
                   >
                     <span className="text-2xl">📍</span>
-                    <span className="text-xs">Places</span>
+                    <span className="text-[11px] uppercase tracking-wider">Places</span>
                   </button>
                   <button 
-                    className={`flex-1 flex flex-col items-center gap-1 px-4 py-3 border-none bg-transparent rounded-2xl cursor-pointer transition-all font-semibold text-gray-500 ${activeCategory === 'food' ? 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md' : 'hover:bg-indigo-100/50 hover:text-indigo-600'}`}
+                    className={`flex-1 flex flex-col items-center gap-1.5 px-4 py-3.5 border-none bg-transparent rounded-xl cursor-pointer transition-all font-bold text-slate-400 ${activeCategory === 'food' ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-lg shadow-indigo-500/25 ring-1 ring-white/20' : 'hover:bg-white/5 hover:text-slate-200'}`}
                     onClick={() => setActiveCategory('food')}
                   >
                     <span className="text-2xl">🍴</span>
-                    <span className="text-xs">Food</span>
+                    <span className="text-[11px] uppercase tracking-wider">Food</span>
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-4 max-h-[450px] overflow-y-auto pr-2">
+                <div className="flex flex-col gap-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
                   {currentMarketplace[activeCategory]?.map((item) => (
-                    <div key={item.id} className="flex gap-4 p-3 bg-white border-2 border-gray-200 rounded-2xl transition-all cursor-pointer hover:border-indigo-600 hover:shadow-md hover:-translate-y-0.5" onClick={() => handleShowItemDetail(item)}>
-                      <div className="relative flex-shrink-0 w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden">
+                    <div key={item.id} className="group flex gap-5 p-4 bg-white/5 border border-white/5 rounded-2xl transition-all cursor-pointer hover:bg-white/10 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1" onClick={() => handleShowItemDetail(item)}>
+                      <div className="relative flex-shrink-0 w-28 h-28 bg-slate-800 rounded-xl overflow-hidden border border-white/5">
                         <img 
                           src={item.image}
                           alt={item.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           onError={(e) => {
                             e.target.style.display = 'none';
                             e.target.nextSibling.style.display = 'flex';
                           }}
                         />
-                        <div className="absolute inset-0 hidden items-center justify-center text-6xl">
+                        <div className="absolute inset-0 hidden items-center justify-center text-4xl">
                           {item.emoji}
                         </div>
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col">
-                        <h5 className="m-0 mb-1.5 text-base font-bold text-gray-800 leading-tight">{item.name}</h5>
-                        <p className="m-0 mb-2 text-sm text-gray-500 leading-relaxed">{item.description}</p>
+                        <h5 className="m-0 mb-1 text-base font-bold text-white group-hover:text-indigo-300 transition-colors">{item.name}</h5>
+                        <p className="m-0 mb-3 text-xs text-slate-400 leading-relaxed line-clamp-2">{item.description}</p>
                         {item.bestTime && (
-                          <div className="inline-flex items-center gap-1.5 mb-2 px-2.5 py-1 bg-gradient-to-r from-indigo-100 to-indigo-200 rounded-full text-xs text-indigo-900 whitespace-nowrap w-fit">
-                            <Clock size={14} className="text-indigo-600 flex-shrink-0" />
-                            <span>Peak: <strong>{item.bestTime}</strong></span>
+                          <div className="inline-flex items-center gap-1.5 mb-3 px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-[10px] text-indigo-300 font-bold uppercase tracking-wide">
+                            <Clock size={12} className="text-indigo-400 flex-shrink-0" />
+                            <span>Peak: {item.bestTime}</span>
                           </div>
                         )}
-                        <div className="flex gap-3 items-center mb-2 flex-wrap">
-                          <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 ${item.crowdLevel?.toLowerCase() === 'low' ? 'bg-green-500 text-white' : item.crowdLevel?.toLowerCase() === 'moderate' ? 'bg-amber-500 text-white' : 'bg-red-500 text-white'}`}>
-                            Crowd: {item.crowdLevel}
+                        <div className="flex gap-3 items-center mb-0 mt-auto">
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border transition-all ${item.crowdLevel?.toLowerCase() === 'low' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : item.crowdLevel?.toLowerCase() === 'moderate' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.2)]'}`}>
+                            {item.crowdLevel}
                           </span>
-                          <span className="text-xs font-semibold text-gray-800 flex items-center gap-1">
-                            ⭐ {item.rating} <span className="text-gray-400 font-medium">({item.reviews})</span>
+                          <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                            ⭐ {item.rating} <span className="text-slate-500 font-medium">({item.reviews})</span>
                           </span>
-                        </div>
-                        <div className="flex justify-between items-center mt-auto gap-3">
-                          <p className="m-0 text-xs text-gray-500 italic flex items-center gap-1">🏢 {item.business}</p>
-                          <button className="inline-flex items-center gap-1.5 px-0 py-0 bg-transparent border-none text-gray-500 text-xs font-medium cursor-pointer transition-all hover:text-indigo-600 hover:underline" onClick={(e) => {
-                            e.stopPropagation();
-                            handleShowReviews(item);
-                          }}>
-                            💬 Reviews ({item.reviews})
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -241,8 +232,8 @@ const LocationModal = ({ location, onClose }) => {
 
           {/* Community Chat Tab */}
           {showCommunity && (
-            <div className="animate-in fade-in duration-400 flex flex-col h-full">
-              <div className="flex-1 overflow-y-auto p-5 px-8 max-h-[450px] min-h-[300px]">
+            <div className="animate-in fade-in duration-500 flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto p-6 px-8 max-h-[450px] min-h-[300px] custom-scrollbar">
                 {currentCommunity.map((msg) => {
                   const messageKey = `${location.id}-${msg.id}`;
                   const currentLikes = messageLikes[messageKey] !== undefined 
@@ -250,17 +241,17 @@ const LocationModal = ({ location, onClose }) => {
                     : msg.likes;
                   
                   return (
-                    <div key={msg.id} className="flex gap-3 p-1 mb-3 transition-all">
-                      <div className="text-2xl w-9 h-9 flex items-center justify-center bg-gray-300 rounded-full flex-shrink-0 self-end">{msg.avatar}</div>
-                      <div className="max-w-[75%] flex-1 bg-white border border-gray-200 px-4 py-3 rounded-2xl shadow-sm">
+                    <div key={msg.id} className="flex gap-4 p-1 mb-5 transition-all">
+                      <div className="text-2xl w-10 h-10 flex items-center justify-center bg-slate-700 rounded-full flex-shrink-0 self-end shadow-lg border border-white/10">{msg.avatar}</div>
+                      <div className="max-w-[80%] flex-1 bg-white/5 border border-white/5 px-5 py-4 rounded-2xl shadow-xl backdrop-blur-md">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="font-bold text-gray-900 text-sm">{msg.user}</span>
-                          <span className="text-xs text-gray-500 font-medium">{msg.time}</span>
+                          <span className="font-bold text-white text-sm">{msg.user}</span>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{msg.time}</span>
                         </div>
-                        <p className="m-0 mb-3 text-gray-700 leading-relaxed text-sm break-words">{msg.message}</p>
+                        <p className="m-0 mb-4 text-slate-300 leading-relaxed text-sm break-words">{msg.message}</p>
                         <div className="flex gap-2">
                           <button 
-                            className="bg-none border-none p-1 px-2 rounded-xl text-xs cursor-pointer transition-all flex items-center gap-1 text-gray-500 font-medium hover:bg-gray-200 hover:text-indigo-600"
+                            className="bg-white/5 border border-white/5 p-1.5 px-3 rounded-xl text-xs cursor-pointer transition-all flex items-center gap-1.5 text-slate-400 font-bold hover:bg-white/10 hover:text-indigo-400"
                             onClick={() => handleLike(messageKey)}
                           >
                             <span>👍</span> {currentLikes}
@@ -272,17 +263,17 @@ const LocationModal = ({ location, onClose }) => {
                 })}
 
                 {communityMessages.map((msg, index) => (
-                  <div key={index} className={`flex gap-3 p-1 mb-3 transition-all ${msg.user === 'You' ? 'flex-row-reverse' : ''}`}>
-                    <div className="text-2xl w-9 h-9 flex items-center justify-center bg-gray-300 rounded-full flex-shrink-0 self-end">{msg.avatar}</div>
-                    <div className="max-w-[75%] flex-1 bg-white border border-gray-200 px-4 py-3 rounded-2xl shadow-sm">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-bold text-gray-900 text-sm">{msg.user}</span>
-                        <span className="text-xs text-gray-500 font-medium">{msg.time}</span>
+                  <div key={index} className={`flex gap-4 p-1 mb-5 transition-all ${msg.user === 'You' ? 'flex-row-reverse' : ''}`}>
+                    <div className="text-2xl w-10 h-10 flex items-center justify-center bg-indigo-600 rounded-full flex-shrink-0 self-end shadow-lg shadow-indigo-500/20 border border-white/10">{msg.avatar}</div>
+                    <div className={`max-w-[80%] flex-1 px-5 py-4 rounded-2xl shadow-xl backdrop-blur-md ${msg.user === 'You' ? 'bg-indigo-500/10 border border-indigo-500/20' : 'bg-white/5 border border-white/5'}`}>
+                      <div className={`flex items-center gap-2 mb-2 ${msg.user === 'You' ? 'flex-row-reverse' : ''}`}>
+                        <span className="font-bold text-white text-sm">{msg.user}</span>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{msg.time}</span>
                       </div>
-                      <p className="m-0 mb-3 text-gray-700 leading-relaxed text-sm break-words">{msg.message}</p>
-                      <div className="flex gap-2">
+                      <p className={`m-0 mb-4 text-slate-300 leading-relaxed text-sm break-words ${msg.user === 'You' ? 'text-right' : ''}`}>{msg.message}</p>
+                      <div className={`flex gap-2 ${msg.user === 'You' ? 'flex-row-reverse' : ''}`}>
                         <button 
-                          className="bg-none border-none p-1 px-2 rounded-xl text-xs cursor-pointer transition-all flex items-center gap-1 text-gray-500 font-medium hover:bg-gray-200 hover:text-indigo-600"
+                          className="bg-white/5 border border-white/5 p-1.5 px-3 rounded-xl text-xs cursor-pointer transition-all flex items-center gap-1.5 text-slate-400 font-bold hover:bg-white/10 hover:text-indigo-400"
                           onClick={() => handleLike(`${msg.id || index}`)}
                         >
                           <span>👍</span> {messageLikes[`${msg.id || index}`] || msg.likes || 0}
@@ -293,19 +284,19 @@ const LocationModal = ({ location, onClose }) => {
                 ))}
               </div>
 
-              <div className="flex gap-4 items-center p-5 px-8 bg-gray-50 border-t-2 border-gray-200 flex-shrink-0">
+              <div className="flex gap-4 items-center p-6 px-8 bg-black/20 border-t border-white/5 flex-shrink-0">
                 <input
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Share your experience..."
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-2xl text-sm font-inherit transition-all focus:outline-none focus:border-indigo-600 focus:shadow-lg focus:shadow-indigo-600/10 bg-white placeholder:text-gray-500"
+                  className="flex-1 px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-sm text-white font-medium transition-all focus:outline-none focus:border-indigo-500 focus:bg-white/10 placeholder:text-slate-500"
                 />
                 <button 
                   onClick={handleSendMessage}
                   disabled={!newMessage.trim()}
-                  className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-2xl font-semibold text-base cursor-pointer transition-all shadow-md whitespace-nowrap flex-shrink-0 hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-3.5 bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white border-none rounded-2xl font-bold text-sm cursor-pointer transition-all shadow-lg shadow-indigo-500/20 whitespace-nowrap flex-shrink-0 hover:shadow-indigo-500/40 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Send
                 </button>
@@ -319,99 +310,101 @@ const LocationModal = ({ location, onClose }) => {
 
       {/* Item Detail Modal */}
       {showItemDetail && selectedDetailItem && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-lg flex items-center justify-center z-[1001] p-5 animate-in fade-in duration-200" onClick={handleCloseItemDetail}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl animate-in slide-in-from-bottom-5" onClick={(e) => e.stopPropagation()}>
-            <button className="absolute top-5 right-5 w-8 h-8 border-none bg-transparent rounded-lg flex items-center justify-center text-2xl cursor-pointer transition-all text-slate-500 hover:bg-gray-100 z-50" onClick={handleCloseItemDetail}>
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-lg flex items-center justify-center z-[1001] p-5 animate-in fade-in duration-300" onClick={handleCloseItemDetail}>
+          <div className="bg-[#1e293b]/95 border border-white/10 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative shadow-2xl animate-in slide-in-from-bottom-8 backdrop-blur-2xl" onClick={(e) => e.stopPropagation()}>
+            <button className="absolute top-6 right-6 w-10 h-10 border border-white/10 bg-white/5 rounded-xl flex items-center justify-center text-xl cursor-pointer transition-all text-slate-400 hover:bg-white/20 hover:text-white z-50" onClick={handleCloseItemDetail}>
               <X size={20} />
             </button>
 
             {/* Header */}
-            <div className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-gray-200">
-              <div className="inline-block bg-gradient-to-r from-indigo-600 to-purple-700 text-white px-3 py-1.5 rounded-full text-sm font-bold mb-3">
+            <div className="p-8 bg-gradient-to-r from-indigo-500/10 to-purple-600/10 border-b border-white/5">
+              <div className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-4 shadow-lg shadow-indigo-500/20">
                 {activeCategory === 'activities' && 'Activity'}
                 {activeCategory === 'places' && 'Place'}
                 {activeCategory === 'food' && 'Food'}
               </div>
+              <h2 className="text-3xl font-black text-white tracking-tight">{selectedDetailItem.name}</h2>
             </div>
 
             {/* Content */}
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">{selectedDetailItem.name}</h2>
-              
-              <div className="flex items-center gap-2 mb-2">
-                <Star size={18} fill="#f59e0b" color="#f59e0b" />
-                <span className="text-lg font-bold text-gray-900">{selectedDetailItem.rating}</span>
-                <span className="text-sm text-gray-500">({selectedDetailItem.reviews} reviews)</span>
+            <div className="p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={16} fill={i < Math.floor(selectedDetailItem.rating) ? "#f59e0b" : "transparent"} color={i < Math.floor(selectedDetailItem.rating) ? "#f59e0b" : "#475569"} />
+                  ))}
+                </div>
+                <span className="text-lg font-black text-white">{selectedDetailItem.rating}</span>
+                <span className="text-sm text-slate-500 font-bold uppercase tracking-wider">({selectedDetailItem.reviews} reviews)</span>
               </div>
 
-              <div className="text-sm font-semibold text-gray-600 mb-6">
-                {activeCategory === 'activities' && 'Activity'}
-                {activeCategory === 'places' && 'Tourist Spot'}
-                {activeCategory === 'food' && 'Restaurant'}
-              </div>
-
-              {/* Details */}
-              <div className="space-y-4 mb-6">
-                <div className="flex gap-3 items-start">
-                  <MapPin size={16} className="mt-0.5 flex-shrink-0 text-gray-600" />
+              {/* Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                <div className="flex gap-4 items-start p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <MapPin size={20} className="text-indigo-400 flex-shrink-0" />
                   <div>
-                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Address</div>
-                    <div className="text-sm text-gray-700">{location.name}, Philippines</div>
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Location</div>
+                    <div className="text-sm text-slate-200 font-semibold">{location.name}, Baguio City</div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 items-start">
-                  <Clock size={16} className="mt-0.5 flex-shrink-0 text-gray-600" />
+                <div className="flex gap-4 items-start p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <Clock size={20} className="text-amber-400 flex-shrink-0" />
                   <div>
-                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Best time to visit</div>
-                    <div className="text-sm text-gray-700">{selectedDetailItem.bestTime || 'Anytime'}</div>
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Best time</div>
+                    <div className="text-sm text-slate-200 font-semibold">{selectedDetailItem.bestTime || 'Anytime'}</div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 items-start">
-                  <Globe size={16} className="mt-0.5 flex-shrink-0 text-gray-600" />
+                <div className="flex gap-4 items-start p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <Globe size={20} className="text-emerald-400 flex-shrink-0" />
                   <div>
-                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Business</div>
-                    <div className="text-sm text-gray-700">{selectedDetailItem.business}</div>
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Operator</div>
+                    <div className="text-sm text-slate-200 font-semibold">{selectedDetailItem.business}</div>
                   </div>
                 </div>
 
-                <div className="flex gap-3 items-start">
-                  <Phone size={16} className="mt-0.5 flex-shrink-0 text-gray-600" />
+                <div className="flex gap-4 items-start p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <Phone size={20} className="text-rose-400 flex-shrink-0" />
                   <div>
-                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Contact</div>
-                    <div className="text-sm text-gray-700">+63 (2) 8XXX XXXX</div>
+                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Contact</div>
+                    <div className="text-sm text-slate-200 font-semibold">+63 74 442 XXXX</div>
                   </div>
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="mb-6">
-                <h3 className="text-base font-bold text-gray-800 mb-3">About</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{selectedDetailItem.description}</p>
+              {/* About */}
+              <div className="mb-10">
+                <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
+                  <span className="w-8 h-1 bg-indigo-500 rounded-full"></span>
+                  About this experience
+                </h3>
+                <p className="text-slate-400 leading-relaxed font-medium">{selectedDetailItem.description}</p>
               </div>
 
-              {/* Price Info */}
-              <div className="mb-6">
-                <h3 className="text-base font-bold text-gray-800 mb-3">Pricing</h3>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-semibold text-gray-700">Entry Fee / Cost:</span>
-                  <span className="text-sm font-bold text-gray-900">{selectedDetailItem.price || 'Contact for pricing'}</span>
+              {/* Pricing */}
+              <div className="mb-10">
+                <div className="flex justify-between items-center p-6 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl shadow-inner">
+                  <span className="text-sm font-bold text-slate-300 uppercase tracking-wider">Estimated Cost</span>
+                  <span className="text-xl font-black text-white">{selectedDetailItem.price || 'P250 - P500'}</span>
                 </div>
               </div>
 
-              {/* Reviews Section */}
-              <div>
-                <h3 className="text-base font-bold text-gray-800 mb-3">Reviews</h3>
+              {/* Reviews Preview */}
+              <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
+                <h3 className="text-base font-black text-white mb-5 flex justify-between items-center">
+                  <span>Guest Reviews</span>
+                  <span className="text-[10px] text-slate-500 bg-white/5 px-2 py-1 rounded-md uppercase tracking-widest">{selectedDetailItem.reviews} TOTAL</span>
+                </h3>
                 <button 
-                  className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-lg font-semibold cursor-pointer transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                  className="w-full px-6 py-4 bg-white/5 border border-white/10 text-white rounded-xl font-bold text-sm cursor-pointer transition-all hover:bg-white/10 hover:border-indigo-500/50 hover:shadow-xl active:scale-[0.98]"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleShowReviews(selectedDetailItem);
                     handleCloseItemDetail();
                   }}
                 >
-                  View all {selectedDetailItem.reviews} reviews
+                  Read all community reviews
                 </button>
               </div>
             </div>
@@ -421,36 +414,36 @@ const LocationModal = ({ location, onClose }) => {
 
       {/* Reviews Modal */}
       {showReviewsModal && selectedItem && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[2000] p-5 animate-in fade-in duration-200" onClick={() => setShowReviewsModal(false)}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-lg animate-in slide-in-from-bottom-5 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-start flex-shrink-0">
-              <div className="flex items-start gap-3 flex-1">
-                <div>
-                  <h3 className="m-0 mb-1.5 text-xl font-semibold text-gray-900 leading-tight">{selectedItem.name}</h3>
-                  <div className="flex items-center gap-1.5 text-sm">
-                    <span className="text-amber-500 font-medium">⭐ {selectedItem.rating}</span>
-                    <span className="text-gray-500">({selectedItem.reviews} reviews)</span>
-                  </div>
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl flex items-center justify-center z-[2000] p-5 animate-in fade-in duration-300" onClick={() => setShowReviewsModal(false)}>
+          <div className="bg-[#1e293b] border border-white/10 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-8 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="p-8 border-b border-white/5 bg-black/20 flex justify-between items-center flex-shrink-0">
+              <div>
+                <h3 className="m-0 mb-1 text-2xl font-black text-white tracking-tight">{selectedItem.name}</h3>
+                <div className="flex items-center gap-2 text-sm font-bold">
+                  <span className="text-amber-400">⭐ {selectedItem.rating}</span>
+                  <span className="text-slate-500 uppercase tracking-widest text-[10px]">({selectedItem.reviews} Verified Reviews)</span>
                 </div>
               </div>
-              <button className="w-8 h-8 border-none bg-transparent rounded-2xl flex items-center justify-center text-2xl cursor-pointer transition-all text-gray-500 hover:bg-gray-200 hover:text-gray-900 flex-shrink-0" onClick={() => setShowReviewsModal(false)}>✕</button>
+              <button className="w-10 h-10 border border-white/10 bg-white/5 rounded-xl flex items-center justify-center text-xl cursor-pointer transition-all text-slate-400 hover:bg-white/10 hover:text-white" onClick={() => setShowReviewsModal(false)}>✕</button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 bg-gray-50 space-y-4">
+            <div className="flex-1 overflow-y-auto p-8 bg-slate-900/30 space-y-6 custom-scrollbar">
               {getItemReviews(selectedItem.name).map((review) => (
-                <div key={review.id} className="bg-white border border-gray-200 rounded-2xl p-4 transition-all hover:border-gray-300 hover:shadow-sm">
-                  <div className="flex justify-between items-start mb-2.5">
+                <div key={review.id} className="bg-white/5 border border-white/5 rounded-2xl p-6 transition-all hover:bg-white/10 hover:border-indigo-500/30 shadow-lg">
+                  <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="font-semibold text-gray-900 text-sm">{review.user}</span>
-                      <span className="text-xs text-gray-500">{review.date}</span>
+                      <span className="font-bold text-white text-sm">{review.user}</span>
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{review.date}</span>
                     </div>
-                    <div className="text-xs text-amber-500 leading-none">
-                      {'⭐'.repeat(review.rating)}
+                    <div className="flex gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={12} fill={i < review.rating ? "#f59e0b" : "transparent"} color={i < review.rating ? "#f59e0b" : "#475569"} />
+                      ))}
                     </div>
                   </div>
-                  <p className="m-0 mb-3 text-gray-600 text-sm leading-relaxed">{review.comment}</p>
+                  <p className="m-0 mb-5 text-slate-300 text-sm leading-relaxed font-medium">{review.comment}</p>
                   <div className="flex items-center gap-2">
-                    <button className="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-lg text-xs font-medium text-gray-500 cursor-pointer transition-all hover:bg-gray-200 hover:text-gray-700">
+                    <button className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer transition-all hover:bg-white/10 hover:text-indigo-400">
                       👍 Helpful ({review.helpful})
                     </button>
                   </div>
@@ -458,8 +451,8 @@ const LocationModal = ({ location, onClose }) => {
               ))}
             </div>
 
-            <div className="p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
-              <button className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-lg font-semibold cursor-pointer transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">✍️ Write a Review</button>
+            <div className="p-8 border-t border-white/5 bg-black/20 flex-shrink-0">
+              <button className="w-full px-6 py-4 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none rounded-xl font-black text-sm uppercase tracking-widest cursor-pointer transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5">✍️ Write a Review</button>
             </div>
           </div>
         </div>

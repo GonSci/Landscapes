@@ -54,9 +54,9 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
     const map = window.L.map(mapRef.current, { zoomControl: false }).setView([16.4023, 120.5960], 13);
     window.L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Add OpenStreetMap tiles
-    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    // Add Dark Matter tiles
+    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 18,
       minZoom: 12,
     }).addTo(map);
@@ -174,8 +174,8 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
           "
           onmouseover="this.style.transform='scale(1.2)'"
           onmouseout="this.style.transform='scale(1)'">
-            <svg viewBox="0 0 24 24" width="36" height="36" style="filter: drop-shadow(0px 3px 2px rgba(0,0,0,0.3));">
-              <path fill="#ea4335" d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/>
+            <svg viewBox="0 0 24 24" width="36" height="36" style="filter: drop-shadow(0px 0px 8px ${bgColor});">
+              <path fill="${bgColor}" d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/>
             </svg>
           </div>
         `,
@@ -186,35 +186,36 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
       const marker = window.L.marker([feature.lat, feature.lng], { icon: featureIcon })
         .addTo(mapInstanceRef.current)
         .bindPopup(`
-          <div style="text-align: center; min-width: 160px;">
+          <div style="text-align: center; min-width: 180px; background: #1e293b; color: #f1f5f9; padding: 12px; border-radius: 12px;">
             <div style="
               display: inline-block;
               background: ${bgColor};
               color: white;
-              padding: 4px 10px;
+              padding: 4px 12px;
               border-radius: 12px;
-              font-size: 0.7rem;
-              font-weight: 700;
+              font-size: 0.75rem;
+              font-weight: 800;
               text-transform: uppercase;
-              letter-spacing: 0.5px;
-              margin-bottom: 8px;
+              letter-spacing: 0.8px;
+              margin-bottom: 10px;
+              box-shadow: 0 0 15px ${bgColor}80;
             ">${label}</div>
-            <h4 style="margin: 0 0 4px 0; color: #1f2937; font-size: 0.95rem;">${feature.name}</h4>
-            <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 0.8rem;">📍 ${feature.city}</p>
+            <h4 style="margin: 0 0 4px 0; color: white; font-size: 1rem; font-weight: 700;">${feature.name}</h4>
+            <p style="margin: 0 0 14px 0; color: #94a3b8; font-size: 0.85rem; font-weight: 500;">📍 ${feature.city}</p>
             <button class="live-feed-btn" data-location="${feature.name}" style="
-              display: flex; align-items: center; justify-content: center; gap: 6px;
-              background: #667eea; color: white; border: none; padding: 8px 12px; border-radius: 8px; 
-              font-size: 0.8rem; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s ease;
-              box-shadow: 0 4px 12px rgba(102,126,234,0.3);
-            " onmouseover="this.style.background='#764ba2'; this.style.boxShadow='0 6px 16px rgba(118,75,162,0.4)';" onmouseout="this.style.background='#667eea'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.3)';">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              display: flex; align-items: center; justify-content: center; gap: 8px;
+              background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 14px; border-radius: 10px; 
+              font-size: 0.85rem; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+              box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(118,75,162,0.5)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102,126,234,0.4)';">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m22 8-6 4 6 4V8Z"></path>
                 <rect width="14" height="12" x="2" y="6" rx="2" ry="2"></rect>
               </svg>
               View Live Feed
             </button>
           </div>
-        `, { autoPan: false });
+        `, { autoPan: false, className: 'dark-popup' });
       
       featureMarkersRef.current.push(marker);
     });
@@ -225,13 +226,13 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
 
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 border-2 border-slate-200 border-l-0 overflow-hidden relative">
-      <div className="bg-white px-8 py-7 border-b-2 border-slate-200">
+    <div className="flex flex-col h-full bg-[#0f172a] border-2 border-white/5 border-l-0 overflow-hidden relative">
+      <div className="bg-[#0a0f1e]/80 backdrop-blur-2xl px-8 py-7 border-b border-white/5 z-10 shadow-lg">
         <div className="flex justify-between items-center gap-6 flex-wrap">
           <div className="flex-1 min-w-80">
-            <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Explore Baguio City</h2>
-            <p className="m-0 p-0 bg-transparent text-slate-500 text-base leading-relaxed font-medium">
-              Click the colored markers to discover featured destinations in Baguio City - the Summer Capital of the Philippines!
+            <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Explore Baguio City</h2>
+            <p className="m-0 p-0 bg-transparent text-slate-400 text-base leading-relaxed font-medium">
+              Click the <span className="text-indigo-400">glowing markers</span> to discover featured destinations in Baguio City.
             </p>
           </div>
         </div>
@@ -240,15 +241,41 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
 
       <div 
         ref={mapRef} 
-        className="flex-1 min-h-96 bg-white overflow-hidden"
+        className="flex-1 min-h-96 bg-[#0f172a] overflow-hidden"
         style={{ height: '100%', width: '100%', borderRadius: '0px', cursor: 'pointer' }}
       >
         {!mapLoaded && (
-          <div className="flex items-center justify-center h-full bg-white text-slate-400 text-base font-semibold uppercase tracking-widest">
-            <p>🗺️ Loading interactive map of Baguio City...</p>
+          <div className="flex items-center justify-center h-full bg-[#0f172a] text-slate-500 text-base font-semibold uppercase tracking-widest">
+            <p className="animate-pulse">🗺️ Loading interactive map of Baguio City...</p>
           </div>
         )}
       </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .dark-popup .leaflet-popup-content-wrapper {
+          background: #1e293b !important;
+          color: white !important;
+          border-radius: 16px !important;
+          padding: 0 !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        }
+        .dark-popup .leaflet-popup-content {
+          margin: 0 !important;
+          line-height: inherit !important;
+        }
+        .dark-popup .leaflet-popup-tip {
+          background: #1e293b !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+        }
+        .dark-popup .leaflet-popup-close-button {
+          color: #94a3b8 !important;
+          padding: 12px 12px 0 0 !important;
+        }
+        .dark-popup .leaflet-popup-close-button:hover {
+          color: white !important;
+        }
+      `}} />
     </div>
   );
 };
