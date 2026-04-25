@@ -18,7 +18,7 @@ import time
 class RealtimeDetector:
     """Real-time people detection with YOLOv8"""
     
-    def __init__(self, model_path='yolov8n.pt', conf_threshold=0.5, iou_threshold=0.45, use_gpu=True):
+    def __init__(self, model_path='best.pt', conf_threshold=0.5, iou_threshold=0.45, use_gpu=True):
         """
         Initialize YOLOv8 detector
         
@@ -79,6 +79,7 @@ class RealtimeDetector:
         )
         
         # Extract detections
+        h, w = frame.shape[:2]
         detections = []
         for result in results:
             boxes = result.boxes
@@ -87,6 +88,17 @@ class RealtimeDetector:
                 x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                 confidence = float(box.conf[0])
                 
+                # --- Geometric Sanity Check ---
+                bw, bh = x2 - x1, y2 - y1
+                
+                # 1. Dimension check (Discard if box > 60% of width OR > 60% of height)
+                if bw > (w * 0.6) or bh > (h * 0.6):
+                    continue
+                    
+                # 2. Edge alignment check (Discard if box touches all 4 boundaries)
+                if x1 <= 2 and y1 <= 2 and x2 >= (w - 2) and y2 >= (h - 2):
+                    continue
+
                 detections.append({
                     'bbox': (int(x1), int(y1), int(x2), int(y2)),
                     'confidence': confidence
@@ -478,8 +490,8 @@ Controls:
                        help='Video source: "webcam", webcam index (0,1), or video file path')
     parser.add_argument('--output', type=str, default=None,
                        help='Output video file path (optional)')
-    parser.add_argument('--model', type=str, default='yolov8n.pt',
-                       help='YOLOv8 model path (default: yolov8n.pt)')
+    parser.add_argument('--model', type=str, default='best.pt',
+                       help='YOLOv8 model path (default: best.pt)')
     parser.add_argument('--conf', type=float, default=0.5,
                        help='Confidence threshold (default: 0.5)')
     parser.add_argument('--iou', type=float, default=0.45,

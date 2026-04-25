@@ -43,7 +43,7 @@ def test_video_file():
     """Check if demo video exists"""
     print("\nChecking for demo video...")
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    video_path = os.path.join(base_dir, 'public', 'assets', 'demo_video.mp4')
+    video_path = os.path.join(base_dir, 'frontend', 'public', 'assets', 'demo_video.mp4')
     
     if os.path.exists(video_path):
         print(f"✓ Video found: {video_path}")
@@ -77,8 +77,8 @@ def test_yolo_model():
     print("\nTesting YOLOv8 model...")
     try:
         from ultralytics import YOLO
-        print("Loading YOLOv8n model (this may take a moment on first run)...")
-        model = YOLO('yolov8n.pt')
+        print("Loading YOLOv8 model (best.pt) (this may take a moment on first run)...")
+        model = YOLO('best.pt')
         print("✓ YOLOv8 model loaded successfully")
         
         # Test inference on a blank image
@@ -99,13 +99,13 @@ def test_detection():
         from ultralytics import YOLO
         
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        video_path = os.path.join(base_dir, 'public', 'assets', 'demo_video.mp4')
+        video_path = os.path.join(base_dir, 'frontend', 'public', 'assets', 'demo_video.mp4')
         
         if not os.path.exists(video_path):
             print("✗ Video not found, skipping detection test")
             return False
         
-        model = YOLO('yolov8n.pt')
+        model = YOLO('best.pt')
         cap = cv2.VideoCapture(video_path)
         
         # Test first frame

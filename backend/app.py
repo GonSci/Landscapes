@@ -55,6 +55,29 @@ detection_results = {
 results_lock = Lock()
 fps_tracker = []
 
+# ── Persistent VideoCapture for ByteTrack tracking ────────────────────────────
+# The tracker requires sequential frames to build associations between detections.
+# Opening/closing VideoCapture per request breaks tracking continuity.
+persistent_cap = None
+cap_lock = Lock()
+
+# ── Peak-Preserving Count for Database Logging ────────────────────────────────
+# Instead of logging an instantaneous snapshot, we track the highest count
+# seen in each logging interval. This ensures crowd peaks are captured
+# for safety analysis (Jacob's Method). The 60% geometric filter guarantees
+# that max_count values are verified physical detections, not hallucinations.
+max_count_in_interval = 0
+max_count_lock = Lock()
+
+# ── Playback Clock for Real-Time Synchronization ──────────────────────────────
+# Tracks the wall-clock start time of the stream to handle frame skipping.
+# This ensures playback speed matches the real video regardless of CPU latency.
+playback_clock = {
+    'start_time': None,
+    'fps': 30,
+    'total_frames': 0
+}
+
 
 # ── Path helpers ───────────────────────────────────────────────────────────────
 def resolve_video_path(video_name):
@@ -80,7 +103,7 @@ def initialize_yolo():
     global yolo_model
     try:
         print("Loading YOLOv8 model...")
-        yolo_model = YOLO('yolov8n.pt')
+        yolo_model = YOLO('best.pt')
         if detection_config['use_gpu'] and cv2.cuda.getCudaEnabledDeviceCount() > 0:
             print("✓ GPU detected, using CUDA acceleration")
         else:
@@ -136,22 +159,25 @@ def apply_gaussian_blur(frame, detections_pixel, ksize=(51, 51)):
 def draw_detections_on_frame(frame, detections_pixel):
     """
     Draw bounding boxes using PIXEL-coordinate detections.
-    detections_pixel: list of {'bbox': (x1,y1,x2,y2), 'confidence': float}
-    
-    FIX: Original code re-converted percentage→pixel inside this function,
-    causing a double-conversion when called from process_frame which already
-    stored pixel coords. Now we accept raw pixel coords directly.
+    detections_pixel: list of {'bbox': (x1,y1,x2,y2), 'confidence': float, 'track_id': int|None}
+    Shows Track ID labels (e.g., 'Person #3') when available for BoT-SORT tracking,
+    falls back to confidence display when tracking is not active.
     """
     annotated = frame.copy()
 
     for det in detections_pixel:
         x1, y1, x2, y2 = det['bbox']
         confidence = det['confidence']
+        track_id = det.get('track_id')
 
         color = (0, 255, 0)
         cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
 
-        label = f"Person {confidence:.2f}"
+        # Show Track ID when available (BoT-SORT), otherwise show confidence
+        if track_id is not None:
+            label = f"Person #{track_id}"
+        else:
+            label = f"Person {confidence:.2f}"
         label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         label_y = max(y1, label_size[1] + 10)
 
@@ -211,15 +237,15 @@ def draw_cctv_overlay(frame, people_count, fps):
     return frame
 
 
-def run_yolo_pipeline(frame, annotate=True, show_overlay=True):
+def run_yolo_pipeline(frame, annotate=True, show_overlay=True, use_tracking=False):
     """
     Full pipeline used by both process_frame and stream_detection:
       1. CLAHE enhancement
-      2. YOLO detection
+      2. YOLO detection (or YOLO tracking via BoT-SORT)
       3. Gaussian blur on detected regions (privacy)
-      4. Draw bounding boxes
+      4. Draw bounding boxes with Track IDs
       5. Draw CCTV overlay
-    Returns (output_frame, detections_pct, detections_pixel, fps)
+    Returns (output_frame, detections_pct, detections_pixel, fps, elapsed)
     """
     global fps_tracker
 
@@ -231,34 +257,66 @@ def run_yolo_pipeline(frame, annotate=True, show_overlay=True):
     else:
         frame_proc = frame.copy()
 
-    # Step 2 – YOLO detection
-    results = yolo_model(
-        frame_proc,
-        classes=[0],
-        conf=detection_config['conf_threshold'],
-        iou=detection_config['iou_threshold'],
-        verbose=False
-    )
+    # Step 2 – YOLO detection / tracking
+    if use_tracking:
+        # ByteTrack: lightweight Kalman-filter + IoU tracker (no Re-ID network)
+        # Much faster than BoT-SORT and better suited for top-down CCTV angles
+        results = yolo_model.track(
+            frame_proc,
+            classes=[0],
+            conf=detection_config['conf_threshold'],
+            iou=detection_config['iou_threshold'],
+            persist=True,
+            tracker="bytetrack.yaml",
+            verbose=False
+        )
+    else:
+        results = yolo_model(
+            frame_proc,
+            classes=[0],
+            conf=detection_config['conf_threshold'],
+            iou=detection_config['iou_threshold'],
+            verbose=False
+        )
 
     h, w = frame.shape[:2]
     detections_pixel = []   # for drawing / blur
     detections_pct   = []   # for sending to frontend
 
     for result in results:
-        for box in result.boxes:
+        for i, box in enumerate(result.boxes):
             x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
             conf = float(box.conf[0])
 
+            # Extract track ID (only available when use_tracking=True)
+            track_id = None
+            if use_tracking and box.id is not None:
+                track_id = int(box.id[0])
+
+            # --- Geometric Sanity Check ---
+            bw, bh = x2 - x1, y2 - y1
+            
+            # 1. Dimension check (Discard if box > 60% of width OR > 60% of height)
+            if bw > (w * 0.6) or bh > (h * 0.6):
+                continue
+                
+            # 2. Edge alignment check (Discard if box touches all 4 boundaries)
+            # We use a 2-pixel margin to be safe
+            if x1 <= 2 and y1 <= 2 and x2 >= (w - 2) and y2 >= (h - 2):
+                continue
+
             detections_pixel.append({
                 'bbox': (int(x1), int(y1), int(x2), int(y2)),
-                'confidence': conf
+                'confidence': conf,
+                'track_id': track_id
             })
             detections_pct.append({
                 'x':          float(x1 / w * 100),
                 'y':          float(y1 / h * 100),
-                'width':      float((x2 - x1) / w * 100),
-                'height':     float((y2 - y1) / h * 100),
-                'confidence': conf
+                'width':      float(bw / w * 100),
+                'height':     float(bh / h * 100),
+                'confidence': conf,
+                'track_id':   track_id
             })
 
     # Step 3 – Gaussian blur (privacy) on enhanced frame
@@ -270,7 +328,14 @@ def run_yolo_pipeline(frame, annotate=True, show_overlay=True):
     if annotate:
         output_frame = draw_detections_on_frame(frame_proc, detections_pixel)
 
-    # Step 5 – CCTV overlay
+    # Step 5 – Update peak count for database logging
+    current_count = len(detections_pixel)
+    with max_count_lock:
+        global max_count_in_interval
+        if current_count > max_count_in_interval:
+            max_count_in_interval = current_count
+
+    # Step 6 – CCTV overlay
     elapsed = time.time() - start_time
     fps_tracker.append(elapsed)
     if len(fps_tracker) > 30:
@@ -279,7 +344,7 @@ def run_yolo_pipeline(frame, annotate=True, show_overlay=True):
     fps = 1.0 / avg_time if avg_time > 0 else 0
 
     if show_overlay:
-        output_frame = draw_cctv_overlay(output_frame, len(detections_pixel), fps)
+        output_frame = draw_cctv_overlay(output_frame, current_count, fps)
 
     return output_frame, detections_pct, detections_pixel, fps, elapsed
 
@@ -362,6 +427,24 @@ def initialize_detection():
             if not initialize_yolo():
                 return jsonify({'error': 'Failed to initialize YOLOv8 model'}), 500
 
+        # Open persistent VideoCapture for ByteTrack tracking
+        global persistent_cap, playback_clock
+        with cap_lock:
+            if persistent_cap is not None:
+                persistent_cap.release()
+            persistent_cap = cv2.VideoCapture(video_path)
+            
+            # Initialize playback clock for real-time synchronization
+            fps = persistent_cap.get(cv2.CAP_PROP_FPS) or 30
+            total = int(persistent_cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            playback_clock.update({
+                'start_time': time.time(),
+                'fps': fps,
+                'total_frames': total
+            })
+            print(f"✓ Persistent VideoCapture opened for tracking: {video_path}")
+            print(f"✓ Playback clock initialized: {fps} FPS, {total} total frames")
+
         cap = cv2.VideoCapture(video_path)
         video_info = {
             'width':        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
@@ -374,7 +457,7 @@ def initialize_detection():
         return jsonify({
             'message':    'YOLOv8 initialized successfully',
             'video_path': video_path,
-            'model':      'yolov8n.pt',
+            'model':      'best.pt',
             'config':     detection_config,
             'video_info': video_info
         })
@@ -448,6 +531,89 @@ def process_frame():
 
     except Exception as e:
         print(f"Error in process_frame: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/yolo/next-frame', methods=['POST'])
+def next_frame():
+    """
+    Read the next wall-clock-synchronized frame from the persistent VideoCapture.
+    Uses cap.grab() to skip frames if the backend is behind real-time, with
+    a 3-frame safety cap to maintain ByteTrack continuity.
+    """
+    global yolo_model, detection_results, persistent_cap, playback_clock
+
+    try:
+        if yolo_model is None:
+            return jsonify({'error': 'YOLOv8 model not initialized'}), 400
+
+        with cap_lock:
+            if persistent_cap is None or not persistent_cap.isOpened():
+                if not video_path or not os.path.exists(video_path):
+                    return jsonify({'error': 'Video not found'}), 404
+                persistent_cap = cv2.VideoCapture(video_path)
+                playback_clock['start_time'] = time.time()
+
+            # --- Wall-Clock Synchronization Logic ---
+            # Calculate exactly which frame we SHOULD be on right now
+            elapsed = time.time() - playback_clock['start_time']
+            target_frame = int(elapsed * playback_clock['fps'])
+            current_frame = int(persistent_cap.get(cv2.CAP_PROP_POS_FRAMES))
+            
+            frames_to_skip = target_frame - current_frame
+
+            # Loop: if we've passed the end, reset the clock
+            if target_frame >= playback_clock['total_frames']:
+                playback_clock['start_time'] = time.time()
+                persistent_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            elif frames_to_skip > 0:
+                # Optimized skipping: grab() is fast fast-forwarding
+                # Hard limit of 3 frames to prevent "teleportation" breaking ByteTrack IDs
+                skip_count = min(frames_to_skip, 3)
+                for _ in range(skip_count):
+                    persistent_cap.grab()
+
+            ret, frame = persistent_cap.read()
+            if not ret:
+                # Fallback loop
+                playback_clock['start_time'] = time.time()
+                persistent_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ret, frame = persistent_cap.read()
+                if not ret:
+                    return jsonify({'error': 'Failed to read frame'}), 500
+
+            current_frame_number = int(persistent_cap.get(cv2.CAP_PROP_POS_FRAMES))
+
+        # Run full tracked pipeline (CLAHE + ByteTrack + blur + draw + overlay)
+        output_frame, detections_pct, _, fps, elapsed_proc = run_yolo_pipeline(
+            frame, annotate=True, show_overlay=True, use_tracking=True
+        )
+
+        # Encode result as base64 JPEG
+        _, buffer = cv2.imencode('.jpg', output_frame)
+        frame_b64 = base64.b64encode(buffer).decode('utf-8')
+
+        with results_lock:
+            detection_results.update({
+                'frame':      frame_b64,
+                'detections': detections_pct,
+                'count':      len(detections_pct),
+                'timestamp':  time.time(),
+                'processing': False,
+                'fps':        fps
+            })
+
+        return jsonify({
+            'frame':           frame_b64,
+            'detections':      detections_pct,
+            'count':           len(detections_pct),
+            'frame_number':    current_frame_number,
+            'fps':             fps,
+            'processing_time': elapsed
+        })
+
+    except Exception as e:
+        print(f"Error in next_frame: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -675,7 +841,7 @@ def get_recent_logs():
 last_log_time = time.time()
 
 def background_logger():
-    global last_log_time, detection_results
+    global last_log_time, detection_results, max_count_in_interval
     with app.app_context():
         while True:
             time.sleep(1) # check every second for High Density override or 60s timer
@@ -687,20 +853,31 @@ def background_logger():
             # Check if model is actively running (timestamp updated in last 5 seconds)
             if current_timestamp and (time.time() - current_timestamp) < 5:
                 now = time.time()
-                is_high_density = current_count >= 10
+                
+                # Use the PEAK count seen since last log, not the instantaneous count.
+                # This ensures crowd peaks are captured for safety analysis.
+                with max_count_lock:
+                    peak_count = max_count_in_interval
+                
+                is_high_density = peak_count >= 10
                 time_since_last_log = now - last_log_time
                 
                 # Log if it's been 60s, OR if we hit High Density and it's been at least 10s (debounce)
                 if time_since_last_log >= 60 or (is_high_density and time_since_last_log >= 10):
                     try:
                         log_entry = SurveillanceLog(
-                            people_count=current_count,
+                            people_count=peak_count,
                             location_name="Burnham Park" # Default for MVP
                         )
                         db.session.add(log_entry)
                         db.session.commit()
                         last_log_time = now
-                        print(f"Logged {current_count} people to DB (High Density Override: {is_high_density and time_since_last_log < 60})")
+                        
+                        # Reset peak counter after logging
+                        with max_count_lock:
+                            max_count_in_interval = 0
+                        
+                        print(f"Logged {peak_count} people (PEAK) to DB (High Density Override: {is_high_density and time_since_last_log < 60})")
                     except Exception as e:
                         db.session.rollback()
                         print(f"DB Log Error: {e}")

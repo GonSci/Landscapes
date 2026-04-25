@@ -21,6 +21,10 @@ const LiveView = () => {
   const detectionIntervalRef = useRef(null);
   const currentFrameRef = useRef(0);
   const hiddenGemsRef = useRef(null);
+  // Request gating: prevents firing a new request while one is in-flight
+  const isFetchingRef = useRef(false);
+  // Count smoothing: sliding window of recent counts for median calculation
+  const countHistoryRef = useRef([]);
 
   const updateConfig = async (clahe, blur) => {
     await fetch(`${API_URL}/yolo/config`, {
@@ -175,47 +179,60 @@ const LiveView = () => {
     };
   }, [continuousDetection]);
 
+  // Helper: compute median of an array
+  const median = (arr) => {
+    if (arr.length === 0) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  };
+
   const startContinuousDetection = () => {
     if (continuousDetection) return;
     
     setContinuousDetection(true);
-    console.log('Continuous detection started');
+    countHistoryRef.current = [];
+    console.log('Continuous detection started with BoT-SORT tracking');
     
-    // Process frames continuously
+    // Request-gated detection loop:
+    // Fires every 100ms but SKIPS the tick if a request is already in-flight.
+    // This prevents the request flooding that caused flickering detections.
     detectionIntervalRef.current = setInterval(async () => {
+      // Gate: skip this tick if previous request hasn't returned
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+
       try {
-        const response = await fetch(`${API_URL}/yolo/process-frame`, {
+        const response = await fetch(`${API_URL}/yolo/next-frame`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            frame_number: currentFrameRef.current,
-            annotate: true,
-            show_overlay: true
-          })
+          body: JSON.stringify({})
         });
 
         const data = await response.json();
         
         if (response.ok) {
-          // Update annotated frame
           if (data.frame) {
             setAnnotatedFrame(`data:image/jpeg;base64,${data.frame}`);
           }
-          
-          // Move to next frame (process every 10 frames for performance)
-          currentFrameRef.current += 10;
-          
-          // Reset to beginning if we reach the end (loop)
-          if (currentFrameRef.current > 1000) {
-            currentFrameRef.current = 0;
+
+          // Count smoothing: sliding-window median over last 5 counts
+          const rawCount = data.count || 0;
+          countHistoryRef.current.push(rawCount);
+          if (countHistoryRef.current.length > 5) {
+            countHistoryRef.current.shift();
           }
+          const smoothedCount = median(countHistoryRef.current);
+          setDetectedCount(smoothedCount);
         } else {
           console.error('Detection API error:', data);
         }
       } catch (error) {
         console.error('Error in continuous detection:', error);
+      } finally {
+        isFetchingRef.current = false;
       }
-    }, 500); // Process every 500ms for smooth real-time detection
+    }, 30); // Check every 30ms (maximize pull rate for real-time speed)
   };
 
   const stopContinuousDetection = () => {
@@ -223,6 +240,8 @@ const LiveView = () => {
       clearInterval(detectionIntervalRef.current);
       detectionIntervalRef.current = null;
     }
+    isFetchingRef.current = false;
+    countHistoryRef.current = [];
     setContinuousDetection(false);
     setAnnotatedFrame(null);
     console.log('Continuous detection stopped');
