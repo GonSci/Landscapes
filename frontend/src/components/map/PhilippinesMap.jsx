@@ -201,7 +201,13 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
               box-shadow: 0 0 15px ${bgColor}80;
             ">${label}</div>
             <h4 style="margin: 0 0 4px 0; color: white; font-size: 1rem; font-weight: 700;">${feature.name}</h4>
-            <p style="margin: 0 0 14px 0; color: #94a3b8; font-size: 0.85rem; font-weight: 500;">📍 ${feature.city}</p>
+            <p style="margin: 0 0 14px 0; color: #94a3b8; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              ${feature.city}
+            </p>
             <button class="live-feed-btn" data-location="${feature.name}" style="
               display: flex; align-items: center; justify-content: center; gap: 8px;
               background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 14px; border-radius: 10px; 
@@ -230,7 +236,7 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
       <div className="bg-[#0a0f1e]/80 backdrop-blur-2xl px-8 py-7 border-b border-white/5 z-10 shadow-lg">
         <div className="flex justify-between items-center gap-6 flex-wrap">
           <div className="flex-1 min-w-80">
-            <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Explore Baguio City</h2>
+            <h2 className="text-3xl font-black text-white mt-2 mb-2 tracking-tight">Explore Baguio City</h2>
             <p className="m-0 p-0 bg-transparent text-slate-400 text-base leading-relaxed font-medium">
               Click the <span className="text-indigo-400">glowing markers</span> to discover featured destinations in Baguio City.
             </p>
