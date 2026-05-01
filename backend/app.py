@@ -22,7 +22,8 @@ import time
 from datetime import datetime, timedelta
 
 from extensions import db
-from models import User, SurveillanceLog
+from extensions import db
+from models import User, SurveillanceLog, Location
 from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
@@ -69,14 +70,14 @@ cap_lock = Lock()
 max_count_in_interval = 0
 max_count_lock = Lock()
 
-# ── Playback Clock for Real-Time Synchronization ──────────────────────────────
-# Tracks the wall-clock start time of the stream to handle frame skipping.
-# This ensures playback speed matches the real video regardless of CPU latency.
 playback_clock = {
     'start_time': None,
     'fps': 30,
     'total_frames': 0
 }
+
+active_location_id = None
+active_location_lock = Lock()
 
 
 # ── Path helpers ───────────────────────────────────────────────────────────────
@@ -383,10 +384,8 @@ def login():
 
 @app.route('/api/locations', methods=['GET'])
 def get_locations():
-    return jsonify({
-        'message': 'Locations endpoint',
-        'note': 'Location data is served from the frontend JSON file'
-    })
+    locations = Location.query.all()
+    return jsonify([loc.to_dict() for loc in locations])
 
 
 # ── YOLO endpoints ─────────────────────────────────────────────────────────────
@@ -420,7 +419,7 @@ def initialize_detection():
             )
             return jsonify({
                 'error': f'Video file not found: {expected}',
-                'message': 'Please place demo_video.mp4 in frontend/public/assets folder'
+                'message': f'Please ensure {video_name} is located in the frontend/public/assets folder.'
             }), 404
 
         if yolo_model is None:
@@ -446,7 +445,7 @@ def initialize_detection():
             print(f"✓ Playback clock initialized: {fps} FPS, {total} total frames")
 
         cap = cv2.VideoCapture(video_path)
-        video_info = {
+        video_info_dict = {
             'width':        int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
             'height':       int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
             'fps':          cap.get(cv2.CAP_PROP_FPS),
@@ -454,16 +453,31 @@ def initialize_detection():
         }
         cap.release()
 
+        # --- Location Tracking & Sync ---
+        location = Location.query.filter_by(video_filename=video_name).first()
+        if location:
+            with active_location_lock:
+                global active_location_id
+                active_location_id = location.id
+            
+            # Reset all locations to inactive, then set current one to active
+            Location.query.update({Location.is_active: False})
+            location.is_active = True
+            db.session.commit()
+            print(f"✓ Active location set to: {location.name} (ID: {location.id})")
+
         return jsonify({
             'message':    'YOLOv8 initialized successfully',
             'video_path': video_path,
             'model':      'best.pt',
             'config':     detection_config,
-            'video_info': video_info
+            'video_info': video_info_dict,
+            'location':   location.to_dict() if location else None
         })
 
     except Exception as e:
         print(f"Error in initialize_detection: {str(e)}")
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 
@@ -807,7 +821,36 @@ def get_live_count():
 
 @app.route('/api/logs/hourly', methods=['GET'])
 def get_hourly_logs():
-    logs = SurveillanceLog.query.order_by(SurveillanceLog.timestamp.desc()).limit(200).all()
+    location_id = request.args.get('location_id')
+    hours = int(request.args.get('hours', 4))
+    date_str = request.args.get('date')
+    
+    now = datetime.now()
+    query = SurveillanceLog.query
+    if location_id:
+        query = query.filter_by(location_id=location_id)
+        
+    if date_str:
+        try:
+            # Parse YYYY-MM-DD
+            target_date = datetime.strptime(date_str, '%Y-%m-%d')
+            start_time = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_time = start_time + timedelta(days=1)
+            query = query.filter(SurveillanceLog.timestamp >= start_time, SurveillanceLog.timestamp < end_time)
+            
+            # If it's today, reference current hour, else end of day
+            if target_date.date() == now.date():
+                reference_hour = now.hour
+            else:
+                reference_hour = 23 
+        except ValueError:
+            query = query.filter(SurveillanceLog.timestamp >= now - timedelta(hours=hours))
+            reference_hour = now.hour
+    else:
+        query = query.filter(SurveillanceLog.timestamp >= now - timedelta(hours=hours))
+        reference_hour = now.hour
+
+    logs = query.order_by(SurveillanceLog.timestamp.desc()).all()
     hourly_data = {}
     for log in logs:
         hour_key = f"{log.timestamp.hour}:00"
@@ -815,69 +858,130 @@ def get_hourly_logs():
             hourly_data[hour_key] = log.people_count
             
     result = []
-    current_hour = datetime.now().hour
-    for i in range(4): # last 4 hours
-        h = (current_hour - i) % 24
+    for i in range(hours):
+        h = (reference_hour - i) % 24
         h_key = f"{h}:00"
         result.append({
             'label': h_key,
             'value': hourly_data.get(h_key, 0),
             'hour': h
         })
-    result.reverse() # chronological
+    result.reverse()
     return jsonify(result)
 
 @app.route('/api/logs/recent', methods=['GET'])
 def get_recent_logs():
-    logs = SurveillanceLog.query.order_by(SurveillanceLog.timestamp.desc()).limit(10).all()
+    location_id = request.args.get('location_id')
+    query = SurveillanceLog.query
+    if location_id:
+        query = query.filter_by(location_id=location_id)
+        
+    logs = query.order_by(SurveillanceLog.timestamp.desc()).limit(10).all()
     return jsonify([
         {
             'id': log.id,
             'time': log.timestamp.strftime("%I:%M:%S %p"),
-            'count': log.people_count
+            'count': log.people_count,
+            'location_id': log.location_id,
+            'location_name': log.location_name
         } for log in logs
     ])
+
+@app.route('/api/analytics/distribution', methods=['GET'])
+def get_distribution():
+    from sqlalchemy import func
+    
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # We use an INNER JOIN to show real data only for matched locations
+    query = db.session.query(
+        Location.name,
+        func.sum(SurveillanceLog.people_count).label('total')
+    ).join(SurveillanceLog, SurveillanceLog.location_id == Location.id)
+    
+    if start_date:
+        query = query.filter(SurveillanceLog.timestamp >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.filter(SurveillanceLog.timestamp <= datetime.fromisoformat(end_date))
+    
+    results = query.group_by(Location.id, Location.name).all()
+    total_people = sum(res.total for res in results) if results else 0
+    
+    if total_people == 0:
+        return jsonify([])
+
+    colors = ["#6366f1", "#ec4899", "#10b981", "#f59e0b", "#06b6d4"]
+    distribution = []
+    for i, res in enumerate(results):
+        pct = (res.total / total_people) * 100
+        distribution.append({
+            "name": res.name,
+            "percentage": round(pct, 1),
+            "color": colors[i % len(colors)]
+        })
+    
+    return jsonify(distribution)
+
 
 last_log_time = time.time()
 
 def background_logger():
-    global last_log_time, detection_results, max_count_in_interval
+    global last_log_time, detection_results, max_count_in_interval, active_location_id
     with app.app_context():
         while True:
-            time.sleep(1) # check every second for High Density override or 60s timer
+            time.sleep(1) 
             
+            with active_location_lock:
+                current_loc_id = active_location_id
+            
+            # Guard: Skip if no location is active
+            if current_loc_id is None:
+                continue
+
             with results_lock:
-                current_count = detection_results['count']
                 current_timestamp = detection_results['timestamp']
+                current_detections = detection_results['detections']
             
-            # Check if model is actively running (timestamp updated in last 5 seconds)
             if current_timestamp and (time.time() - current_timestamp) < 5:
                 now = time.time()
                 
-                # Use the PEAK count seen since last log, not the instantaneous count.
-                # This ensures crowd peaks are captured for safety analysis.
                 with max_count_lock:
                     peak_count = max_count_in_interval
                 
                 is_high_density = peak_count >= 10
                 time_since_last_log = now - last_log_time
                 
-                # Log if it's been 60s, OR if we hit High Density and it's been at least 10s (debounce)
                 if time_since_last_log >= 60 or (is_high_density and time_since_last_log >= 10):
                     try:
+                        location = Location.query.get(current_loc_id)
+                        if not location:
+                            continue
+
+                        # Compute confidence_avg
+                        conf_avg = None
+                        if current_detections:
+                            conf_avg = sum(d['confidence'] for d in current_detections) / len(current_detections)
+
+                        # Only log if we are reasonably confident or if there are no detections (0 count)
+                        if conf_avg is not None and conf_avg < 0.4:
+                            print(f"Skipping log for {location.name}: Low confidence ({conf_avg:.2f})")
+                            continue
+
                         log_entry = SurveillanceLog(
                             people_count=peak_count,
-                            location_name="Burnham Park" # Default for MVP
+                            location_id=current_loc_id,
+                            location_name=location.name,
+                            confidence_avg=conf_avg
                         )
                         db.session.add(log_entry)
                         db.session.commit()
                         last_log_time = now
                         
-                        # Reset peak counter after logging
                         with max_count_lock:
                             max_count_in_interval = 0
                         
-                        print(f"Logged {peak_count} people (PEAK) to DB (High Density Override: {is_high_density and time_since_last_log < 60})")
+                        print(f"Logged {peak_count} people for {location.name} to DB")
                     except Exception as e:
                         db.session.rollback()
                         print(f"DB Log Error: {e}")

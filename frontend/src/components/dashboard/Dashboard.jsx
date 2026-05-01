@@ -64,7 +64,7 @@ const Dashboard = () => {
       </div>
 
       {/* Dashboard Global Styles */}
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -105,7 +105,7 @@ const Dashboard = () => {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgba(255, 255, 255, 0.2);
         }
-      `}</style>
+      `}} />
     </div>
   );
 };

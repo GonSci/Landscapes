@@ -26,7 +26,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     {
       id: 'beach',
       name: 'Beach Trip',
-      icon: '🏖️',
+      icon: '',
       items: [
         { name: 'Sunscreen', icon: '☀️', note: 'SPF 50+' },
         { name: 'Swimsuit', icon: '👙', note: '' },
@@ -40,7 +40,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     {
       id: 'hiking',
       name: 'Hiking Adventure',
-      icon: '⛰️',
+      icon: '',
       items: [
         { name: 'Hiking Boots', icon: '👢', note: 'Comfortable and broken in' },
         { name: 'Water Bottle', icon: '💧', note: '2-3 liters' },
@@ -54,7 +54,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     {
       id: 'camping',
       name: 'Camping Trip',
-      icon: '⛺',
+      icon: '',
       items: [
         { name: 'Tent', icon: '⛺', note: '' },
         { name: 'Sleeping Bag', icon: '🛏️', note: 'Appropriate for season' },
@@ -68,7 +68,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     {
       id: 'city',
       name: 'City Exploration',
-      icon: '🏙️',
+      icon: '',
       items: [
         { name: 'Comfortable Shoes', icon: '👟', note: 'For walking' },
         { name: 'Camera', icon: '📸', note: 'Capture memories' },
@@ -82,7 +82,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     {
       id: 'business',
       name: 'Business Trip',
-      icon: '💼',
+      icon: '',
       items: [
         { name: 'Business Attire', icon: '👔', note: 'Formal clothes' },
         { name: 'Laptop', icon: '💻', note: 'And charger' },
@@ -96,7 +96,7 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
     {
       id: 'island',
       name: 'Island Hopping',
-      icon: '🏝️',
+      icon: '',
       items: [
         { name: 'Waterproof Bag', icon: '🎒', note: 'Electronics protection' },
         { name: 'Snorkel Gear', icon: '🤿', note: 'Mask and fins' },
@@ -509,7 +509,6 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
                   className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 transition-all duration-300 hover:-translate-y-1 hover:border-[#667eea]/50 hover:bg-[#667eea]/10 hover:shadow-2xl hover:shadow-indigo-500/20 active:translate-y-0 ${compactMode ? 'px-2 py-3.5' : 'px-3 py-4'}`}
                   title={`Load ${template.name} template`}
                 >
-                  <span className={`${compactMode ? 'text-[1.4rem]' : 'text-[1.8rem]'}`}>{template.icon}</span>
                   <span className={`break-words text-center font-black leading-tight text-slate-300 tracking-tight ${compactMode ? 'text-[0.75rem]' : 'text-[0.85rem]'}`}>
                     {template.name}
                   </span>
