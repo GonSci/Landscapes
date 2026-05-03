@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import baguioData from '../../data/baguio_locations.json';
+import { useLiveLocations } from '../../hooks/useLiveLocations';
 
-const ExploreSection = ({ onNavigate }) => {
+const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCrowdLevel, setSelectedCrowdLevel] = useState('All');
   const [isCrowdDropdownOpen, setIsCrowdDropdownOpen] = useState(false);
   
+  const { locations, isLoading, isStale, lastUpdated } = useLiveLocations();
+
   const categories = [
     { id: 'all', name: 'All Places'},
     { id: 'park', name: 'Parks'},
@@ -19,63 +21,24 @@ const ExploreSection = ({ onNavigate }) => {
 
   const crowdLevelOptions = [
     'All',
+    'Sparse Crowd',
     'Low Crowd',
     'Moderate Crowd',
     'High Crowd'
   ];
 
-  // Transform Baguio locations data
-  const transformBaguioLocations = () => {
-    return baguioData.locations.map(loc => {
-      // Convert crowd level to readable format
-      const crowdLevel = loc.currentCrowdLevel === 'high' ? 'High Crowd' : 
-                        loc.currentCrowdLevel === 'moderate' ? 'Moderate Crowd' : 'Low Crowd';
-      
-      // Create highlights from facilities and other data
-      const highlights = [
-        ...loc.facilities,
-        `Capacity: ${loc.capacity} people`,
-        `Current visitors: ${loc.detectedPeople}`,
-        `Distance: ${loc.distance} km from city center`
-      ];
-
-      return {
-        id: loc.id,
-        name: loc.name,
-        region: loc.region,
-        lat: loc.coordinates.lat,
-        lng: loc.coordinates.lng,
-        image: loc.image,
-        description: loc.description,
-        highlights: highlights,
-        bestTime: `Peak Hours: ${loc.peakHours.join(', ')}`,
-        category: loc.type,
-        rating: loc.crowdDensity * 5,
-        ratingLabel: crowdLevel,
-        discoveryLevel: crowdLevel,
-        currentCrowdLevel: loc.currentCrowdLevel,
-        detectedPeople: loc.detectedPeople,
-        capacity: loc.capacity,
-        crowdDensity: loc.crowdDensity,
-        averageWaitTime: loc.averageWaitTime
-      };
-    });
-  };
-
-  const baguioLocations = transformBaguioLocations();
-
   // Filter by category
   const currentData = selectedCategory === 'all' 
-    ? baguioLocations 
-    : baguioLocations.filter(loc => loc.category === selectedCategory);
+    ? locations 
+    : locations.filter(loc => loc.category && loc.category.toLowerCase() === selectedCategory);
 
   const filteredData = currentData
-    .filter(loc =>
-      selectedCrowdLevel === 'All' ? true : loc.ratingLabel === selectedCrowdLevel
-    )
+    .filter(loc => {
+      if (selectedCrowdLevel === 'All') return true;
+      const levelString = `${loc.crowdLevel} Crowd`;
+      return levelString === selectedCrowdLevel;
+    })
     .sort((a, b) => a.detectedPeople - b.detectedPeople); // Sort by crowd (low to high)
-
-
 
   return (
     <div className="min-h-[calc(100vh-100px)] bg-[#0a0f1e] px-3 py-5 text-white sm:px-4 md:px-5 md:py-8 lg:px-6 lg:py-10">
@@ -84,6 +47,12 @@ const ExploreSection = ({ onNavigate }) => {
         <h2 className="mb-4 inline-block animate-fadeInDown bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text pb-1 text-3xl font-black leading-[1.1] tracking-tight text-transparent sm:text-4xl lg:text-[48px]">
           Explore Baguio City
         </h2>
+        {lastUpdated && (
+          <p className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+            Live Data: {lastUpdated.toLocaleTimeString()}
+            {isStale && <span className="ml-2 text-amber-500">⚠️ Data may be outdated</span>}
+          </p>
+        )}
         <p className="mx-auto max-w-2xl animate-fadeInUp text-sm leading-7 text-slate-400 sm:text-base lg:text-lg">
           Discover Baguio's top attractions with real-time crowd monitoring - from scenic parks to historical sites
         </p>
@@ -157,10 +126,15 @@ const ExploreSection = ({ onNavigate }) => {
       {/* Cards Grid */}
       <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-4 animate-fadeIn sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
         {filteredData.map(location => {
-          const crowdPercent = Math.min(100, (location.detectedPeople / location.capacity) * 100);
-          const crowdColor = location.currentCrowdLevel === 'high' ? 'from-rose-500 to-rose-600 shadow-rose-500/50' : 
-                            location.currentCrowdLevel === 'moderate' ? 'from-amber-500 to-amber-600 shadow-amber-500/50' : 
+          const crowdPercent = location.crowdPercent || 0;
+          const crowdColor = location.crowdLevel === 'High' ? 'from-rose-500 to-rose-600 shadow-rose-500/50' : 
+                            location.crowdLevel === 'Moderate' ? 'from-amber-500 to-amber-600 shadow-amber-500/50' : 
+                            location.crowdLevel === 'Sparse' ? 'from-blue-500 to-blue-600 shadow-blue-500/50' :
                             'from-emerald-500 to-emerald-600 shadow-emerald-500/50';
+          
+          const highlights = [
+            ...(location.facilities || []),
+          ];
 
           return (
             <div
@@ -168,7 +142,11 @@ const ExploreSection = ({ onNavigate }) => {
               className="group cursor-pointer overflow-hidden rounded-3xl border border-white/5 bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-500 animate-slideInUp hover:-translate-y-2 hover:border-white/10 hover:bg-white/[0.08]"
               onClick={(e) => {
                 e.stopPropagation();
-                      onNavigate('dashboard');
+                if (onViewLiveFeed) {
+                  onViewLiveFeed(location.id);
+                } else {
+                  onNavigate('dashboard');
+                }
               }}
             >
               <div className="relative h-48 overflow-hidden sm:h-52 lg:h-[240px]">
@@ -195,7 +173,7 @@ const ExploreSection = ({ onNavigate }) => {
                 <div className="mb-6">
                   <h4 className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#667eea]">Highlights</h4>
                   <ul className="grid grid-cols-1 gap-2">
-                    {location.highlights.slice(0, 3).map((highlight, idx) => (
+                    {highlights.slice(0, 3).map((highlight, idx) => (
                       <li key={idx} className="flex items-center gap-2 text-[13px] text-slate-300">
                         <span className="h-1 w-1 rounded-full bg-[#667eea]"></span>
                         {highlight}
@@ -208,10 +186,11 @@ const ExploreSection = ({ onNavigate }) => {
                 <div className="mb-6">
                   <div className="mb-2 flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
                     <span className="text-slate-400">Crowd Density</span>
-                    <span className={location.currentCrowdLevel === 'high' ? 'text-rose-400' : 
-                                  location.currentCrowdLevel === 'moderate' ? 'text-amber-400' : 
+                    <span className={location.crowdLevel === 'High' ? 'text-rose-400' : 
+                                  location.crowdLevel === 'Moderate' ? 'text-amber-400' : 
+                                  location.crowdLevel === 'Sparse' ? 'text-blue-400' :
                                   'text-emerald-400'}>
-                      {location.ratingLabel}
+                      {location.crowdLevel} Crowd
                     </span>
                   </div>
                   <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-white/5">
@@ -234,7 +213,11 @@ const ExploreSection = ({ onNavigate }) => {
                     className="w-full rounded-2xl bg-gradient-to-r from-[#667eea] to-[#764ba2] py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/40"
                     onClick={(e) => {
                       e.stopPropagation();
-                            onNavigate('dashboard');
+                      if (onViewLiveFeed) {
+                        onViewLiveFeed(location.id);
+                      } else {
+                        onNavigate('dashboard');
+                      }
                     }}
                   >
                     View Live Feed

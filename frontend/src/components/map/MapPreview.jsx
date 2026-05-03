@@ -101,7 +101,7 @@ const MapPreview = ({
           "
           onmouseover="this.style.transform='scale(1.2)'"
           onmouseout="this.style.transform='scale(1)'">
-            📍
+            
           </div>
         `,
         iconSize: [35, 35],

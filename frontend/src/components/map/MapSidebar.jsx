@@ -1,43 +1,17 @@
 import React, { useState } from 'react';
 import UserProfile from '../profile/UserProfile';
-
-const locationMarketplace = {
-  baguio: {
-    activities: [
-      { id: 1, name: 'Strawberry Picking', lat: 16.3980, lng: 120.5600, crowdLevel: 'Low', image: '/assets/featured_images/strawberry-farm.jpg', emoji: '🍓', description: 'Pick fresh strawberries at La Trinidad', business: 'Strawberry Farms', bestTime: '6:00 AM - 4:00 PM' },
-      { id: 2, name: 'Burnham Park Boat Ride', lat: 16.4120, lng: 120.5930, crowdLevel: 'Moderate', image: '/assets/featured_images/burnham-park.jpg', emoji: '🚣', description: 'Scenic lake paddleboat ride', business: 'Burnham Park Admin', bestTime: '8:00 AM - 6:00 PM' },
-      { id: 3, name: 'Tam-Awan Village Tour', lat: 16.4250, lng: 120.5800, crowdLevel: 'High', image: '/assets/featured_images/teachers-camp.jpg', emoji: '🏘️', description: 'Cordillera cultural village', business: 'Tam-Awan Village', bestTime: '9:00 AM - 6:00 PM' },
-      { id: 4, name: 'Mines View Park', lat: 16.3895, lng: 120.6145, crowdLevel: 'Low', image: '/assets/featured_images/mines-view-park.jpg', emoji: '📷', description: 'Mountain views & souvenir shops', business: 'Baguio Tourism', bestTime: '6:00 AM - 6:00 PM' }
-    ],
-    places: [
-      { id: 1, name: 'The Mansion', lat: 16.4170, lng: 120.5970, crowdLevel: 'Moderate', image: '/assets/featured_images/wright-park.jpg', emoji: '🏛️', description: 'Official summer residence of President', business: 'Philippine Gov', bestTime: '7:00 AM - 5:00 PM' },
-      { id: 2, name: 'Botanical Garden', lat: 16.4140, lng: 120.6050, crowdLevel: 'High', image: '/assets/images/baguio.jpg', emoji: '🏺', description: 'Peaceful garden with Igorot sculptures', business: 'Baguio Parks', bestTime: '6:00 AM - 6:00 PM' },
-      { id: 3, name: 'Session Road', lat: 16.4050, lng: 120.5900, crowdLevel: 'High', image: '/assets/featured_images/session-road.jpg', emoji: '🛍️', description: 'Main shopping & dining street', business: 'Session Road Assoc.', bestTime: '9:00 AM - 10:00 PM' },
-      { id: 4, name: 'Baguio Cathedral', lat: 16.4109, lng: 120.5926, crowdLevel: 'Low', image: '/assets/featured_images/baguio-cathedral.jpg', emoji: '⛪', description: 'Historic church with prayer bell', business: 'Baguio Cathedral', bestTime: '6:00 AM - 7:00 PM' }
-    ],
-    food: [
-      { id: 1, name: 'Good Shepherd Convent', lat: 16.4020, lng: 120.6100, crowdLevel: 'Low', image: '/assets/images/philippines-placeholder.jpg', emoji: '🪧', description: 'Famous ube jam & strawberry jam', business: 'Good Shepherd', bestTime: '8:00 AM - 5:00 PM' },
-      { id: 2, name: 'Hill Station', lat: 16.4080, lng: 120.5960, crowdLevel: 'Low', image: '/assets/images/baguio.jpg', emoji: '🍽️', description: 'Fine dining with mountain views', business: 'Hill Station Rest.', bestTime: '11:00 AM - 2:00 PM, 6:00 PM - 10:00 PM' },
-      { id: 3, name: 'Vizco\'s', lat: 16.4060, lng: 120.5910, crowdLevel: 'Moderate', image: '/assets/featured_images/session-road.jpg', emoji: '🍰', description: 'Strawberry shortcake & pastries', business: 'Vizco\'s Bakery', bestTime: '8:00 AM - 8:00 PM' },
-      { id: 4, name: 'Strawberry Taho Vendors', lat: 16.4120, lng: 120.5930, crowdLevel: 'Low', image: '/assets/featured_images/strawberry-farm.jpg', emoji: '🥛', description: 'Fresh strawberry taho at parks', business: 'Various Vendors', bestTime: '6:00 AM - 10:00 AM' }
-    ]
-  },
-};
+import { useLiveLocations } from '../../hooks/useLiveLocations';
 
 const MapSidebar = ({ userProfile, currentUser, onLocationClick, onSidebarToggle }) => {
   const [activeTab, setActiveTab] = useState('explore');
   const [crowdFilter, setCrowdFilter] = useState('All');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const allExploreItems = [
-    ...locationMarketplace.baguio.activities.map(item => ({...item, category: 'Activity'})),
-    ...locationMarketplace.baguio.places.map(item => ({...item, category: 'Place'})),
-    ...locationMarketplace.baguio.food.map(item => ({...item, category: 'Food'})),
-  ];
+  const { locations, isLoading, isStale, lastUpdated } = useLiveLocations();
 
   const filteredItems = crowdFilter === 'All' 
-    ? allExploreItems 
-    : allExploreItems.filter(item => item.crowdLevel === crowdFilter);
+    ? locations 
+    : locations.filter(item => item.crowdLevel === crowdFilter);
 
   return (
     <div className="flex flex-col h-full w-full bg-[#0a0f1e]/80 backdrop-blur-2xl overflow-hidden pointer-events-auto border-r border-white/5 shadow-2xl">
@@ -79,7 +53,15 @@ const MapSidebar = ({ userProfile, currentUser, onLocationClick, onSidebarToggle
              {/* Header & Filter */}
              <div className="sticky top-0 bg-slate-900/10 backdrop-blur-md pt-2 pb-3 mb-2 z-10 border-b border-white/5">
                <div className="flex items-center justify-between">
-                 <h2 className="text-[1.3rem] font-black text-white tracking-tight">Baguio City</h2>
+                 <div>
+                   <h2 className="text-[1.3rem] font-black text-white tracking-tight">Baguio City</h2>
+                   {lastUpdated && (
+                     <p className="text-[10px] text-slate-400 font-medium tracking-wide">
+                       Live: {lastUpdated.toLocaleTimeString()}
+                       {isStale && <span className="ml-2 text-amber-500 font-bold">⚠️ Data may be outdated</span>}
+                     </p>
+                   )}
+                 </div>
                   <div className="relative">
                     <button 
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -98,7 +80,7 @@ const MapSidebar = ({ userProfile, currentUser, onLocationClick, onSidebarToggle
                           onClick={() => setIsDropdownOpen(false)}
                         ></div>
                         <div className="absolute right-0 mt-2 w-48 bg-[#0a0f1e]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl z-30 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
-                          {['All', 'Low', 'Moderate', 'High'].map((level) => (
+                          {['All', 'Sparse', 'Low', 'Moderate', 'High'].map((level) => (
                             <button
                               key={level}
                               onClick={() => {
@@ -126,7 +108,7 @@ const MapSidebar = ({ userProfile, currentUser, onLocationClick, onSidebarToggle
                {filteredItems.map(item => (
                   <div 
                     key={`${item.category}-${item.id}`} 
-                    onClick={() => onLocationClick({ lat: item.lat || 16.4023, lng: item.lng || 120.5960, name: item.name, region: 'Baguio City' })}
+                    onClick={() => onLocationClick({ id: item.id, lat: item.lat || 16.4023, lng: item.lng || 120.5960, name: item.name, region: 'Baguio City' })}
                     className="group flex gap-3.5 p-2 rounded-xl hover:bg-white/5 cursor-pointer transition-all duration-300 border border-transparent hover:border-white/10 active:bg-white/10"
                   >
                     {/* Image */}
@@ -158,10 +140,12 @@ const MapSidebar = ({ userProfile, currentUser, onLocationClick, onSidebarToggle
                           </span>
                         </div>
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-[6px] border transition-all shadow-[0_0_10px_rgba(0,0,0,0.2)] ${
+                          item.crowdLevel === 'Sparse' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-blue-500/20' :
                           item.crowdLevel === 'Low' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/20' :
                           item.crowdLevel === 'Moderate' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/20' :
                           'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-rose-500/20'
                         }`} style={{ boxShadow: `0 0 12px ${
+                          item.crowdLevel === 'Sparse' ? 'rgba(59, 130, 246, 0.25)' :
                           item.crowdLevel === 'Low' ? 'rgba(16, 185, 129, 0.25)' :
                           item.crowdLevel === 'Moderate' ? 'rgba(245, 158, 11, 0.25)' :
                           'rgba(244, 63, 94, 0.25)'

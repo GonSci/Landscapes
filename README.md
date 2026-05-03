@@ -90,27 +90,70 @@ python app.py
 
 ### PostgreSQL Database Setup
 
-The backend now uses PostgreSQL for authentication and persistent surveillance logging. You must install and run PostgreSQL locally.
+The backend uses PostgreSQL for user accounts, location data, and surveillance logs. You must have PostgreSQL running locally.
 
-1. Install PostgreSQL (macOS: `brew install postgresql@14`, Windows: Download from EnterpriseDB).
-2. Start the PostgreSQL service.
-3. Create the database and user with the following `psql` commands:
+1. **Install PostgreSQL**:
+   - **macOS**: `brew install postgresql@14`
+   - **Windows**: Download the installer from [EnterpriseDB](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads).
+2. **Start the Service**:
+   - **macOS**: `brew services start postgresql@14`
+   - **Windows**: Ensure the PostgreSQL service is running in `services.msc`.
+3. **Initialize Database and User**:
+   Open your terminal (or `psql` shell) and run:
    ```sql
+   -- Create the database
    CREATE DATABASE landscapes;
+
+   -- Create the specialized user
    CREATE USER landscapes_user WITH ENCRYPTED PASSWORD 'landscapes_pass123';
+
+   -- Grant permissions
    GRANT ALL PRIVILEGES ON DATABASE landscapes TO landscapes_user;
-   -- Important for PostgreSQL 15+
+
+   -- CRITICAL for PostgreSQL 15+: Ensure the user owns the schema
    ALTER DATABASE landscapes OWNER TO landscapes_user;
    ```
-4. Run the database initialization script before starting `app.py`:
+
+### Backend Setup (Step-by-Step)
+
+1. **Environment Configuration**:
+   - Copy `backend/.env.example` to `backend/.env`:
+     ```bash
+     cp backend/.env.example backend/.env
+     ```
+   - Verify the `DATABASE_URL` in `.env` matches your local PostgreSQL credentials.
+
+2. **Install Dependencies**:
    ```bash
-   python create_db.py
+   cd backend
+   python3 -m venv venv
+   source venv/bin/activate  # Windows: venv\Scripts\activate
+   pip install --upgrade pip
+   pip install -r requirements.txt
    ```
-*(Note: If you run into schema issues later, you can use `python fix_db.py` to recreate tables.)*
 
-Expected backend URL:
+3. **Initialize Database Tables**:
+   This script creates the actual tables in your PostgreSQL database:
+   ```bash
+   python3 create_db.py
+   ```
 
-- http://localhost:5001
+4. **Seed Location Data (CRITICAL)**:
+   This step populates the `locations` table with the actual Baguio places (Night Market, The Mansion, etc.). **If you skip this, the map and explore pages will be empty.**
+   ```bash
+   python3 run_migration.py
+   ```
+
+5. **Verify AI Model**:
+   Ensure `backend/best.pt` exists. This is the YOLOv8 model used for people detection.
+
+6. **Start the Server**:
+   ```bash
+   python3 app.py
+   ```
+   Expected backend URL: [http://localhost:5001](http://localhost:5001)
+
+---
 
 ## Step 3: Setup and Run Frontend
 
@@ -235,8 +278,11 @@ npm install
 ```bash
 cd backend
 source venv/bin/activate    # Windows: venv\Scripts\activate
-python3 -m pip install -r requirements.txt
-python3 create_db.py        # Update database schema if needed
+pip install -r requirements.txt
+python3 create_db.py        # Ensure tables exist
+python3 run_migration.py    # CRITICAL: Sync location data and latest schema
 ```
+
+**Note**: If we've updated the AI model, make sure you have the latest `best.pt` file in the `backend/` folder.
 
 Then run backend and frontend again.

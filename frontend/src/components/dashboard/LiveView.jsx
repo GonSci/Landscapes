@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = 'http://localhost:5001/api';
 
-const LiveView = () => {
+const LiveView = ({ targetLocationId, clearTargetLocation }) => {
   const [detectedCount, setDetectedCount] = useState(0);
   const [videoInitialized, setVideoInitialized] = useState(false);
   const [videoError, setVideoError] = useState(null);
@@ -18,7 +18,7 @@ const LiveView = () => {
   const [hoveredBar, setHoveredBar] = useState(null);
   const [claheEnabled, setClaheEnabled] = useState(true);
   const [blurEnabled, setBlurEnabled]   = useState(true);
-  const [stableCrowdLevel, setStableCrowdLevel] = useState({ label: 'LOW', color: '#10b981', percentage: 33 });
+  const [stableCrowdLevel, setStableCrowdLevel] = useState({ label: 'SPARSE', color: '#3b82f6', percentage: 15 });
   const [analysisView, setAnalysisView] = useState('intelligence');
   const [analyticsData, setAnalyticsData] = useState([]);
   const [startDate, setStartDate] = useState(() => {
@@ -62,8 +62,10 @@ const LiveView = () => {
           const data = await response.json();
           setLocations(data);
           
-          // Set initial active location based on what's active in DB
-          const active = data.find(l => l.is_active) || data[0];
+          // Prioritize targetLocationId if redirected from Map or Explore
+          const targetLoc = targetLocationId ? data.find(l => l.id === targetLocationId) : null;
+          const active = targetLoc || data.find(l => l.is_active) || data[0];
+          
           if (active) {
             setActiveLocationId(active.id);
             setActiveLocationName(active.name);
@@ -79,7 +81,11 @@ const LiveView = () => {
                 use_gpu: true
               })
             }).then(res => {
-              if (res.ok) setVideoInitialized(true);
+              if (res.ok) {
+                setVideoInitialized(true);
+                // Clear the target so it doesn't sticky redirect on next mount
+                if (clearTargetLocation) clearTargetLocation();
+              }
             });
           }
         }
@@ -348,11 +354,28 @@ const LiveView = () => {
   };
 
   // Get crowd level based on detected count (10+ people = HIGH for demo)
+  const locationThresholds = {
+    1: { sparse: 2, low: 8, moderate: 14 },
+    2: { sparse: 6, low: 22, moderate: 37 },
+    3: { sparse: 2, low: 7, moderate: 13 },
+    4: { sparse: 2, low: 8, moderate: 14 },
+    5: { sparse: 12, low: 39, moderate: 65 },
+  };
+
   const getCrowdLevel = () => {
-    if (detectedCount === 0) return { label: 'LOW', color: '#10b981', percentage: 0 };
-    if (detectedCount < 5) return { label: 'LOW', color: '#10b981', percentage: 33 };
-    if (detectedCount < 10) return { label: 'MODERATE', color: '#f59e0b', percentage: 66 };
+    const thresholds = locationThresholds[activeLocationId] || { sparse: 2, low: 8, moderate: 14 };
+    if (detectedCount <= thresholds.sparse) return { label: 'SPARSE', color: '#3b82f6', percentage: 15 };
+    if (detectedCount <= thresholds.low) return { label: 'LOW', color: '#10b981', percentage: 45 };
+    if (detectedCount <= thresholds.moderate) return { label: 'MODERATE', color: '#f59e0b', percentage: 75 };
     return { label: 'HIGH', color: '#ef4444', percentage: 100 };
+  };
+
+  const getLogStyle = (count) => {
+    const thresholds = locationThresholds[activeLocationId] || { sparse: 2, low: 8, moderate: 14 };
+    if (count <= thresholds.sparse) return { bg: 'bg-blue-500/10', iconColor: 'text-blue-400', textColor: 'text-blue-500' };
+    if (count <= thresholds.low) return { bg: 'bg-emerald-500/10', iconColor: 'text-emerald-400', textColor: 'text-emerald-500' };
+    if (count <= thresholds.moderate) return { bg: 'bg-amber-500/10', iconColor: 'text-amber-400', textColor: 'text-amber-500' };
+    return { bg: 'bg-red-500/10', iconColor: 'text-red-400', textColor: 'text-red-500' };
   };
 
   // Scroll to Hidden Gems section
@@ -411,7 +434,7 @@ const LiveView = () => {
           shadow: 'shadow-[0_0_20px_rgba(245,158,11,0.4)]',
           icon: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
         };
-      default:
+      case 'LOW':
         return {
           title: 'Optimal Access',
           text: 'Low crowd density detected. This is the perfect time for a visit to enjoy full accessibility and a peaceful environment.',
@@ -420,6 +443,17 @@ const LiveView = () => {
           border: 'border-emerald-500/20',
           textMuted: 'text-emerald-400',
           shadow: 'shadow-[0_0_20px_rgba(16,185,129,0.4)]',
+          icon: <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        };
+      default: // SPARSE
+        return {
+          title: 'Minimal crowd',
+          text: 'Crowd density is sparse. This is an excellent time for uninterrupted viewing and photography with minimal foot traffic.',
+          color: 'blue',
+          bg: 'bg-blue-500/10',
+          border: 'border-blue-500/20',
+          textMuted: 'text-blue-400',
+          shadow: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]',
           icon: <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
         };
     }
@@ -698,6 +732,7 @@ const LiveView = () => {
                       <span className={`text-[10px] font-black uppercase tracking-widest ${
                         crowdLevel.label === 'HIGH' ? 'text-red-500' : 
                         crowdLevel.label === 'MODERATE' ? 'text-amber-500' : 
+                        crowdLevel.label === 'SPARSE' ? 'text-blue-500' :
                         'text-emerald-500'
                       }`}>
                         {crowdLevel.label} DENSITY
@@ -709,12 +744,14 @@ const LiveView = () => {
                           className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] ${
                             crowdLevel.label === 'HIGH' ? 'from-red-500 to-rose-600' : 
                             crowdLevel.label === 'MODERATE' ? 'from-amber-500 to-orange-600' : 
+                            crowdLevel.label === 'SPARSE' ? 'from-blue-500 to-blue-600' :
                             'from-emerald-500 to-teal-600'
                           }`}
                           style={{ width: `${crowdLevel.percentage}%` }}
                         ></div>
                       </div>
                       <div className="flex justify-between text-[9px] font-black uppercase tracking-[2px] text-slate-600">
+                        <span className={crowdLevel.label === 'SPARSE' ? 'text-blue-500' : ''}>Sparse</span>
                         <span className={crowdLevel.label === 'LOW' ? 'text-emerald-500' : ''}>Low</span>
                         <span className={crowdLevel.label === 'MODERATE' ? 'text-amber-500' : ''}>Moderate</span>
                         <span className={crowdLevel.label === 'HIGH' ? 'text-red-500' : ''}>High</span>
@@ -935,13 +972,15 @@ const LiveView = () => {
                   </div>
                   
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    {surveillanceLogs.length > 0 ? surveillanceLogs.map((log) => (
+                    {surveillanceLogs.length > 0 ? surveillanceLogs.map((log) => {
+                      const style = !log.isEvent ? getLogStyle(log.count) : null;
+                      return (
                       <div 
                         key={log.id} 
                         className="flex items-center justify-between rounded-2xl bg-white/5 border border-white/10 p-4 transition-all hover:bg-white/[0.08]"
                       >
                         <div className="flex items-center gap-4">
-                          <div className={`p-2 rounded-xl ${log.isEvent ? 'bg-indigo-500/10 text-indigo-400' : (log.count >= 10 ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400')}`}>
+                          <div className={`p-2 rounded-xl ${log.isEvent ? 'bg-indigo-500/10 text-indigo-400' : `${style.bg} ${style.iconColor}`}`}>
                             {log.isEvent ? (
                               <Settings className="w-3.5 h-3.5" />
                             ) : (
@@ -958,7 +997,7 @@ const LiveView = () => {
                         <div className="flex flex-col items-end gap-0.5">
                           {!log.isEvent ? (
                             <>
-                              <span className={`text-sm font-black ${log.count >= 10 ? 'text-red-500' : 'text-emerald-500'}`}>
+                              <span className={`text-sm font-black ${style.textColor}`}>
                                 {log.count}
                               </span>
                               <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">PEOPLE</span>
@@ -968,7 +1007,8 @@ const LiveView = () => {
                           )}
                         </div>
                       </div>
-                    )) : (
+                      );
+                    }) : (
                       <div className="flex flex-col items-center gap-4 py-20">
                          <div className="w-10 h-10 border-2 border-indigo-500/10 border-t-indigo-500/40 rounded-full animate-spin"></div>
                          <p className="text-[10px] font-black uppercase tracking-[3px] text-slate-600">Waiting for logs...</p>

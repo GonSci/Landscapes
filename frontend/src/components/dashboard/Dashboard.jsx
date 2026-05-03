@@ -4,7 +4,7 @@ import CSRNet from './CSRNet';
 import Redirection from './Redirection';
 import { Activity, Map as MapIcon, Compass } from 'lucide-react';
 
-const Dashboard = () => {
+const Dashboard = ({ targetLocationId, clearTargetLocation }) => {
   const [activeTab, setActiveTab] = useState('live');
 
   const tabs = [
@@ -59,7 +59,10 @@ const Dashboard = () => {
       {/* Main Content Area */}
       <div className="max-w-[1600px] mx-auto">
         <div className="animate-fadeInUp delay-300">
-          <ActiveComponent />
+          <ActiveComponent 
+            targetLocationId={targetLocationId} 
+            clearTargetLocation={clearTargetLocation}
+          />
         </div>
       </div>
 

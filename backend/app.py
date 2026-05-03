@@ -387,6 +387,36 @@ def get_locations():
     locations = Location.query.all()
     return jsonify([loc.to_dict() for loc in locations])
 
+@app.route('/api/locations/live-status', methods=['GET'])
+def get_live_status():
+    from sqlalchemy import func
+    try:
+        subquery = db.session.query(
+            SurveillanceLog.location_id,
+            func.max(SurveillanceLog.timestamp).label('max_time')
+        ).group_by(SurveillanceLog.location_id).subquery()
+
+        latest_logs = db.session.query(SurveillanceLog).join(
+            subquery,
+            (SurveillanceLog.location_id == subquery.c.location_id) & 
+            (SurveillanceLog.timestamp == subquery.c.max_time)
+        ).all()
+
+        if not latest_logs:
+            return jsonify([])
+
+        return jsonify([{
+            'location_id': log.location_id,
+            'people_count': log.people_count,
+            'timestamp': log.timestamp.isoformat() if log.timestamp else None
+        } for log in latest_logs])
+    except Exception as e:
+        print(f"Error in get_live_status: {str(e)}")
+        # Requirement: "The endpoint must return an empty array [] — never an error response — if no logs exist yet."
+        # Falling back to returning [] in case the table is completely missing/empty or fails
+        return jsonify([])
+
+
 
 # ── YOLO endpoints ─────────────────────────────────────────────────────────────
 @app.route('/api/yolo/initialize', methods=['POST'])
@@ -949,7 +979,17 @@ def background_logger():
                 with max_count_lock:
                     peak_count = max_count_in_interval
                 
-                is_high_density = peak_count >= 10
+                # Dynamic thresholding based on location
+                location_high_thresholds = {
+                    1: 15, # Baguio Night Market
+                    2: 38, # The Mansion
+                    3: 14, # The Mansion Entrance
+                    4: 15, # Baguio Cathedral
+                    5: 66  # Melvin Jones Burnham Park
+                }
+                high_threshold = location_high_thresholds.get(current_loc_id, 10)
+                is_high_density = peak_count >= high_threshold
+                
                 time_since_last_log = now - last_log_time
                 
                 if time_since_last_log >= 60 or (is_high_density and time_since_last_log >= 10):

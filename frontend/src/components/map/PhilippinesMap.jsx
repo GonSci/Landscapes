@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import philippinesData from '../../data/philippines_locations.json';
+import { useLiveLocations } from '../../hooks/useLiveLocations';
 
-const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebarOpen, onViewLiveFeed }) => {
+const PhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onViewLiveFeed }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
   const featureMarkersRef = useRef([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [showFeatures, setShowFeatures] = useState(true);
+
+  const { locations } = useLiveLocations();
 
   // Invalidate map size when sidebar toggles
   useEffect(() => {
@@ -88,8 +90,8 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
       const btn = e.popup._contentNode?.querySelector('.live-feed-btn');
       if (btn) {
         btn.onclick = () => {
-          const locationName = btn.getAttribute('data-location');
-          if (onViewLiveFeed) onViewLiveFeed(locationName);
+          const locationId = parseInt(btn.getAttribute('data-location-id'));
+          if (onViewLiveFeed) onViewLiveFeed(locationId);
         };
       }
     });
@@ -100,14 +102,15 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
 
     // Removed standard Baguio location pins as per user request
 
-  }, [mapLoaded, onLocationClick]);
+  }, [mapLoaded]);
 
   // Focus on a specific location when requested
   useEffect(() => {
     if (focusLocation && mapInstanceRef.current && window.L && featureMarkersRef.current) {
-      // Find the marker that matches the coordinates
+      // Find the marker that matches the location ID (robust) or coordinates (fallback)
       const targetMarker = featureMarkersRef.current.find(
-        m => m.getLatLng().lat === focusLocation.lat && m.getLatLng().lng === focusLocation.lng
+        m => m.options.locationId === focusLocation.id || 
+             (m.getLatLng().lat === focusLocation.lat && m.getLatLng().lng === focusLocation.lng)
       );
       
       if (targetMarker) {
@@ -121,9 +124,9 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
     }
   }, [focusLocation]);
 
-  // Add feature markers for Baguio activities, places, and food only
+  // Add feature markers from database locations
   useEffect(() => {
-    if (!mapInstanceRef.current || !window.L) return;
+    if (!mapInstanceRef.current || !window.L || !locations.length) return;
     
     // Clear existing feature markers
     featureMarkersRef.current.forEach(marker => marker.remove());
@@ -132,32 +135,10 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
     // If features are hidden, don't add any markers
     if (!showFeatures) return;
     
-    // Featured locations with their categories - Baguio only
-    const featuredLocations = [
-      // Baguio features
-      { lat: 16.4120, lng: 120.5930, type: 'place', name: 'Burnham Park', city: 'Baguio', icon: '🌳' },
-      { lat: 16.4050, lng: 120.5900, type: 'place', name: 'Session Road', city: 'Baguio', icon: '🛍️' },
-      { lat: 16.4109, lng: 120.5926, type: 'place', name: 'Baguio Cathedral', city: 'Baguio', icon: '⛪' },
-      { lat: 16.4170, lng: 120.5970, type: 'place', name: 'The Mansion', city: 'Baguio', icon: '🏛️' },
-      { lat: 16.4185, lng: 120.5935, type: 'place', name: 'Wright Park', city: 'Baguio', icon: '🐴' },
-      { lat: 16.3980, lng: 120.5600, type: 'activity', name: 'Strawberry Farm', city: 'Baguio', icon: '🍓' },
-      { lat: 16.3895, lng: 120.6145, type: 'activity', name: 'Mines View Park', city: 'Baguio', icon: '🔭' },
-    ];
-    
-    // Add markers for each featured location
-    featuredLocations.forEach((feature) => {
-      // Choose color based on type
-      let bgColor, label;
-      if (feature.type === 'activity') {
-        bgColor = '#3b82f6'; // Blue
-        label = 'Activity';
-      } else if (feature.type === 'place') {
-        bgColor = '#8b5cf6'; // Purple
-        label = 'Place';
-      } else {
-        bgColor = '#f59e0b'; // Orange
-        label = 'Food';
-      }
+    // Add markers for each database location
+    locations.forEach((loc) => {
+      const bgColor = '#8b5cf6'; // Default Purple
+      const label = 'Place';
       
       const featureIcon = window.L.divIcon({
         className: 'feature-marker',
@@ -183,10 +164,13 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
         iconAnchor: [18, 36],
       });
       
-      const marker = window.L.marker([feature.lat, feature.lng], { icon: featureIcon })
+      const marker = window.L.marker([loc.lat, loc.lng], { 
+        icon: featureIcon,
+        locationId: loc.id // Store ID for focus logic
+      })
         .addTo(mapInstanceRef.current)
         .bindPopup(`
-          <div style="text-align: center; min-width: 180px; background: #1e293b; color: #f1f5f9; padding: 12px; border-radius: 12px;">
+          <div style="text-align: center; min-width: 200px; background: #1e293b; color: #f1f5f9; padding: 12px; border-radius: 12px;">
             <div style="
               display: inline-block;
               background: ${bgColor};
@@ -199,16 +183,16 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
               letter-spacing: 0.8px;
               margin-bottom: 10px;
               box-shadow: 0 0 15px ${bgColor}80;
-            ">${label}</div>
-            <h4 style="margin: 0 0 4px 0; color: white; font-size: 1rem; font-weight: 700;">${feature.name}</h4>
+            ">${loc.crowdLevel} Crowd</div>
+            <h4 style="margin: 0 0 4px 0; color: white; font-size: 1rem; font-weight: 700;">${loc.name}</h4>
             <p style="margin: 0 0 14px 0; color: #94a3b8; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 4px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
                 <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
                 <circle cx="12" cy="10" r="3"></circle>
               </svg>
-              ${feature.city}
+              Baguio City
             </p>
-            <button class="live-feed-btn" data-location="${feature.name}" style="
+            <button class="live-feed-btn" data-location-id="${loc.id}" style="
               display: flex; align-items: center; justify-content: center; gap: 8px;
               background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 14px; border-radius: 10px; 
               font-size: 0.85rem; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -225,7 +209,7 @@ const PhilippinesMap = ({ onLocationClick, userProfile, focusLocation, isSidebar
       
       featureMarkersRef.current.push(marker);
     });
-  }, [mapInstanceRef.current, window.L, showFeatures]);
+  }, [mapInstanceRef.current, window.L, showFeatures, locations]);
 
 
 

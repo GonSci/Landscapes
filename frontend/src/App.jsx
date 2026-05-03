@@ -3,7 +3,7 @@ import './App.css';
 import Navbar from './components/navbar/Navbar';
 import PhilippinesMap from './components/map/PhilippinesMap';
 import UserProfile from './components/profile/UserProfile';
-import LocationModal from './components/map/LocationModal';
+
 import ExploreSection from './components/explore/ExploreSection';
 import Home from './components/landingPage/Home';
 import Dashboard from './components/dashboard/Dashboard';
@@ -20,8 +20,7 @@ function App() {
 
   const [currentPage, setCurrentPage] = useState(getInitialPage());
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+
   const [userProfile, setUserProfile] = useState({
     checklists: [], 
     savedTemplates: [],
@@ -30,6 +29,7 @@ function App() {
   const [focusLocation, setFocusLocation] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dashboardTargetId, setDashboardTargetId] = useState(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -105,13 +105,7 @@ function App() {
     }
   };
 
-  const handleLocationClick = (location) => {
-    setSelectedLocation(location);
-    setShowModal(true);
-    if (currentPage === 'explore') {
-      setCurrentPage('map');
-    }
-  };
+
 
 
 
@@ -120,16 +114,16 @@ function App() {
     window.location.hash = page;
   };
 
-  const handleViewOnMap = (location) => {
-    setCurrentPage('map');
-    setFocusLocation(location);
-    setShowModal(false);
-    setTimeout(() => setFocusLocation(null), 3000);
-  };
+
 
   const handleSidebarItemClick = (location) => {
     // Append a timestamp so React always sees this as a new object, forcing the map to react on every click
     setFocusLocation({ ...location, t: Date.now() });
+  };
+
+  const handleViewLiveFeed = (locationId) => {
+    setDashboardTargetId(locationId);
+    handleNavigate('dashboard');
   };
 
   if (loading) {
@@ -208,11 +202,10 @@ function App() {
                 )}
                 
                 <PhilippinesMap
-                  onLocationClick={handleLocationClick}
                   userProfile={userProfile}
                   focusLocation={focusLocation}
                   isSidebarOpen={isSidebarOpen}
-                  onViewLiveFeed={() => handleNavigate('dashboard')}
+                  onViewLiveFeed={handleViewLiveFeed}
                 />
               </div>
             </div>
@@ -224,6 +217,7 @@ function App() {
             <ExploreSection 
               onNavigate={handleNavigate}
               userProfile={userProfile}
+              onViewLiveFeed={handleViewLiveFeed}
             />
           </div>
         )}
@@ -245,17 +239,15 @@ function App() {
 
         {currentPage === 'dashboard' && (
           <div className="page dashboard-page">
-            <Dashboard />
+            <Dashboard 
+              targetLocationId={dashboardTargetId} 
+              clearTargetLocation={() => setDashboardTargetId(null)}
+            />
           </div>
         )}
       </div>
 
-      {showModal && (
-        <LocationModal
-          location={selectedLocation}
-          onClose={() => setShowModal(false)}
-        />
-      )}
+
     </div>
   );
 }
