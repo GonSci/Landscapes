@@ -1,18 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import baguioData from '../../data/baguio_locations.json';
+import redirectionFallback from '../../data/redirection_fallback_locations.json';
 import CSRNet from './CSRNet';
+import { useLiveLocations } from '../../hooks/useLiveLocations';
 
 const Redirection = React.forwardRef((props, ref) => {
   const [baguioLocations, setBaguioLocations] = useState([]);
   const [hoveredLocation, setHoveredLocation] = useState(null);
   const markerRefs = useRef({});
 
-  // Load Baguio locations
+  // Load Baguio locations for Hidden Gems section
   useEffect(() => {
     setBaguioLocations(baguioData.locations);
   }, []);
+
+  // Get live locations from database for interactive map (locations 1-5)
+  const { locations: liveLocations } = useLiveLocations();
+  // Use fallback locations if database locations are empty or not loaded
+  const mapLocations = liveLocations && liveLocations.length > 0 
+    ? liveLocations.filter(loc => loc.id >= 1 && loc.id <= 5)
+    : redirectionFallback.locations;
 
   // Handle location card hover
   const handleLocationHover = (locationId) => {
@@ -30,33 +40,75 @@ const Redirection = React.forwardRef((props, ref) => {
     });
   };
 
-  return (
-    <div className="mx-auto mt-10 max-w-[1600px] scroll-mt-8 rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8" ref={ref}>
-      <div className="flex flex-col gap-2 mb-8 text-center">
-        <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Intelligent Recommendations</h2>
-        <h3 className="m-0 text-2xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
-          Hidden Gems Nearby
-        </h3>
-      </div>
-      
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.3fr_2fr] 2xl:grid-cols-[1.5fr_2fr]">
-        {/* Left Side - CSRNET Density Mapping */}
-        <CSRNet />
+  // Get color based on crowd level
+  const getCrowdColor = (crowdLevel) => {
+    switch (crowdLevel) {
+      case 'low':
+        return '#10b981'; // Emerald
+      case 'moderate':
+        return '#f59e0b'; // Amber
+      case 'high':
+        return '#ef4444'; // Red
+      default:
+        return '#8b5cf6'; // Purple fallback
+    }
+  };
 
-        {/* Right Side - Map and Location Cards */}
-        <div className="flex flex-col gap-4">
-          {/* Leaflet Map */}
-          <div className="h-[250px] overflow-hidden rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.1)] sm:h-[280px] lg:h-[320px]">
+  // Create custom marker icon
+  const createCustomMarker = (crowdLevel) => {
+    const color = getCrowdColor(crowdLevel);
+    return L.divIcon({
+      className: 'custom-location-marker',
+      html: `
+        <div style="
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 0.2s ease;
+          transform-origin: bottom center;
+        "
+        onmouseover="this.style.transform='scale(1.25)'"
+        onmouseout="this.style.transform='scale(1)'">
+          <svg viewBox="0 0 24 24" width="36" height="36" style="filter: drop-shadow(0px 0px 8px ${color});">
+            <path fill="${color}" d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/>
+          </svg>
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+      popupAnchor: [0, -36],
+    });
+  };
+
+  return (
+    <div ref={ref} className="mx-auto mt-10 max-w-[1600px] scroll-mt-8 space-y-6">
+      {/* Interactive Map Card */}
+      <div className="rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8">
+        <div className="flex flex-col gap-2 mb-6 text-center">
+          <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Real-Time Location Monitoring</h2>
+          <h3 className="m-0 text-2xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
+            Crowd Distribution Map
+          </h3>
+        </div>
+
+        {/* Leaflet Map */}
+        <div className="h-[400px] overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)] sm:h-[450px] lg:h-[500px]">
             <MapContainer
-              center={[16.4065, 120.5930]}
-              zoom={14}
+              center={[16.413, 120.604]}
+              zoom={15}
               minZoom={13}
               maxZoom={16}
               maxBounds={[
-                [16.3600, 120.5400],
-                [16.4500, 120.6200]
+                [16.410, 120.593],
+                [16.416, 120.614]
               ]}
+              maxBoundsViscosity={1.0}
               scrollWheelZoom={false}
+              zoomControl={false}
+              attributionControl={false}
               className="h-full w-full"
               style={{ height: '100%', width: '100%' }}
             >
@@ -64,45 +116,57 @@ const Redirection = React.forwardRef((props, ref) => {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
-              {baguioLocations.map((location) => (
+              <ZoomControl position="bottomright" />
+              {mapLocations.map((location) => (
                 <Marker 
                   key={location.id} 
-                  position={[location.coordinates.lat, location.coordinates.lng]}
+                  position={[location.lat, location.lng]}
+                  icon={createCustomMarker(location.crowdLevel?.toLowerCase() || 'low')}
                   ref={(ref) => {
                     if (ref) {
                       markerRefs.current[location.id] = ref;
                     }
                   }}
                 >
-                  <Popup>
-                      <div className="p-2">
-                        <h4 className="mb-2 text-base font-semibold text-slate-800">
+                  <Popup className="location-popup">
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-white/10 p-4 min-w-[240px] shadow-2xl">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <h4 className="text-base font-black text-white tracking-tight">
                           {location.name}
                         </h4>
-                        <p className="mb-2 text-sm capitalize text-slate-500">
-                          {location.type}
-                        </p>
-                        <div className="flex items-center gap-2">
-                        <span 
-                            className={`rounded px-2.5 py-1 text-xs font-semibold text-white ${
-                              location.currentCrowdLevel === 'low'
-                                ? 'bg-emerald-500'
-                                : location.currentCrowdLevel === 'moderate'
-                                  ? 'bg-amber-500'
-                                  : 'bg-red-500'
-                            }`}
-                        >
-                          {location.currentCrowdLevel.toUpperCase()}
-                        </span>
-                          <span className="text-sm font-medium text-slate-500">
-                            {location.detectedPeople} people
-                          </span>
                       </div>
-                        <div className="mt-2 flex items-center gap-1.5 border-t border-slate-200 pt-2">
-                          <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-amber-500">
-                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                        </svg>
-                          <span className="text-sm font-medium text-slate-500">{location.distance} km away</span>
+                      
+                      <p className="text-xs text-slate-300 capitalize mb-3 font-medium">
+                        {location.type}
+                      </p>
+
+                      <div className="inline-block mb-3">
+                        <span 
+                          className={`rounded-lg px-3 py-1.5 text-xs font-black text-white uppercase tracking-widest ${
+                            location.crowdLevel?.toLowerCase() === 'low' || location.crowdLevel?.toLowerCase() === 'sparse'
+                              ? 'bg-emerald-500/80 shadow-lg shadow-emerald-500/30'
+                              : location.crowdLevel?.toLowerCase() === 'moderate'
+                                ? 'bg-amber-500/80 shadow-lg shadow-amber-500/30'
+                                : 'bg-red-500/80 shadow-lg shadow-red-500/30'
+                          }`}
+                        >
+                          {location.crowdLevel}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2.5 border-t border-white/10 pt-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">People</span>
+                          <span className="text-xs font-black text-white">{location.detectedPeople}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Capacity</span>
+                          <span className="text-xs font-black text-white">{location.capacity}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Distance</span>
+                          <span className="text-xs font-black text-slate-200">{location.distance} km</span>
+                        </div>
                       </div>
                     </div>
                   </Popup>
@@ -110,9 +174,23 @@ const Redirection = React.forwardRef((props, ref) => {
               ))}
             </MapContainer>
           </div>
+      </div>
 
-          {/* Scrollable Location Cards */}
-            <div className="overflow-hidden">
+      {/* Hidden Gems Nearby Section */}
+      <div className="rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8">
+        <div className="flex flex-col gap-2 mb-8 text-center">
+          <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Intelligent Recommendations</h2>
+          <h3 className="m-0 text-2xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
+            Hidden Gems Nearby
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.3fr_2fr] 2xl:grid-cols-[1.5fr_2fr]">
+          {/* Left Side - CSRNET Density Mapping */}
+          <CSRNet />
+
+          {/* Right Side - Location Cards */}
+          <div className="flex flex-col gap-4">
               <div className="flex gap-5 overflow-x-auto pb-4 scroll-smooth custom-scrollbar">
               {baguioLocations
                 .filter(loc => loc.currentCrowdLevel === 'low')
@@ -169,3 +247,52 @@ const Redirection = React.forwardRef((props, ref) => {
 Redirection.displayName = 'Redirection';
 
 export default Redirection;
+
+const styles = `
+  .location-popup .leaflet-popup-content-wrapper {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    color: white !important;
+    border-radius: 16px !important;
+    padding: 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .location-popup .leaflet-popup-content {
+    margin: 0 !important;
+    line-height: inherit !important;
+  }
+
+  .location-popup .leaflet-popup-tip {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .location-popup .leaflet-popup-close-button {
+    color: #94a3b8 !important;
+    padding: 12px 12px 0 0 !important;
+    font-size: 20px !important;
+    opacity: 0.8;
+  }
+
+  .location-popup .leaflet-popup-close-button:hover {
+    color: white !important;
+    opacity: 1;
+  }
+
+  .custom-location-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .leaflet-container {
+    background-color: #0f172a;
+  }
+`;
+
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}
