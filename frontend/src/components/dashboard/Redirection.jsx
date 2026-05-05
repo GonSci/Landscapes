@@ -10,6 +10,11 @@ import { useLiveLocations } from '../../hooks/useLiveLocations';
 const Redirection = React.forwardRef((props, ref) => {
   const [baguioLocations, setBaguioLocations] = useState([]);
   const [hoveredLocation, setHoveredLocation] = useState(null);
+  const [maxTravelTime, setMaxTravelTime] = useState(15);
+  const [travelMode, setTravelMode] = useState('walking');
+  const [groupSize, setGroupSize] = useState(1);
+  const [environment, setEnvironment] = useState('any');
+  const [paidAttractions, setPaidAttractions] = useState(false);
   const markerRefs = useRef({});
 
   // Load Baguio locations for Hidden Gems section
@@ -87,15 +92,21 @@ const Redirection = React.forwardRef((props, ref) => {
     <div ref={ref} className="mx-auto mt-10 max-w-[1600px] scroll-mt-8 space-y-6">
       {/* Interactive Map Card */}
       <div className="rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8">
-        <div className="flex flex-col gap-2 mb-6 text-center">
-          <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Real-Time Location Monitoring</h2>
-          <h3 className="m-0 text-2xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
-            Crowd Distribution Map
-          </h3>
-        </div>
+        {/* Map and Settings Layout */}
+        <div className="grid grid-cols-1 gap-6 items-stretch lg:grid-cols-[2fr_1fr]">
+          {/* Left Column - Map with Header */}
+          <div className="flex flex-col gap-4">
+            {/* Header - Left Aligned */}
+            <div className="flex flex-col gap-2 text-left">
+              <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Smart Redirection</h2>
+              <h3 className="m-0 text-2xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
+                Crowd-Aware Redirection
+              </h3>
+              <p className="m-0 text-sm text-slate-400 font-medium mt-1">Click on any location marker to view details and find alternative routes based on current crowd levels</p>
+            </div>
 
-        {/* Leaflet Map */}
-        <div className="h-[400px] overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)] sm:h-[450px] lg:h-[500px]">
+            {/* Leaflet Map */}
+            <div className="flex-1 overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)]" style={{ minHeight: '320px' }}>
             <MapContainer
               center={[16.413, 120.604]}
               zoom={15}
@@ -173,7 +184,134 @@ const Redirection = React.forwardRef((props, ref) => {
                 </Marker>
               ))}
             </MapContainer>
+            </div>
           </div>
+
+          {/* Settings Sidebar - Right Side */}
+          <div className="flex flex-col self-stretch">
+            {/* Settings Panel */}
+            <div className="h-full rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-y-auto flex flex-col">
+              <h4 className="text-lg font-black text-white mb-5 tracking-tight">Your Preferences</h4>
+              
+              {/* Max Travel Time */}
+              <div className="space-y-1.5 mb-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Max Travel Time</label>
+                  <span className="text-sm font-black text-indigo-400">{maxTravelTime} min</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="1" 
+                  max="30" 
+                  value={maxTravelTime}
+                  onChange={(e) => setMaxTravelTime(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
+              </div>
+
+              <div className="border-t border-white/10 my-2.5"></div>
+
+              {/* Travel Mode */}
+              <div className="space-y-1.5 mb-3">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Travel Mode</label>
+                <select 
+                  value={travelMode}
+                  onChange={(e) => setTravelMode(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-white/10 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                >
+                  <option value="walking">Walking</option>
+                  <option value="commuting">Commuting</option>
+                  <option value="driving">Driving</option>
+                </select>
+              </div>
+
+              <div className="border-t border-white/10 my-2.5"></div>
+
+              {/* Group Size */}
+              <div className="space-y-1.5 mb-3">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Group Size</label>
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="50"
+                  value={groupSize}
+                  onChange={(e) => setGroupSize(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-white/10 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+              </div>
+
+              <div className="border-t border-white/10 my-2.5"></div>
+
+              {/* Environment Preference */}
+              <div className="space-y-1.5 mb-3">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Environment</label>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="radio" 
+                      id="indoors" 
+                      name="environment"
+                      value="indoors"
+                      checked={environment === 'indoors'}
+                      onChange={(e) => setEnvironment(e.target.value)}
+                      className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                    />
+                    <label htmlFor="indoors" className="text-sm text-slate-300 cursor-pointer">Indoors</label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="radio" 
+                      id="outdoors" 
+                      name="environment"
+                      value="outdoors"
+                      checked={environment === 'outdoors'}
+                      onChange={(e) => setEnvironment(e.target.value)}
+                      className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                    />
+                    <label htmlFor="outdoors" className="text-sm text-slate-300 cursor-pointer">Outdoors</label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="radio" 
+                      id="any" 
+                      name="environment"
+                      value="any"
+                      checked={environment === 'any'}
+                      onChange={(e) => setEnvironment(e.target.value)}
+                      className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                    />
+                    <label htmlFor="any" className="text-sm text-slate-300 cursor-pointer">Any</label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-white/10 my-2.5"></div>
+
+              {/* Paid Attractions */}
+              <div className="space-y-1.5 mb-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Include Paid Attractions</label>
+                  <input 
+                    type="checkbox" 
+                    checked={paidAttractions}
+                    onChange={(e) => setPaidAttractions(e.target.checked)}
+                    className="w-5 h-5 rounded accent-indigo-500 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-white/10 my-2.5"></div>
+
+              {/* Redirect Me Now Button */}
+              <button 
+                onClick={() => console.log({ maxTravelTime, travelMode, groupSize, environment, paidAttractions })}
+                className="mt-auto w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black uppercase tracking-widest text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/50"
+              >
+                Redirect Me Now
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Hidden Gems Nearby Section */}
