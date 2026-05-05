@@ -16,13 +16,29 @@ const Redirection = React.forwardRef((props, ref) => {
   const [groupSize, setGroupSize] = useState(1);
   const [environment, setEnvironment] = useState('any');
   const [paidAttractions, setPaidAttractions] = useState(false);
+  const [isTravelModeOpen, setIsTravelModeOpen] = useState(false);
   const markerRefs = useRef({});
   const mapRef = useRef(null);
+  const travelModeRef = useRef(null);
 
   // Load Baguio locations for Hidden Gems section
   useEffect(() => {
     setBaguioLocations(baguioData.locations);
   }, []);
+
+  // Handle clicking outside the travel mode dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (travelModeRef.current && !travelModeRef.current.contains(event.target)) {
+        setIsTravelModeOpen(false);
+      }
+    };
+
+    if (isTravelModeOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isTravelModeOpen]);
 
   // Get live locations from database for interactive map (locations 1-5)
   const { locations: liveLocations } = useLiveLocations();
@@ -250,19 +266,50 @@ const Redirection = React.forwardRef((props, ref) => {
               {/* Travel Mode */}
               <div className="space-y-1.5 mb-3">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400">Travel Mode</label>
-                <div className="relative">
-                  <select 
-                    value={travelMode}
-                    onChange={(e) => setTravelMode(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 cursor-pointer appearance-none backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg"
+                <div className="relative" ref={travelModeRef}>
+                  <button
+                    onClick={() => setIsTravelModeOpen(!isTravelModeOpen)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 cursor-pointer backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg flex items-center justify-between"
                   >
-                    <option value="walking">🚶 Walking</option>
-                    <option value="commuting">🚌 Commuting</option>
-                    <option value="driving">🚗 Driving</option>
-                  </select>
-                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
+                    <span className="capitalize">
+                      {travelMode === 'walking' ? 'Walking' : travelMode === 'commuting' ? 'Public Transport' : 'Driving'}
+                    </span>
+                    <svg 
+                      className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isTravelModeOpen ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </button>
+
+                  {isTravelModeOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {['Walking', 'Public Transport', 'Driving'].map((option, index) => (
+                        <button
+                          key={option}
+                          onClick={() => {
+                            setTravelMode(option.toLowerCase().replace(' ', '_'));
+                            setIsTravelModeOpen(false);
+                          }}
+                          style={{
+                            animationDelay: `${index * 30}ms`
+                          }}
+                          className={`w-full px-4 py-3 text-sm font-medium text-left transition-all duration-200 flex items-center gap-3 group ${
+                            (option === 'Walking' && travelMode === 'walking') ||
+                            (option === 'Public Transport' && travelMode === 'commuting') ||
+                            (option === 'Driving' && travelMode === 'driving')
+                              ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 text-indigo-100 border-l-2 border-indigo-400'
+                              : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent'
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-current opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                          <span>{option}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -271,23 +318,44 @@ const Redirection = React.forwardRef((props, ref) => {
               {/* Group Size */}
               <div className="space-y-1.5 mb-3">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400">Group Size</label>
-                <input 
-                  type="number" 
-                  min="1" 
-                  max="50"
-                  value={groupSize}
-                  onChange={(e) => setGroupSize(Number(e.target.value))}
-                  className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg"
-                />
+                <div className="relative group">
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="50"
+                    value={groupSize}
+                    onChange={(e) => setGroupSize(Math.max(1, Math.min(50, Number(e.target.value))))}
+                    placeholder={groupSize === 1 ? 'Person' : 'People'}
+                    className="group-size-input w-full px-4 pr-16 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-black focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg text-center"
+                  />
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 pointer-events-auto z-50">
+                    <button
+                      onClick={() => setGroupSize(Math.min(50, groupSize + 1))}
+                      className="group/btn flex items-center justify-center w-6 h-4.5 rounded-t-md bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-indigo-500/40 hover:to-purple-500/40 border border-white/20 hover:border-indigo-500/50 transition-all duration-200 cursor-pointer shadow-sm active:from-indigo-500/60 active:to-purple-500/60"
+                    >
+                      <svg className="w-3 h-3 text-slate-300 group-hover/btn:text-indigo-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setGroupSize(Math.max(1, groupSize - 1))}
+                      className="group/btn flex items-center justify-center w-6 h-4.5 rounded-b-md bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-indigo-500/40 hover:to-purple-500/40 border border-white/20 hover:border-indigo-500/50 transition-all duration-200 cursor-pointer shadow-sm active:from-indigo-500/60 active:to-purple-500/60"
+                    >
+                      <svg className="w-3 h-3 text-slate-300 group-hover/btn:text-indigo-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="border-t border-white/10 my-2.5"></div>
 
               {/* Environment Preference */}
-              <div className="space-y-1.5 mb-3">
+              <div className="space-y-2 mb-3">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400">Environment</label>
-                <div className="space-y-2">
-                  <label className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all duration-300 ${environment === 'indoors' ? 'bg-gradient-to-r from-indigo-500/30 to-purple-500/30 border border-indigo-500/50 shadow-lg shadow-indigo-500/20' : 'bg-slate-700/30 border border-white/10 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
+                <div className="grid grid-cols-3 gap-2">
+                  <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 font-medium text-xs uppercase tracking-wide ${environment === 'indoors' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
                     <input 
                       type="radio" 
                       id="indoors"
@@ -295,12 +363,11 @@ const Redirection = React.forwardRef((props, ref) => {
                       value="indoors"
                       checked={environment === 'indoors'}
                       onChange={(e) => setEnvironment(e.target.value)}
-                      className="w-4 h-4 accent-indigo-500 cursor-pointer transition-all duration-300"
+                      className="w-3 h-3 accent-white cursor-pointer"
                     />
-                    <span className="text-lg">🏠</span>
-                    <span className={`text-sm font-medium transition-colors duration-300 ${environment === 'indoors' ? 'text-white font-bold' : 'text-slate-300'}`}>Indoors</span>
+                    <span className="ml-2">Indoors</span>
                   </label>
-                  <label className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all duration-300 ${environment === 'outdoors' ? 'bg-gradient-to-r from-indigo-500/30 to-purple-500/30 border border-indigo-500/50 shadow-lg shadow-indigo-500/20' : 'bg-slate-700/30 border border-white/10 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
+                  <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 font-medium text-xs uppercase tracking-wide ${environment === 'outdoors' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
                     <input 
                       type="radio" 
                       id="outdoors"
@@ -308,12 +375,11 @@ const Redirection = React.forwardRef((props, ref) => {
                       value="outdoors"
                       checked={environment === 'outdoors'}
                       onChange={(e) => setEnvironment(e.target.value)}
-                      className="w-4 h-4 accent-indigo-500 cursor-pointer transition-all duration-300"
+                      className="w-3 h-3 accent-white cursor-pointer"
                     />
-                    <span className="text-lg">🏞️</span>
-                    <span className={`text-sm font-medium transition-colors duration-300 ${environment === 'outdoors' ? 'text-white font-bold' : 'text-slate-300'}`}>Outdoors</span>
+                    <span className="ml-2">Outdoors</span>
                   </label>
-                  <label className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all duration-300 ${environment === 'any' ? 'bg-gradient-to-r from-indigo-500/30 to-purple-500/30 border border-indigo-500/50 shadow-lg shadow-indigo-500/20' : 'bg-slate-700/30 border border-white/10 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
+                  <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 font-medium text-xs uppercase tracking-wide ${environment === 'any' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
                     <input 
                       type="radio" 
                       id="any"
@@ -321,10 +387,9 @@ const Redirection = React.forwardRef((props, ref) => {
                       value="any"
                       checked={environment === 'any'}
                       onChange={(e) => setEnvironment(e.target.value)}
-                      className="w-4 h-4 accent-indigo-500 cursor-pointer transition-all duration-300"
+                      className="w-3 h-3 accent-white cursor-pointer"
                     />
-                    <span className="text-lg">🌐</span>
-                    <span className={`text-sm font-medium transition-colors duration-300 ${environment === 'any' ? 'text-white font-bold' : 'text-slate-300'}`}>Any</span>
+                    <span className="ml-2">Any</span>
                   </label>
                 </div>
               </div>
@@ -349,14 +414,33 @@ const Redirection = React.forwardRef((props, ref) => {
 
               <div className="border-t border-white/10 my-2.5"></div>
 
-              {/* Redirect Me Now Button */}
-              <button 
-                onClick={() => console.log({ maxTravelTime, travelMode, groupSize, environment, paidAttractions })}
-                className="mt-auto w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black uppercase tracking-widest text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/50 hover:scale-105 active:scale-95 relative overflow-hidden group"
-              >
-                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center justify-center gap-2">Redirect Me Now ✨</span>
-              </button>
+              {/* Get Recommendations Button */}
+              <div className="mt-auto relative group">
+                <button 
+                  onClick={() => console.log({ maxTravelTime, travelMode, groupSize, environment, paidAttractions })}
+                  disabled={selectedLocationId === null}
+                  className={`w-full py-3 px-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all duration-300 relative overflow-hidden flex items-center justify-center gap-2 ${
+                    selectedLocationId === null
+                      ? 'bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-400 cursor-not-allowed border border-white/10 shadow-lg'
+                      : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-2xl hover:shadow-purple-500/40 hover:-translate-y-0.5 active:translate-y-0 active:shadow-lg'
+                  }`}
+                >
+                  <div className={`absolute inset-0 transition-opacity duration-300 ${selectedLocationId === null ? 'bg-transparent' : 'bg-white/10 opacity-0 group-hover:opacity-100'}`}></div>
+                  <svg className="w-4 h-4 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="relative">Get Recommendations</span>
+                </button>
+
+                {selectedLocationId === null && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-slate-900/95 border border-indigo-500/50 rounded-lg shadow-2xl text-xs font-medium text-indigo-200 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                    <div className="flex items-center gap-2">
+                      <span>Click your location on the map to start</span>
+                    </div>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900/95 border-r border-b border-indigo-500/50 rotate-45"></div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -496,6 +580,46 @@ const styles = `
     background-color: #0f172a;
   }
 
+  /* Group Size Input Styling */
+  .group-size-input {
+    -moz-appearance: textfield;
+    background: linear-gradient(135deg, rgba(55, 65, 81, 0.5) 0%, rgba(15, 23, 42, 0.5) 100%) !important;
+    color: white !important;
+    caret-color: rgb(165, 180, 252);
+  }
+
+  .group-size-input::-webkit-outer-spin-button,
+  .group-size-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .group-size-input::placeholder {
+    color: rgba(148, 163, 184, 0.9);
+    font-weight: 500;
+  }
+
+  .group-size-input::-moz-placeholder {
+    color: rgba(148, 163, 184, 0.9);
+    font-weight: 500;
+  }
+
+  .group-size-input:hover {
+    border-color: rgba(99, 102, 241, 0.5);
+  }
+
+  .group-size-input:focus {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%) !important;
+  }
+
+  .group-size-input:-webkit-autofill,
+  .group-size-input:-webkit-autofill:hover,
+  .group-size-input:-webkit-autofill:focus,
+  .group-size-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px rgba(55, 65, 81, 0.5) inset !important;
+    -webkit-text-fill-color: white !important;
+  }
+
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -556,8 +680,59 @@ const styles = `
     }
   }
 
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-in {
+    animation: slideInFromTop 0.2s ease-out;
+  }
+
+  .fade-in {
+    animation: fadeInDropdown 0.2s ease-out;
+  }
+
+  @keyframes fadeInDropdown {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .slide-in-from-top-2 {
+    animation: slideInFromTop 0.2s ease-out;
+  }
+
   .leaflet-map-pane {
     transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  button:disabled {
+    opacity: 0.6;
+  }
+
+  button:disabled:hover {
+    transform: none;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      border-color: rgba(99, 102, 241, 0.3);
+      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.1);
+    }
+    50% {
+      border-color: rgba(99, 102, 241, 0.6);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
   }
 `;
 

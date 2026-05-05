@@ -58,7 +58,7 @@ const MapSidebar = ({ userProfile, currentUser, onLocationClick, onSidebarToggle
                    {lastUpdated && (
                      <p className="text-[10px] text-slate-400 font-medium tracking-wide">
                        Live: {lastUpdated.toLocaleTimeString()}
-                       {isStale && <span className="ml-2 text-amber-500 font-bold">⚠️ Data may be outdated</span>}
+                       {isStale && <span className="ml-2 text-amber-500 font-bold">Data may be outdated</span>}
                      </p>
                    )}
                  </div>

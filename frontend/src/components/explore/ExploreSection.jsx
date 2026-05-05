@@ -50,7 +50,7 @@ const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
         {lastUpdated && (
           <p className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
             Live Data: {lastUpdated.toLocaleTimeString()}
-            {isStale && <span className="ml-2 text-amber-500">⚠️ Data may be outdated</span>}
+            {isStale && <span className="ml-2 text-amber-500">Data may be outdated</span>}
           </p>
         )}
         <p className="mx-auto max-w-2xl animate-fadeInUp text-sm leading-7 text-slate-400 sm:text-base lg:text-lg">
