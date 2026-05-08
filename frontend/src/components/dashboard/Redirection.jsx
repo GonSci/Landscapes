@@ -16,10 +16,13 @@ const Redirection = React.forwardRef((props, ref) => {
   const [groupSize, setGroupSize] = useState(1);
   const [environment, setEnvironment] = useState('any');
   const [paidAttractions, setPaidAttractions] = useState(false);
+  const [placeCategory, setPlaceCategory] = useState('any');
   const [isTravelModeOpen, setIsTravelModeOpen] = useState(false);
+  const [isPlaceCategoryOpen, setIsPlaceCategoryOpen] = useState(false);
   const markerRefs = useRef({});
   const mapRef = useRef(null);
   const travelModeRef = useRef(null);
+  const placeCategoryRef = useRef(null);
 
   // Load Baguio locations for Hidden Gems section
   useEffect(() => {
@@ -39,6 +42,20 @@ const Redirection = React.forwardRef((props, ref) => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isTravelModeOpen]);
+
+  // Handle clicking outside the place category dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (placeCategoryRef.current && !placeCategoryRef.current.contains(event.target)) {
+        setIsPlaceCategoryOpen(false);
+      }
+    };
+
+    if (isPlaceCategoryOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isPlaceCategoryOpen]);
 
   // Get live locations from database for interactive map (locations 1-5)
   const { locations: liveLocations } = useLiveLocations();
@@ -132,24 +149,24 @@ const Redirection = React.forwardRef((props, ref) => {
   };
 
   return (
-    <div ref={ref} className="mx-auto mt-10 max-w-[1600px] scroll-mt-8 space-y-6">
+    <div ref={ref} className="mx-auto max-w-[1600px] scroll-mt-8 flex flex-col gap-0">
       {/* Interactive Map Card */}
-      <div className="rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8">
+      <div className="flex-1 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-5 flex flex-col">
         {/* Map and Settings Layout */}
-        <div className="grid grid-cols-1 gap-6 items-stretch lg:grid-cols-[2fr_1fr]">
+        <div className="grid grid-cols-1 gap-4 items-stretch flex-1 lg:grid-cols-[2fr_1fr]">
           {/* Left Column - Map with Header */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             {/* Header - Left Aligned */}
-            <div className="flex flex-col gap-2 text-left">
+            <div className="flex flex-col gap-1 text-left">
               <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Smart Redirection</h2>
-              <h3 className="m-0 text-2xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
+              <h3 className="m-0 text-xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
                 Crowd-Aware Redirection
               </h3>
-              <p className="m-0 text-sm text-slate-400 font-medium mt-1">Click on any location marker to view details and find alternative routes based on current crowd levels</p>
+              <p className="m-0 text-xs text-slate-400 font-medium">Click on any location marker to view details and find alternative routes based on current crowd levels</p>
             </div>
 
             {/* Leaflet Map */}
-            <div className="flex-1 overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)]" style={{ minHeight: '320px' }}>
+            <div className="flex-1 overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)]" style={{ minHeight: 'calc(100vh - 400px)' }}>
             <MapContainer
               ref={mapRef}
               center={[16.413, 120.604]}
@@ -235,189 +252,253 @@ const Redirection = React.forwardRef((props, ref) => {
           </div>
 
           {/* Settings Sidebar - Right Side */}
-          <div className="flex flex-col self-stretch">
+          <div className="flex flex-col self-stretch" style={{ minHeight: 'calc(100vh - 400px)' }}>
             {/* Settings Panel */}
-            <div className="h-full rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-y-auto flex flex-col">
-              <h4 className="text-lg font-black text-white mb-5 tracking-tight">Your Preferences</h4>
+            <div className="rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-hidden flex flex-col flex-1">
+              <h4 className="text-lg font-black text-white mb-4 tracking-tight">Your Preferences</h4>
               
-              {/* Max Travel Time */}
-              <div className="space-y-1.5 mb-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Max Travel Time</label>
-                  <span className="text-sm font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{maxTravelTime} min</span>
+              {/* SECTION: Trip Basics */}
+              <div className="mb-3">
+                {/* Max Travel Time */}
+                <div className="space-y-1.5 mb-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">Max Travel Time</label>
+                    <span className="text-sm font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{maxTravelTime} min</span>
+                  </div>
+                  <div className="relative group">
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="30" 
+                      value={maxTravelTime}
+                      onChange={(e) => setMaxTravelTime(Number(e.target.value))}
+                      className="w-full h-2 bg-gradient-to-r from-slate-700 to-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/30"
+                      style={{
+                        background: `linear-gradient(to right, rgb(79, 70, 229) 0%, rgb(79, 70, 229) ${(maxTravelTime / 30) * 100}%, rgb(55, 65, 81) ${(maxTravelTime / 30) * 100}%, rgb(55, 65, 81) 100%)`
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="relative group">
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="30" 
-                    value={maxTravelTime}
-                    onChange={(e) => setMaxTravelTime(Number(e.target.value))}
-                    className="w-full h-2 bg-gradient-to-r from-slate-700 to-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/30"
-                    style={{
-                      background: `linear-gradient(to right, rgb(79, 70, 229) 0%, rgb(79, 70, 229) ${(maxTravelTime / 30) * 100}%, rgb(55, 65, 81) ${(maxTravelTime / 30) * 100}%, rgb(55, 65, 81) 100%)`
-                    }}
-                  />
-                </div>
-              </div>
 
-              <div className="border-t border-white/10 my-2.5"></div>
-
-              {/* Travel Mode */}
-              <div className="space-y-1.5 mb-3">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Travel Mode</label>
-                <div className="relative" ref={travelModeRef}>
-                  <button
-                    onClick={() => setIsTravelModeOpen(!isTravelModeOpen)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 cursor-pointer backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg flex items-center justify-between"
-                  >
-                    <span className="capitalize">
-                      {travelMode === 'walking' ? 'Walking' : travelMode === 'commuting' ? 'Public Transport' : 'Driving'}
-                    </span>
-                    <svg 
-                      className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isTravelModeOpen ? 'rotate-180' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
+                {/* Travel Mode */}
+                <div className="space-y-1.5 mb-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Travel Mode</label>
+                  <div className="relative" ref={travelModeRef}>
+                    <button
+                      onClick={() => setIsTravelModeOpen(!isTravelModeOpen)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 cursor-pointer backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg flex items-center justify-between"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                    </svg>
-                  </button>
+                      <span className="capitalize">
+                        {travelMode === 'walking' ? 'Walking' : travelMode === 'commuting' ? 'Public Transport' : 'Driving'}
+                      </span>
+                      <svg 
+                        className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isTravelModeOpen ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </button>
 
-                  {isTravelModeOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                      {['Walking', 'Public Transport', 'Driving'].map((option, index) => (
-                        <button
-                          key={option}
-                          onClick={() => {
-                            setTravelMode(option.toLowerCase().replace(' ', '_'));
-                            setIsTravelModeOpen(false);
-                          }}
-                          style={{
-                            animationDelay: `${index * 30}ms`
-                          }}
-                          className={`w-full px-4 py-3 text-sm font-medium text-left transition-all duration-200 flex items-center gap-3 group ${
-                            (option === 'Walking' && travelMode === 'walking') ||
-                            (option === 'Public Transport' && travelMode === 'commuting') ||
-                            (option === 'Driving' && travelMode === 'driving')
-                              ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 text-indigo-100 border-l-2 border-indigo-400'
-                              : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent'
-                          }`}
-                        >
-                          <span className="w-2 h-2 rounded-full bg-current opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
-                          <span>{option}</span>
-                        </button>
-                      ))}
+                    {isTravelModeOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {['Walking', 'Public Transport', 'Driving'].map((option, index) => (
+                          <button
+                            key={option}
+                            onClick={() => {
+                              setTravelMode(option.toLowerCase().replace(' ', '_'));
+                              setIsTravelModeOpen(false);
+                            }}
+                            style={{
+                              animationDelay: `${index * 30}ms`
+                            }}
+                            className={`w-full px-4 py-3 text-sm font-medium text-left transition-all duration-200 flex items-center gap-3 group ${
+                              (option === 'Walking' && travelMode === 'walking') ||
+                              (option === 'Public Transport' && travelMode === 'commuting') ||
+                              (option === 'Driving' && travelMode === 'driving')
+                                ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 text-indigo-100 border-l-2 border-indigo-400'
+                                : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent'
+                            }`}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-current opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                            <span>{option}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Group Size */}
+                <div className="space-y-1.5 mb-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Group Size</label>
+                  <div className="relative group">
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="50"
+                      value={groupSize}
+                      onChange={(e) => setGroupSize(Math.max(1, Math.min(50, Number(e.target.value))))}
+                      placeholder={groupSize === 1 ? 'Person' : 'People'}
+                      className="group-size-input w-full px-4 pr-16 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-black focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg text-center"
+                    />
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 pointer-events-auto z-50">
+                      <button
+                        onClick={() => setGroupSize(Math.min(50, groupSize + 1))}
+                        className="group/btn flex items-center justify-center w-6 h-4.5 rounded-t-md bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-indigo-500/40 hover:to-purple-500/40 border border-white/20 hover:border-indigo-500/50 transition-all duration-200 cursor-pointer shadow-sm active:from-indigo-500/60 active:to-purple-500/60"
+                      >
+                        <svg className="w-3 h-3 text-slate-300 group-hover/btn:text-indigo-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setGroupSize(Math.max(1, groupSize - 1))}
+                        className="group/btn flex items-center justify-center w-6 h-4.5 rounded-b-md bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-indigo-500/40 hover:to-purple-500/40 border border-white/20 hover:border-indigo-500/50 transition-all duration-200 cursor-pointer shadow-sm active:from-indigo-500/60 active:to-purple-500/60"
+                      >
+                        <svg className="w-3 h-3 text-slate-300 group-hover/btn:text-indigo-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t border-white/10 my-2.5"></div>
-
-              {/* Group Size */}
-              <div className="space-y-1.5 mb-3">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Group Size</label>
-                <div className="relative group">
-                  <input 
-                    type="number" 
-                    min="1" 
-                    max="50"
-                    value={groupSize}
-                    onChange={(e) => setGroupSize(Math.max(1, Math.min(50, Number(e.target.value))))}
-                    placeholder={groupSize === 1 ? 'Person' : 'People'}
-                    className="group-size-input w-full px-4 pr-16 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-black focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg text-center"
-                  />
-                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 pointer-events-auto z-50">
-                    <button
-                      onClick={() => setGroupSize(Math.min(50, groupSize + 1))}
-                      className="group/btn flex items-center justify-center w-6 h-4.5 rounded-t-md bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-indigo-500/40 hover:to-purple-500/40 border border-white/20 hover:border-indigo-500/50 transition-all duration-200 cursor-pointer shadow-sm active:from-indigo-500/60 active:to-purple-500/60"
-                    >
-                      <svg className="w-3 h-3 text-slate-300 group-hover/btn:text-indigo-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setGroupSize(Math.max(1, groupSize - 1))}
-                      className="group/btn flex items-center justify-center w-6 h-4.5 rounded-b-md bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-indigo-500/40 hover:to-purple-500/40 border border-white/20 hover:border-indigo-500/50 transition-all duration-200 cursor-pointer shadow-sm active:from-indigo-500/60 active:to-purple-500/60"
-                    >
-                      <svg className="w-3 h-3 text-slate-300 group-hover/btn:text-indigo-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-white/10 my-2.5"></div>
 
-              {/* Environment Preference */}
-              <div className="space-y-2 mb-3">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Environment</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 font-medium text-xs uppercase tracking-wide ${environment === 'indoors' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
-                    <input 
-                      type="radio" 
-                      id="indoors"
-                      name="environment"
-                      value="indoors"
-                      checked={environment === 'indoors'}
-                      onChange={(e) => setEnvironment(e.target.value)}
-                      className="w-3 h-3 accent-white cursor-pointer"
-                    />
-                    <span className="ml-2">Indoors</span>
-                  </label>
-                  <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 font-medium text-xs uppercase tracking-wide ${environment === 'outdoors' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
-                    <input 
-                      type="radio" 
-                      id="outdoors"
-                      name="environment"
-                      value="outdoors"
-                      checked={environment === 'outdoors'}
-                      onChange={(e) => setEnvironment(e.target.value)}
-                      className="w-3 h-3 accent-white cursor-pointer"
-                    />
-                    <span className="ml-2">Outdoors</span>
-                  </label>
-                  <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 font-medium text-xs uppercase tracking-wide ${environment === 'any' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
-                    <input 
-                      type="radio" 
-                      id="any"
-                      name="environment"
-                      value="any"
-                      checked={environment === 'any'}
-                      onChange={(e) => setEnvironment(e.target.value)}
-                      className="w-3 h-3 accent-white cursor-pointer"
-                    />
-                    <span className="ml-2">Any</span>
+              {/* SECTION: Interests & Amenities */}
+              <div className="mb-3">
+                {/* Environment Preference */}
+                <div className="space-y-2 mb-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Environment</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 font-medium text-xs uppercase tracking-wide ${environment === 'indoors' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
+                      <input 
+                        type="radio" 
+                        id="indoors"
+                        name="environment"
+                        value="indoors"
+                        checked={environment === 'indoors'}
+                        onChange={(e) => setEnvironment(e.target.value)}
+                        className="w-3 h-3 accent-white cursor-pointer"
+                      />
+                      <span className="ml-2">Indoors</span>
+                    </label>
+                    <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 font-medium text-xs uppercase tracking-wide ${environment === 'outdoors' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
+                      <input 
+                        type="radio" 
+                        id="outdoors"
+                        name="environment"
+                        value="outdoors"
+                        checked={environment === 'outdoors'}
+                        onChange={(e) => setEnvironment(e.target.value)}
+                        className="w-3 h-3 accent-white cursor-pointer"
+                      />
+                      <span className="ml-2">Outdoors</span>
+                    </label>
+                    <label className={`flex items-center justify-center px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 font-medium text-xs uppercase tracking-wide ${environment === 'any' ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
+                      <input 
+                        type="radio" 
+                        id="any"
+                        name="environment"
+                        value="any"
+                        checked={environment === 'any'}
+                        onChange={(e) => setEnvironment(e.target.value)}
+                        className="w-3 h-3 accent-white cursor-pointer"
+                      />
+                      <span className="ml-2">Any</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="border-t border-white/10 my-2.5"></div>
+
+                {/* Place Category */}
+                <div className="space-y-1.5 mb-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Place Category</label>
+                  <div className="relative" ref={placeCategoryRef}>
+                    <button
+                      onClick={() => setIsPlaceCategoryOpen(!isPlaceCategoryOpen)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 cursor-pointer backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg flex items-center justify-between"
+                    >
+                      <span className="capitalize">
+                        {placeCategory === 'shopping' ? 'Shopping & Retail' : placeCategory === 'nature' ? 'Nature & Outdoors' : placeCategory === 'dining' ? 'Dining & Food' : placeCategory === 'culture' ? 'Museums & Arts' : 'Any Category'}
+                      </span>
+                      <svg 
+                        className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isPlaceCategoryOpen ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </button>
+
+                    {isPlaceCategoryOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {[
+                          { value: 'any', label: 'Any Category' },
+                          { value: 'shopping', label: 'Shopping & Retail' },
+                          { value: 'nature', label: 'Nature & Outdoors' },
+                          { value: 'dining', label: 'Dining & Food' },
+                          { value: 'culture', label: 'Museums & Arts' }
+                        ].map((option, index) => (
+                          <button
+                            key={option.value}
+                            onClick={() => {
+                              setPlaceCategory(option.value);
+                              setIsPlaceCategoryOpen(false);
+                            }}
+                            style={{
+                              animationDelay: `${index * 30}ms`
+                            }}
+                            className={`w-full px-4 py-3 text-sm font-medium text-left transition-all duration-200 flex items-center gap-3 group ${
+                              placeCategory === option.value
+                                ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 text-indigo-100 border-l-2 border-indigo-400'
+                                : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent'
+                            }`}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-current opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                            <span>{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t border-white/10 my-2.5"></div>
+
+                {/* Paid Attractions */}
+                <div className="space-y-1.5 mb-3">
+                  <label className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 ${paidAttractions ? 'bg-gradient-to-r from-indigo-500/30 to-purple-500/30 border border-indigo-500/50 shadow-lg shadow-indigo-500/20' : 'bg-slate-700/30 border border-white/10 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-300">Include Paid Attractions</span>
+                    <div className={`relative w-12 h-6 rounded-full transition-colors duration-300 shadow-inner ${paidAttractions ? 'bg-indigo-500' : 'bg-slate-600'}`}>
+                      <input 
+                        type="checkbox" 
+                        checked={paidAttractions}
+                        onChange={(e) => setPaidAttractions(e.target.checked)}
+                        className="absolute opacity-0 w-full h-full cursor-pointer"
+                      />
+                      <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 shadow-md ${paidAttractions ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                    </div>
                   </label>
                 </div>
-              </div>
-
-              <div className="border-t border-white/10 my-2.5"></div>
-
-              {/* Paid Attractions */}
-              <div className="space-y-1.5 mb-3">
-                <label className={`flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-300 ${paidAttractions ? 'bg-gradient-to-r from-indigo-500/30 to-purple-500/30 border border-indigo-500/50 shadow-lg shadow-indigo-500/20' : 'bg-slate-700/30 border border-white/10 hover:border-indigo-500/30 hover:bg-slate-700/50'}`}>
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-300">Include Paid Attractions</span>
-                  <div className={`relative w-12 h-6 rounded-full transition-colors duration-300 shadow-inner ${paidAttractions ? 'bg-indigo-500' : 'bg-slate-600'}`}>
-                    <input 
-                      type="checkbox" 
-                      checked={paidAttractions}
-                      onChange={(e) => setPaidAttractions(e.target.checked)}
-                      className="absolute opacity-0 w-full h-full cursor-pointer"
-                    />
-                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 shadow-md ${paidAttractions ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                  </div>
-                </label>
               </div>
 
               <div className="border-t border-white/10 my-2.5"></div>
 
               {/* Get Recommendations Button */}
               <div className="mt-auto relative group">
+                {selectedLocationId !== null && (
+                  <div className="mb-2.5 px-1">
+                    <p className="text-xs text-slate-400 font-medium">Selected Location:</p>
+                    <p className="text-sm font-black text-indigo-300 truncate">{mapLocations.find(loc => loc.id === selectedLocationId)?.name || 'Location'}</p>
+                  </div>
+                )}
                 <button 
-                  onClick={() => console.log({ maxTravelTime, travelMode, groupSize, environment, paidAttractions })}
+                  onClick={() => console.log({ maxTravelTime, travelMode, groupSize, environment, paidAttractions, placeCategory })}
                   disabled={selectedLocationId === null}
                   className={`w-full py-3 px-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all duration-300 relative overflow-hidden flex items-center justify-center gap-2 ${
                     selectedLocationId === null
@@ -447,7 +528,7 @@ const Redirection = React.forwardRef((props, ref) => {
       </div>
 
       {/* Hidden Gems Nearby Section */}
-      <div className="rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8">
+      <div className="mt-8 rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8">
         <div className="flex flex-col gap-2 mb-8 text-center">
           <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Intelligent Recommendations</h2>
           <h3 className="m-0 text-2xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
