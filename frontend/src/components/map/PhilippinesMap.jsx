@@ -53,12 +53,11 @@ const PhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onViewLiveF
     if (!mapLoaded || !window.L || mapInstanceRef.current) return;
 
     // Initialize map centered on Baguio City
-    const map = window.L.map(mapRef.current, { zoomControl: false }).setView([16.4023, 120.5960], 13);
+    const map = window.L.map(mapRef.current, { zoomControl: false, attributionControl: false }).setView([16.4023, 120.5960], 13);
     window.L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     // Add Dark Matter tiles
     window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 18,
       minZoom: 12,
     }).addTo(map);

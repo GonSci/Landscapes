@@ -194,7 +194,6 @@ const Redirection = React.forwardRef((props, ref) => {
               style={{ height: '100%', width: '100%' }}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
               <ZoomControl position="bottomright" />
