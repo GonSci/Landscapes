@@ -81,6 +81,102 @@ const STATIC_LOCATION_ASSETS = {
       moderate: [40, 65],
       high: 66
     }
+  },
+  6: { // Mt. Cloud Bookshop
+    name: "Mt. Cloud Bookshop",
+    image: "/assets/featured_images/mt-cloud-bookshop.jpg",
+    description: "Charming bookstore perched on a mountainside offering rare books, cozy reading spaces, and panoramic views.",
+    business: "Mt. Cloud",
+    bestTime: "9:00 AM - 6:00 PM",
+    capacity: 80,
+    distance: 1.2,
+    facilities: ["Bookstore", "Cafe", "Parking", "Reading Area"],
+    thresholds: {
+      sparse: [0, 8],
+      low: [9, 24],
+      moderate: [25, 40],
+      high: 41
+    }
+  },
+  7: { // Ili-Likha Arts & Village
+    name: "Ili-Likha Arts & Village",
+    image: "/assets/featured_images/ili-likha-arts.jpg",
+    description: "Artistic village showcasing local crafts, traditional art forms, and indigenous cultural heritage.",
+    business: "Ili-Likha",
+    bestTime: "10:00 AM - 5:00 PM",
+    capacity: 120,
+    distance: 0.6,
+    facilities: ["Art Gallery", "Workshops", "Shop", "Parking"],
+    thresholds: {
+      sparse: [0, 12],
+      low: [13, 36],
+      moderate: [37, 60],
+      high: 61
+    }
+  },
+  8: { // Cafe by the Ruins
+    name: "Cafe by the Ruins",
+    image: "/assets/featured_images/cafe-ruins.jpg",
+    description: "Charming cafe nestled among historic ruins offering artisanal coffee and traditional Cordillera cuisine.",
+    business: "Cafe Ruins",
+    bestTime: "8:00 AM - 7:00 PM",
+    capacity: 60,
+    distance: 0.3,
+    facilities: ["Cafe", "WiFi", "Outdoor Seating", "Parking"],
+    thresholds: {
+      sparse: [0, 6],
+      low: [7, 18],
+      moderate: [19, 30],
+      high: 31
+    }
+  },
+  9: { // Gypsy Baguio by Chef Waya
+    name: "Gypsy Baguio by Chef Waya",
+    image: "/assets/featured_images/gypsy-baguio.jpg",
+    description: "Fusion restaurant by celebrity chef combining Asian flavors with international cuisine in bohemian ambiance.",
+    business: "Gypsy Baguio",
+    bestTime: "11:00 AM - 10:00 PM",
+    capacity: 70,
+    distance: 0.8,
+    facilities: ["Restaurant", "Bar", "WiFi", "Parking"],
+    thresholds: {
+      sparse: [0, 7],
+      low: [8, 21],
+      moderate: [22, 35],
+      high: 36
+    }
+  },
+  10: { // Baguio Orchidarium
+    name: "Baguio Orchidarium",
+    image: "/assets/featured_images/orchidarium.jpg",
+    description: "Garden sanctuary featuring thousands of rare orchid species from around the world with guided tours available.",
+    business: "Orchidarium",
+    bestTime: "7:00 AM - 5:00 PM",
+    capacity: 100,
+    distance: 1.8,
+    facilities: ["Gardens", "Guided Tours", "Plant Shop", "Parking"],
+    thresholds: {
+      sparse: [0, 10],
+      low: [11, 30],
+      moderate: [31, 50],
+      high: 51
+    }
+  },
+  11: { // Heritage Hill
+    name: "Heritage Hill",
+    image: "/assets/featured_images/heritage-hill.jpg",
+    description: "Historical site featuring colonial-era buildings, museums, and scenic overlooks of the Baguio landscape.",
+    business: "Heritage Hill",
+    bestTime: "8:00 AM - 6:00 PM",
+    capacity: 150,
+    distance: 2.5,
+    facilities: ["Museums", "Photo Spots", "Walking Paths", "Parking"],
+    thresholds: {
+      sparse: [0, 15],
+      low: [16, 45],
+      moderate: [46, 75],
+      high: 76
+    }
   }
 };
 

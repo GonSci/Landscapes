@@ -64,6 +64,20 @@ const Redirection = React.forwardRef((props, ref) => {
     ? liveLocations.filter(loc => loc.id >= 1 && loc.id <= 5)
     : redirectionFallback.locations;
 
+  // Fit map to show all markers on initial load
+  useEffect(() => {
+    if (mapRef.current && mapLocations && mapLocations.length > 0) {
+      setTimeout(() => {
+        try {
+          const bounds = L.latLngBounds(mapLocations.map(loc => [loc.lat, loc.lng]));
+          mapRef.current.fitBounds(bounds, { padding: [30, 30] });
+        } catch (e) {
+          console.error('Error fitting bounds:', e);
+        }
+      }, 500);
+    }
+  }, [mapLocations]);
+
   // Handle location card hover
   const handleLocationHover = (locationId) => {
     setHoveredLocation(locationId);
@@ -170,8 +184,8 @@ const Redirection = React.forwardRef((props, ref) => {
             <MapContainer
               ref={mapRef}
               center={[16.413, 120.604]}
-              zoom={15}
-              minZoom={13}
+              zoom={14}
+              minZoom={10}
               maxZoom={18}
               scrollWheelZoom={false}
               zoomControl={false}
@@ -277,6 +291,60 @@ const Redirection = React.forwardRef((props, ref) => {
                         background: `linear-gradient(to right, rgb(79, 70, 229) 0%, rgb(79, 70, 229) ${(maxTravelTime / 30) * 100}%, rgb(55, 65, 81) ${(maxTravelTime / 30) * 100}%, rgb(55, 65, 81) 100%)`
                       }}
                     />
+                  </div>
+                </div>
+
+                {/* Place Category */}
+                <div className="space-y-1.5 mb-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Place Category</label>
+                  <div className="relative" ref={placeCategoryRef}>
+                    <button
+                      onClick={() => setIsPlaceCategoryOpen(!isPlaceCategoryOpen)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 cursor-pointer backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg flex items-center justify-between"
+                    >
+                      <span className="capitalize">
+                        {placeCategory === 'shopping' ? 'Shopping & Retail' : placeCategory === 'nature' ? 'Nature & Outdoors' : placeCategory === 'dining' ? 'Dining & Food' : placeCategory === 'culture' ? 'Museums & Arts' : 'Any Category'}
+                      </span>
+                      <svg 
+                        className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isPlaceCategoryOpen ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </button>
+
+                    {isPlaceCategoryOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                        {[
+                          { value: 'any', label: 'Any Category' },
+                          { value: 'shopping', label: 'Shopping & Retail' },
+                          { value: 'nature', label: 'Nature & Outdoors' },
+                          { value: 'dining', label: 'Dining & Food' },
+                          { value: 'culture', label: 'Museums & Arts' }
+                        ].map((option, index) => (
+                          <button
+                            key={option.value}
+                            onClick={() => {
+                              setPlaceCategory(option.value);
+                              setIsPlaceCategoryOpen(false);
+                            }}
+                            style={{
+                              animationDelay: `${index * 30}ms`
+                            }}
+                            className={`w-full px-4 py-3 text-sm font-medium text-left transition-all duration-200 flex items-center gap-3 group ${
+                              placeCategory === option.value
+                                ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 text-indigo-100 border-l-2 border-indigo-400'
+                                : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent'
+                            }`}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-current opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                            <span>{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -409,62 +477,6 @@ const Redirection = React.forwardRef((props, ref) => {
                       />
                       <span className="ml-2">Any</span>
                     </label>
-                  </div>
-                </div>
-
-                <div className="border-t border-white/10 my-2.5"></div>
-
-                {/* Place Category */}
-                <div className="space-y-1.5 mb-3">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Place Category</label>
-                  <div className="relative" ref={placeCategoryRef}>
-                    <button
-                      onClick={() => setIsPlaceCategoryOpen(!isPlaceCategoryOpen)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 cursor-pointer backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg flex items-center justify-between"
-                    >
-                      <span className="capitalize">
-                        {placeCategory === 'shopping' ? 'Shopping & Retail' : placeCategory === 'nature' ? 'Nature & Outdoors' : placeCategory === 'dining' ? 'Dining & Food' : placeCategory === 'culture' ? 'Museums & Arts' : 'Any Category'}
-                      </span>
-                      <svg 
-                        className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isPlaceCategoryOpen ? 'rotate-180' : ''}`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                    </button>
-
-                    {isPlaceCategoryOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {[
-                          { value: 'any', label: 'Any Category' },
-                          { value: 'shopping', label: 'Shopping & Retail' },
-                          { value: 'nature', label: 'Nature & Outdoors' },
-                          { value: 'dining', label: 'Dining & Food' },
-                          { value: 'culture', label: 'Museums & Arts' }
-                        ].map((option, index) => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                              setPlaceCategory(option.value);
-                              setIsPlaceCategoryOpen(false);
-                            }}
-                            style={{
-                              animationDelay: `${index * 30}ms`
-                            }}
-                            className={`w-full px-4 py-3 text-sm font-medium text-left transition-all duration-200 flex items-center gap-3 group ${
-                              placeCategory === option.value
-                                ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 text-indigo-100 border-l-2 border-indigo-400'
-                                : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent'
-                            }`}
-                          >
-                            <span className="w-2 h-2 rounded-full bg-current opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
-                            <span>{option.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
 
