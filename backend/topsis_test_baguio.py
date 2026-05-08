@@ -53,9 +53,15 @@ MOCK_LOCATION_DATA = {
     # Structure: "Location Name": {"capacity": int, "people_count": int}
     "Baguio Cathedral": {"capacity": 150, "people_count": 130},  # Overcrowded (starting point)
     "Baguio Night Market": {"capacity": 200, "people_count": 85},  # Light
-    "Burnham Park": {"capacity": 300, "people_count": 150},  # Moderate
+    "Melvin Jones Burnham Park": {"capacity": 300, "people_count": 150},  # Moderate
     "The Mansion": {"capacity": 100, "people_count": 28},  # Very light
     "The Mansion Entrance": {"capacity": 80, "people_count": 40},  # Moderate
+    "Mt. Cloud Bookshop": {"capacity": 80, "people_count": 32},  # Light
+    "Ili-Likha Arts & Village": {"capacity": 120, "people_count": 45},  # Light
+    "Cafe by the Ruins": {"capacity": 60, "people_count": 28},  # Light
+    "Gypsy Baguio by Chef Waya": {"capacity": 70, "people_count": 35},  # Moderate
+    "Baguio Orchidarium": {"capacity": 100, "people_count": 18},  # Very light
+    "Heritage Hill": {"capacity": 150, "people_count": 24},  # Very light
 }
 
 # ══════════════════════════════════════════════════════════════════════════════

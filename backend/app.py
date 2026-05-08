@@ -954,6 +954,270 @@ def get_distribution():
     return jsonify(distribution)
 
 
+# ── TOPSIS Redirection Endpoint ────────────────────────────────────────────────
+import math
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """Calculate distance between two coordinates in km"""
+    R = 6371  # Earth's radius in km
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
+    delta_lat = math.radians(lat2 - lat1)
+    delta_lon = math.radians(lon2 - lon1)
+    
+    a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+def apply_hard_constraints(locations_with_metrics, max_travel_time, place_category):
+    """
+    Filter locations based on hard constraints
+    """
+    filtered = []
+    for loc in locations_with_metrics:
+        # Constraint 1: Max travel time
+        if loc['travel_time_minutes'] > max_travel_time:
+            continue
+        
+        # Constraint 2: Place category (if not 'any')
+        if place_category != 'any':
+            loc_type = loc.get('type', '').lower()
+            if place_category == 'shopping' and 'shopping' not in loc_type and 'retail' not in loc_type:
+                continue
+            elif place_category == 'nature' and 'nature' not in loc_type and 'park' not in loc_type and 'garden' not in loc_type:
+                continue
+            elif place_category == 'dining' and 'dining' not in loc_type and 'food' not in loc_type and 'cafe' not in loc_type and 'restaurant' not in loc_type:
+                continue
+            elif place_category == 'culture' and 'museum' not in loc_type and 'arts' not in loc_type and 'cultural' not in loc_type:
+                continue
+        
+        filtered.append(loc)
+    
+    return filtered
+
+def normalize_matrix(matrix):
+    """Normalize decision matrix using vector normalization"""
+    if not matrix:
+        return []
+    
+    n_alternatives = len(matrix)
+    n_criteria = len(matrix[0]) if matrix else 0
+    
+    # Initialize normalized matrix
+    normalized = [[0.0 for _ in range(n_criteria)] for _ in range(n_alternatives)]
+    
+    # Normalize each criterion (column)
+    for criterion_idx in range(n_criteria):
+        # Calculate sum of squares for this criterion
+        sum_of_squares = sum(matrix[alt_idx][criterion_idx]**2 for alt_idx in range(n_alternatives))
+        norm_factor = math.sqrt(sum_of_squares) if sum_of_squares > 0 else 1
+        
+        # Normalize this criterion for all alternatives
+        for alt_idx in range(n_alternatives):
+            normalized[alt_idx][criterion_idx] = matrix[alt_idx][criterion_idx] / norm_factor
+    
+    return normalized
+
+def calculate_weighted_matrix(normalized_matrix, weights):
+    """Apply weights to normalized matrix"""
+    weighted = []
+    for row in normalized_matrix:
+        weighted_row = [row[i] * weights[i] for i in range(len(weights))]
+        weighted.append(weighted_row)
+    return weighted
+
+def calculate_ideal_solutions(weighted_matrix):
+    """Calculate ideal and anti-ideal solutions"""
+    if not weighted_matrix:
+        return [], []
+    
+    n_criteria = len(weighted_matrix[0])
+    ideal = []
+    anti_ideal = []
+    
+    for criterion_idx in range(n_criteria):
+        column = [row[criterion_idx] for row in weighted_matrix]
+        ideal.append(min(column))  # Both criteria should be minimized
+        anti_ideal.append(max(column))
+    
+    return ideal, anti_ideal
+
+def calculate_separation(weighted_matrix, ideal, anti_ideal):
+    """Calculate separation distances"""
+    s_plus = []
+    s_minus = []
+    
+    for row in weighted_matrix:
+        sum_sq_ideal = sum((row[i] - ideal[i])**2 for i in range(len(ideal)))
+        sum_sq_anti = sum((row[i] - anti_ideal[i])**2 for i in range(len(anti_ideal)))
+        
+        s_plus.append(math.sqrt(sum_sq_ideal))
+        s_minus.append(math.sqrt(sum_sq_anti))
+    
+    return s_plus, s_minus
+
+def calculate_topsis_scores(s_plus, s_minus):
+    """Calculate TOPSIS scores"""
+    scores = []
+    for i in range(len(s_plus)):
+        denominator = s_plus[i] + s_minus[i]
+        score = s_minus[i] / denominator if denominator > 0 else 0
+        scores.append(score)
+    return scores
+
+@app.route('/api/redirection', methods=['POST'])
+def get_topsis_recommendations():
+    """
+    TOPSIS-based crowd-aware redirection endpoint
+    
+    Expected payload:
+    {
+        "start_location_id": int,
+        "start_coords": [lat, lon],
+        "max_travel_time": int (minutes),
+        "travel_mode": str ('walking', 'commuting', 'driving'),
+        "group_size": int,
+        "environment": str ('indoors', 'outdoors', 'any'),
+        "place_category": str ('shopping', 'nature', 'dining', 'culture', 'any'),
+        "paid_attractions": bool
+    }
+    """
+    try:
+        data = request.get_json()
+        print(f"[TOPSIS] Received payload: {data}")
+        
+        # Extract parameters
+        start_location_id = data.get('start_location_id')
+        start_coords = data.get('start_coords')
+        max_travel_time = data.get('max_travel_time', 15)
+        place_category = data.get('place_category', 'any')
+        
+        # Fetch all available locations
+        all_locations = Location.query.all()
+        print(f"[TOPSIS] Found {len(all_locations)} locations in database")
+        
+        if not all_locations:
+            return jsonify({'error': 'No locations available in database'}), 400
+        
+        # Get start location
+        start_location = Location.query.get(start_location_id)
+        if not start_location:
+            return jsonify({'error': f'Start location {start_location_id} not found'}), 400
+        
+        start_lat, start_lon = start_coords
+        print(f"[TOPSIS] Starting from {start_location.name} at [{start_lat}, {start_lon}]")
+        
+        # Build decision matrix
+        locations_with_metrics = []
+        decision_matrix = []
+        
+        for loc in all_locations:
+            if loc.id == start_location_id:
+                continue  # Skip the starting location
+            
+            # Calculate distance
+            distance = haversine_distance(start_lat, start_lon, loc.latitude, loc.longitude)
+            
+            # Calculate travel time (adjust based on travel mode)
+            TERRAIN_MULTIPLIER = 1.4  # Baguio mountainous terrain
+            SPEED_KMH = {'walking': 5.0, 'commuting': 15.0, 'driving': 40.0}.get('walking', 5.0)
+            travel_time = (distance / SPEED_KMH * TERRAIN_MULTIPLIER) * 60  # Convert to minutes
+            
+            # Get crowd level from latest database logs
+            crowd_density = 50  # Default
+            latest_log = SurveillanceLog.query.filter_by(location_id=loc.id).order_by(SurveillanceLog.timestamp.desc()).first()
+            if latest_log:
+                # Estimate capacity as 2x the detected people for now
+                # This is a simplification - in production, store capacity in Location model
+                estimated_capacity = latest_log.people_count * 2 if latest_log.people_count > 0 else 100
+                crowd_density = (latest_log.people_count / estimated_capacity) * 100
+            
+            location_data = {
+                'id': loc.id,
+                'name': loc.name,
+                'type': loc.type if hasattr(loc, 'type') else 'Unknown',
+                'latitude': loc.latitude,
+                'longitude': loc.longitude,
+                'distance': distance,
+                'travel_time_minutes': travel_time,
+                'crowd_density_percent': crowd_density,
+                'detected_people': 0,
+                'capacity': 100
+            }
+            
+            locations_with_metrics.append(location_data)
+            decision_matrix.append([travel_time, crowd_density])
+        
+        # Apply hard constraints
+        filtered_locations = apply_hard_constraints(locations_with_metrics, max_travel_time, place_category)
+        print(f"[TOPSIS] After constraints: {len(filtered_locations)} locations remain")
+        
+        if len(filtered_locations) < 1:
+            print(f"[TOPSIS] No locations match criteria")
+            return jsonify({
+                'top_3_results': [],
+                'message': 'No recommendations match your criteria'
+            }), 200
+        
+        # Rebuild decision matrix with filtered locations
+        filtered_decision_matrix = [
+            [loc['travel_time_minutes'], loc['crowd_density_percent']]
+            for loc in filtered_locations
+        ]
+        
+        # TOPSIS calculation
+        weights = [0.5, 0.5]  # Equal weight: time and density
+        
+        # Step 1: Normalize
+        normalized = normalize_matrix(filtered_decision_matrix)
+        
+        # Step 2: Weight
+        weighted = calculate_weighted_matrix(normalized, weights)
+        
+        # Step 3: Ideal solutions
+        ideal, anti_ideal = calculate_ideal_solutions(weighted)
+        
+        # Step 4: Separation
+        s_plus, s_minus = calculate_separation(weighted, ideal, anti_ideal)
+        
+        # Step 5: TOPSIS scores
+        topsis_scores = calculate_topsis_scores(s_plus, s_minus)
+        
+        # Rank results
+        ranked_results = []
+        for idx, loc in enumerate(filtered_locations):
+            ranked_results.append({
+                'location_id': loc['id'],
+                'name': loc['name'],
+                'type': loc['type'],
+                'distance': round(loc['distance'], 2),
+                'travel_time_minutes': round(loc['travel_time_minutes'], 1),
+                'crowd_level': loc['crowd_density_percent'],
+                'topsis_score': round(topsis_scores[idx], 4),
+                'latitude': loc['latitude'],
+                'longitude': loc['longitude']
+            })
+        
+        # Sort by TOPSIS score (descending) - higher is better
+        ranked_results.sort(key=lambda x: x['topsis_score'], reverse=True)
+        
+        # Return top 3
+        top_3 = ranked_results[:3]
+        print(f"[TOPSIS] Top 3 results: {[r['name'] for r in top_3]}")
+        
+        return jsonify({
+            'top_3_results': top_3,
+            'total_considered': len(filtered_locations),
+            'total_locations': len(locations_with_metrics)
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        print(f"[TOPSIS] Error: {e}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 last_log_time = time.time()
 
 def background_logger():

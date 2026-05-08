@@ -19,6 +19,9 @@ const Redirection = React.forwardRef((props, ref) => {
   const [placeCategory, setPlaceCategory] = useState('any');
   const [isTravelModeOpen, setIsTravelModeOpen] = useState(false);
   const [isPlaceCategoryOpen, setIsPlaceCategoryOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('preferences'); // 'preferences' or 'results'
+  const [topsisResults, setTopsisResults] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const markerRefs = useRef({});
   const mapRef = useRef(null);
   const travelModeRef = useRef(null);
@@ -57,14 +60,16 @@ const Redirection = React.forwardRef((props, ref) => {
     }
   }, [isPlaceCategoryOpen]);
 
-  // Get live locations from database for interactive map (locations 1-5)
+  // Get live locations from database for interactive map
   const { locations: liveLocations } = useLiveLocations();
   // Use fallback locations if database locations are empty or not loaded
-  const mapLocations = liveLocations && liveLocations.length > 0 
-    ? liveLocations.filter(loc => loc.id >= 1 && loc.id <= 5)
+  // NOTE: show all available locations (not limited to 1-5) so places
+  // without camera footage can still appear on the redirection map.
+  const mapLocations = (liveLocations && liveLocations.length > 0)
+    ? liveLocations
     : redirectionFallback.locations;
 
-  // Fit map to show all markers on initial load
+  // Fit map to show all markers on initial load only
   useEffect(() => {
     if (mapRef.current && mapLocations && mapLocations.length > 0) {
       setTimeout(() => {
@@ -74,9 +79,9 @@ const Redirection = React.forwardRef((props, ref) => {
         } catch (e) {
           console.error('Error fitting bounds:', e);
         }
-      }, 500);
+      }, 300);
     }
-  }, [mapLocations]);
+  }, []);
 
   // Handle location card hover
   const handleLocationHover = (locationId) => {
@@ -98,25 +103,13 @@ const Redirection = React.forwardRef((props, ref) => {
   const handleMarkerClick = (location) => {
     setSelectedLocationId(location.id);
     if (mapRef.current) {
-      // Disable interactions during animation to prevent jitter
-      mapRef.current.dragging.disable();
-      mapRef.current.scrollWheelZoom.disable();
+      // Instant zoom without animation
+      mapRef.current.setView([location.lat, location.lng], 17);
       
-      // Smooth flyTo animation with easing
-      mapRef.current.flyTo([location.lat, location.lng], 17, {
-        duration: 1.0,
-        easeLinearity: 0.25
-      });
-      
-      // Open popup and re-enable interactions after animation completes
-      setTimeout(() => {
-        if (markerRefs.current[location.id]) {
-          markerRefs.current[location.id].openPopup();
-        }
-        // Re-enable interactions
-        mapRef.current.dragging.enable();
-        mapRef.current.scrollWheelZoom.enable();
-      }, 1000);
+      // Open popup immediately
+      if (markerRefs.current[location.id]) {
+        markerRefs.current[location.id].openPopup();
+      }
     }
   };
 
@@ -124,9 +117,7 @@ const Redirection = React.forwardRef((props, ref) => {
   const handlePopupClose = () => {
     setSelectedLocationId(null);
     if (mapRef.current) {
-      mapRef.current.flyTo([16.413, 120.604], 15, {
-        duration: 0.8
-      });
+      mapRef.current.setView([16.413, 120.604], 15);
     }
   };
 
@@ -145,21 +136,86 @@ const Redirection = React.forwardRef((props, ref) => {
   };
 
   // Create custom marker icon
-  const createCustomMarker = (crowdLevel) => {
-    const color = getCrowdColor(crowdLevel);
+  const createCustomMarker = (crowdLevel, isTopResult = false) => {
+    const baseColor = getCrowdColor(crowdLevel);
+    const color = isTopResult ? '#fbbf24' : baseColor; // Gold for top result
     return L.divIcon({
       className: 'custom-location-marker',
       html: `
-        <div class="marker-inner">
-          <svg viewBox="0 0 24 24" width="36" height="36" style="filter: drop-shadow(0px 0px 8px ${color});">
+        <div class="marker-inner" style="${isTopResult ? 'filter: drop-shadow(0px 0px 12px #fbbf24) drop-shadow(0px 0px 6px #f59e0b);' : ''}">
+          <svg viewBox="0 0 24 24" width="${isTopResult ? '44' : '36'}" height="${isTopResult ? '44' : '36'}" style="filter: drop-shadow(0px 0px 8px ${color});">
             <path fill="${color}" d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/>
           </svg>
         </div>
       `,
-      iconSize: [36, 36],
-      iconAnchor: [18, 36],
-      popupAnchor: [0, -36],
+      iconSize: [isTopResult ? 44 : 36, isTopResult ? 44 : 36],
+      iconAnchor: [isTopResult ? 22 : 18, isTopResult ? 44 : 36],
+      popupAnchor: [0, isTopResult ? -44 : -36],
     });
+  };
+
+  // Handle Get Recommendations - Call TOPSIS API
+  const handleGetRecommendations = async () => {
+    console.log('Get Recommendations clicked');
+    if (selectedLocationId === null) {
+      console.log('No location selected');
+      return;
+    }
+
+    const selectedLocation = mapLocations.find(loc => loc.id === selectedLocationId);
+    if (!selectedLocation) {
+      console.log('Selected location not found in mapLocations');
+      return;
+    }
+
+    console.log('Calling TOPSIS API with payload:', {
+      start_location_id: selectedLocationId,
+      start_coords: [selectedLocation.lat, selectedLocation.lng],
+      max_travel_time: maxTravelTime,
+      place_category: placeCategory,
+    });
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        start_location_id: selectedLocationId,
+        start_coords: [selectedLocation.lat, selectedLocation.lng],
+        max_travel_time: maxTravelTime,
+        travel_mode: travelMode,
+        group_size: groupSize,
+        environment: environment,
+        place_category: placeCategory,
+        paid_attractions: paidAttractions,
+      };
+
+      const response = await fetch('http://localhost:5001/api/redirection', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get recommendations: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data);
+      setTopsisResults(data.top_3_results || []);
+      setViewMode('results');
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Edit Preferences - Return to preferences view
+  const handleEditPreferences = () => {
+    setViewMode('preferences');
+    setTopsisResults(null);
   };
 
   return (
@@ -187,8 +243,8 @@ const Redirection = React.forwardRef((props, ref) => {
               zoom={14}
               minZoom={10}
               maxZoom={18}
-              scrollWheelZoom={false}
-              zoomControl={false}
+              scrollWheelZoom={true}
+              zoomControl={true}
               attributionControl={false}
               className="h-full w-full"
               style={{ height: '100%', width: '100%' }}
@@ -197,11 +253,21 @@ const Redirection = React.forwardRef((props, ref) => {
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
               <ZoomControl position="bottomright" />
-              {mapLocations.map((location) => (
+              {
+                (() => {
+                  // Filter markers based on view mode
+                  let locationsToDisplay = mapLocations;
+                  if (viewMode === 'results' && topsisResults && topsisResults.length > 0) {
+                    const resultIds = topsisResults.map(r => r.location_id);
+                    locationsToDisplay = mapLocations.filter(loc => loc.id === selectedLocationId || resultIds.includes(loc.id));
+                  }
+                  return locationsToDisplay.map((location) => {
+                    const isTopResult = viewMode === 'results' && topsisResults && topsisResults.length > 0 && topsisResults[0].location_id === location.id;
+                    return (
                 <Marker 
                   key={location.id} 
                   position={[location.lat, location.lng]}
-                  icon={createCustomMarker(location.crowdLevel?.toLowerCase() || 'low')}
+                  icon={createCustomMarker(location.crowdLevel?.toLowerCase() || 'low', isTopResult)}
                   eventHandlers={{
                     click: () => handleMarkerClick(location),
                   }}
@@ -259,16 +325,23 @@ const Redirection = React.forwardRef((props, ref) => {
                     </div>
                   </Popup>
                 </Marker>
-              ))}
+                    );
+                  });
+                })()
+              }
             </MapContainer>
             </div>
           </div>
 
           {/* Settings Sidebar - Right Side */}
           <div className="flex flex-col self-stretch" style={{ minHeight: 'calc(100vh - 400px)' }}>
-            {/* Settings Panel */}
+            {/* Settings Panel / Results View */}
             <div className="rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-hidden flex flex-col flex-1">
-              <h4 className="text-lg font-black text-white mb-4 tracking-tight">Your Preferences</h4>
+              
+              {viewMode === 'preferences' ? (
+                /* PREFERENCES VIEW */
+                <>
+                  <h4 className="text-lg font-black text-white mb-4 tracking-tight">Your Preferences</h4>
               
               {/* SECTION: Trip Basics */}
               <div className="mb-3">
@@ -315,7 +388,7 @@ const Redirection = React.forwardRef((props, ref) => {
                     </button>
 
                     {isPlaceCategoryOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[100]">
                         {[
                           { value: 'any', label: 'Any Category' },
                           { value: 'shopping', label: 'Shopping & Retail' },
@@ -369,7 +442,7 @@ const Redirection = React.forwardRef((props, ref) => {
                     </button>
 
                     {isTravelModeOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
                         {['Walking', 'Public Transport', 'Driving'].map((option, index) => (
                           <button
                             key={option}
@@ -509,19 +582,19 @@ const Redirection = React.forwardRef((props, ref) => {
                   </div>
                 )}
                 <button 
-                  onClick={() => console.log({ maxTravelTime, travelMode, groupSize, environment, paidAttractions, placeCategory })}
-                  disabled={selectedLocationId === null}
+                  onClick={handleGetRecommendations}
+                  disabled={selectedLocationId === null || isLoading}
                   className={`w-full py-3 px-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all duration-300 relative overflow-hidden flex items-center justify-center gap-2 ${
-                    selectedLocationId === null
+                    selectedLocationId === null || isLoading
                       ? 'bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-400 cursor-not-allowed border border-white/10 shadow-lg'
                       : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-2xl hover:shadow-purple-500/40 hover:-translate-y-0.5 active:translate-y-0 active:shadow-lg'
                   }`}
                 >
-                  <div className={`absolute inset-0 transition-opacity duration-300 ${selectedLocationId === null ? 'bg-transparent' : 'bg-white/10 opacity-0 group-hover:opacity-100'}`}></div>
-                  <svg className="w-4 h-4 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className={`absolute inset-0 transition-opacity duration-300 ${selectedLocationId === null || isLoading ? 'bg-transparent' : 'bg-white/10 opacity-0 group-hover:opacity-100'}`}></div>
+                  <svg className={`w-4 h-4 relative ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  <span className="relative">Get Recommendations</span>
+                  <span className="relative">{isLoading ? 'Loading...' : 'Get Recommendations'}</span>
                 </button>
 
                 {selectedLocationId === null && (
@@ -533,6 +606,82 @@ const Redirection = React.forwardRef((props, ref) => {
                   </div>
                 )}
               </div>
+                </>
+              ) : (
+                /* RESULTS VIEW */
+                <div className="flex flex-col gap-4 h-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-lg font-black text-white tracking-tight">Top Recommendations</h4>
+                    <button
+                      onClick={handleEditPreferences}
+                      className="px-3 py-1.5 text-xs font-black uppercase tracking-widest bg-slate-700/50 border border-white/20 hover:border-indigo-500/50 text-slate-300 hover:text-indigo-200 rounded-lg transition-all duration-300"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto space-y-3">
+                    {topsisResults && topsisResults.length > 0 ? (
+                      topsisResults.map((result, index) => {
+                        const location = mapLocations.find(loc => loc.id === result.location_id);
+                        const isTopResult = index === 0;
+                        return (
+                          <div
+                            key={result.location_id}
+                            className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col gap-3 ${
+                              isTopResult
+                                ? 'bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border-amber-500/50 shadow-lg shadow-amber-500/20 relative overflow-hidden'
+                                : 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-white/10 hover:border-indigo-500/30'
+                            }`}
+                          >
+                            {isTopResult && (
+                              <div className="absolute top-2 right-2 px-2.5 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                                #1 Best Match
+                              </div>
+                            )}
+                            
+                            <div className="pr-20">
+                              <h5 className={`text-sm font-black ${isTopResult ? 'text-amber-100' : 'text-white'} mb-1`}>
+                                #{index + 1} {location?.name || result?.name || 'Location'}
+                              </h5>
+                              <p className="text-xs text-slate-400">{location?.type || result?.type || 'Unknown'}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500">Score</span>
+                                <span className="font-black text-indigo-300">{result.topsis_score?.toFixed(2) || 'N/A'}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500">Distance</span>
+                                <span className="font-black text-slate-200">{result.distance?.toFixed(1) || location?.distance} km</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500">People</span>
+                                <span className="font-black text-slate-200">{location?.detectedPeople || 0}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500">Level</span>
+                                <span className={`font-black uppercase text-[9px] ${
+                                  location?.crowdLevel?.toLowerCase() === 'low' ? 'text-emerald-400' :
+                                  location?.crowdLevel?.toLowerCase() === 'moderate' ? 'text-amber-400' :
+                                  'text-red-400'
+                                }`}>
+                                  {location?.crowdLevel || 'Unknown'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="flex items-center justify-center h-32 text-slate-400">
+                        <p className="text-sm">No recommendations found</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -758,18 +907,7 @@ const styles = `
   }
 
   .leaflet-popup-pane {
-    animation: popupZoom 0.4s ease-in-out;
-  }
-
-  @keyframes popupZoom {
-    from {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+    /* Animation removed for better map interaction */
   }
 
   @keyframes slideInFromTop {
@@ -805,7 +943,7 @@ const styles = `
   }
 
   .leaflet-map-pane {
-    transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* Transition removed for smooth interaction */
   }
 
   button:disabled {

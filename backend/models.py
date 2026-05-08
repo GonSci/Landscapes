@@ -27,6 +27,11 @@ class Location(db.Model):
     description    = db.Column(db.Text)
     is_active      = db.Column(db.Boolean, default=False)
     
+    # TOPSIS-required columns for crowd-aware redirection
+    type           = db.Column(db.String(100), nullable=True)  # e.g., "Dining", "Nature", "Culture"
+    max_capacity   = db.Column(db.Integer, default=100)        # For crowd density calculation
+    environment    = db.Column(db.String(50), nullable=True)   # e.g., "Indoor", "Outdoor"
+    
     # Relationship back to logs
     logs = db.relationship('SurveillanceLog', backref='location', lazy=True)
 
@@ -39,7 +44,10 @@ class Location(db.Model):
             'longitude': self.longitude,
             'video_filename': self.video_filename, 
             'is_active': self.is_active,
-            'description': self.description
+            'description': self.description,
+            'type': self.type,
+            'max_capacity': self.max_capacity,
+            'environment': self.environment
         }
 
 class SurveillanceLog(db.Model):

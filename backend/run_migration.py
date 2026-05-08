@@ -36,7 +36,13 @@ def run_migration():
             ('The Mansion',               'Leonard Wood', 16.414, 120.612, 'mansion.mp4'),
             ('The Mansion Entrance',      'Leonard Wood', 16.414, 120.613, 'mansion_entrance.mp4'),
             ('Baguio Cathedral',          'Session Rd',  16.412, 120.598, 'cathedral.mp4'),
-            ('Melvin Jones Burnham Park', 'Burnham Park', 16.411, 120.594, 'burnham.mp4')
+            ('Melvin Jones Burnham Park', 'Burnham Park', 16.411, 120.594, 'burnham.mp4'),
+            ('Mt. Cloud Bookshop',        'Asin Rd', 16.415053161865124, 120.60853416441807, 'mt_cloud_bookshop.mp4'),
+            ('Ili-Likha Arts & Village',  'Chuntug Rd', 16.4138531557859, 120.5974293481474, 'ili_likha_arts.mp4'),
+            ('Cafe by the Ruins',         'Chuntug Rd', 16.412952681792103, 120.5916397052069, 'cafe_ruins.mp4'),
+            ('Gypsy Baguio by Chef Waya', 'Upper Gen. Luna', 16.413264927701736, 120.58258758316477, 'gypsy_baguio.mp4'),
+            ('Baguio Orchidarium',        'Leonard Wood', 16.410979486415332, 120.5924255500515, 'orchidarium.mp4'),
+            ('Heritage Hill',             'Bokawkan Rd', 16.403957133004596, 120.58665803918751, 'heritage_hill.mp4')
         ]
         
         for name, district, lat, lon, video in locations:
