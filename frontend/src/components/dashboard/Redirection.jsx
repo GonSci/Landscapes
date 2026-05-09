@@ -731,7 +731,7 @@ const Redirection = React.forwardRef((props, ref) => {
                   >
                     <div className="relative h-[140px] overflow-hidden sm:h-[160px]">
                       <img 
-                        src={`/assets/featured_images/${location.id}.jpg`} 
+                        src={location.image} 
                         alt={location.name}
                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                         onError={(e) => {

@@ -100,7 +100,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   7: { // Ili-Likha Arts & Village
     name: "Ili-Likha Arts & Village",
-    image: "/assets/featured_images/ili-likha-arts.jpg",
+    image: "/assets/featured_images/ili-likha-art.jpg",
     description: "Artistic village showcasing local crafts, traditional art forms, and indigenous cultural heritage.",
     business: "Ili-Likha",
     bestTime: "10:00 AM - 5:00 PM",
@@ -116,7 +116,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   8: { // Cafe by the Ruins
     name: "Cafe by the Ruins",
-    image: "/assets/featured_images/cafe-ruins.jpg",
+    image: "/assets/featured_images/cafe-by-the-ruins.jpg",
     description: "Charming cafe nestled among historic ruins offering artisanal coffee and traditional Cordillera cuisine.",
     business: "Cafe Ruins",
     bestTime: "8:00 AM - 7:00 PM",
@@ -148,7 +148,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   10: { // Baguio Orchidarium
     name: "Baguio Orchidarium",
-    image: "/assets/featured_images/orchidarium.jpg",
+    image: "/assets/featured_images/bagiuo-orchidarium.jpg",
     description: "Garden sanctuary featuring thousands of rare orchid species from around the world with guided tours available.",
     business: "Orchidarium",
     bestTime: "7:00 AM - 5:00 PM",

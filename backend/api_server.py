@@ -537,4 +537,5 @@ def get_distribution():
 if __name__ == '__main__':
     print("[API] Starting Travel AI REST API Server...")
     print("[API] Server running on http://localhost:5001")
-    app.run(debug=True, port=5001)
+    # Disable debug mode and reloader to prevent high memory/CPU usage
+    app.run(debug=False, port=5001, use_reloader=False)

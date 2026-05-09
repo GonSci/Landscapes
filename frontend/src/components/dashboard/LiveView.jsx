@@ -353,6 +353,13 @@ const LiveView = ({ targetLocationId, clearTargetLocation }) => {
     console.log('Continuous detection stopped');
   };
 
+  // CLEANUP: Prevent massive memory leaks when component unmounts
+  useEffect(() => {
+    return () => {
+      stopContinuousDetection();
+    };
+  }, []);
+
   // Get crowd level based on detected count (10+ people = HIGH for demo)
   const locationThresholds = {
     1: { sparse: 2, low: 8, moderate: 14 },
