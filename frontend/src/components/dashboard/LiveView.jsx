@@ -60,11 +60,20 @@ const LiveView = ({ targetLocationId, clearTargetLocation }) => {
         const response = await fetch(`${API_URL}/locations`);
         if (response.ok) {
           const data = await response.json();
-          setLocations(data);
+          const noCameraList = [
+            'Mt. Cloud Bookshop', 
+            'Ili-Likha Arts & Village', 
+            'Heritage Hill', 
+            'Cafe by the Ruins', 
+            'Baguio Orchidarium', 
+            'Gypsy Baguio by Chef Waya'
+          ];
+          const locationsWithCameras = data.filter(loc => !noCameraList.includes(loc.name));
+          setLocations(locationsWithCameras);
           
           // Prioritize targetLocationId if redirected from Map or Explore
-          const targetLoc = targetLocationId ? data.find(l => l.id === targetLocationId) : null;
-          const active = targetLoc || data.find(l => l.is_active) || data[0];
+          const targetLoc = targetLocationId ? locationsWithCameras.find(l => l.id === targetLocationId) : null;
+          const active = targetLoc || locationsWithCameras.find(l => l.is_active) || locationsWithCameras[0];
           
           if (active) {
             setActiveLocationId(active.id);

@@ -208,20 +208,22 @@ const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
                   <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500">
                     {location.bestTime}
                   </div>
-                  <button
-                    type="button"
-                    className="w-full rounded-2xl bg-gradient-to-r from-[#667eea] to-[#764ba2] py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/40"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onViewLiveFeed) {
-                        onViewLiveFeed(location.id);
-                      } else {
-                        onNavigate('dashboard');
-                      }
-                    }}
-                  >
-                    View Live Feed
-                  </button>
+                  {!['Mt. Cloud Bookshop', 'Ili-Likha Arts & Village', 'Heritage Hill', 'Cafe by the Ruins', 'Baguio Orchidarium', 'Gypsy Baguio by Chef Waya'].includes(location.name) && (
+                    <button
+                      type="button"
+                      className="w-full rounded-2xl bg-gradient-to-r from-[#667eea] to-[#764ba2] py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-indigo-500/40"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onViewLiveFeed) {
+                          onViewLiveFeed(location.id);
+                        } else {
+                          onNavigate('dashboard');
+                        }
+                      }}
+                    >
+                      View Live Feed
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
