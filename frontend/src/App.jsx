@@ -161,8 +161,14 @@ function App() {
         {currentPage === 'map' && (
           <div className="page map-page">
             <div className="map-layout">
-              {isSidebarOpen ? (
-                <div className="map-sidebar p-0">
+              <div 
+                className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 h-full border-r border-white/10 relative z-20 overflow-hidden ${
+                  isSidebarOpen 
+                    ? 'w-full lg:w-[380px] bg-[rgba(10,15,30,0.8)] backdrop-blur-2xl' 
+                    : 'w-0 lg:w-[56px] bg-slate-900/40 backdrop-blur-md'
+                }`}
+              >
+                <div className={`absolute top-0 left-0 w-full lg:w-[380px] h-full transition-opacity duration-200 ${isSidebarOpen ? 'opacity-100 pointer-events-auto delay-100' : 'opacity-0 pointer-events-none'}`}>
                   <MapSidebar 
                     userProfile={userProfile}
                     currentUser={currentUser}
@@ -170,8 +176,8 @@ function App() {
                     onSidebarToggle={() => setIsSidebarOpen(false)}
                   />
                 </div>
-              ) : (
-                <div className="w-[56px] shrink-0 bg-slate-900/40 backdrop-blur-md border-r border-white/10 h-full hidden lg:flex flex-col items-center py-4 z-10 shadow-sm relative">
+                
+                <div className={`absolute top-0 left-0 w-[56px] hidden lg:flex flex-col items-center py-4 h-full transition-opacity duration-200 ${!isSidebarOpen ? 'opacity-100 pointer-events-auto delay-100' : 'opacity-0 pointer-events-none'}`}>
                   <button 
                     onClick={() => setIsSidebarOpen(true)}
                     className="p-2.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
@@ -185,7 +191,7 @@ function App() {
                     Explore Baguio
                   </div>
                 </div>
-              )}
+              </div>
 
               <div className="map-main relative">
                 {/* Mobile-only floating toggle button */}

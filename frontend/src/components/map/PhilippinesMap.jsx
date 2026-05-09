@@ -14,10 +14,23 @@ const PhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onViewLiveF
   // Invalidate map size when sidebar toggles
   useEffect(() => {
     if (mapInstanceRef.current && window.L) {
-      const timer = setTimeout(() => {
-        mapInstanceRef.current.invalidateSize({ animate: true });
-      }, 300); // 300ms matches the CSS transition duration
-      return () => clearTimeout(timer);
+      let startTime = performance.now();
+      let animationFrame;
+      
+      const animateMap = (currentTime) => {
+        if (currentTime - startTime < 350) { // Run for slightly longer than the 300ms CSS transition
+          mapInstanceRef.current.invalidateSize({ animate: false });
+          animationFrame = requestAnimationFrame(animateMap);
+        } else {
+          mapInstanceRef.current.invalidateSize({ animate: true });
+        }
+      };
+      
+      animationFrame = requestAnimationFrame(animateMap);
+      
+      return () => {
+        if (animationFrame) cancelAnimationFrame(animationFrame);
+      };
     }
   }, [isSidebarOpen]);
 

@@ -353,7 +353,7 @@ const Redirection = React.forwardRef((props, ref) => {
           </div>
 
           {/* Settings Sidebar - Right Side */}
-          <div className="flex flex-col self-stretch" style={{ minHeight: 'calc(100vh - 400px)' }}>
+          <div className="flex flex-col self-stretch" style={{ height: 'calc(100vh - 325px)' }}>
             {/* Settings Panel / Results View */}
             <div className="rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-hidden flex flex-col flex-1">
               
@@ -594,12 +594,16 @@ const Redirection = React.forwardRef((props, ref) => {
 
               {/* Get Recommendations Button */}
               <div className="mt-auto relative group">
-                {selectedLocationId !== null && (
                   <div className="mb-2.5 px-1">
                     <p className="text-xs text-slate-400 font-medium">Selected Location:</p>
-                    <p className="text-sm font-black text-indigo-300 truncate">{mapLocations.find(loc => loc.id === selectedLocationId)?.name || 'Location'}</p>
+                    {selectedLocationId !== null ? (
+                      <p className="text-sm font-black text-indigo-300 truncate">
+                        {mapLocations.find(loc => loc.id === selectedLocationId)?.name || 'Location'}
+                      </p>
+                    ) : (
+                      <p className="text-sm font-black text-slate-500 italic">None Selected</p>
+                    )}
                   </div>
-                )}
                 <button 
                   onClick={handleGetRecommendations}
                   disabled={selectedLocationId === null || isLoading}
@@ -639,7 +643,7 @@ const Redirection = React.forwardRef((props, ref) => {
                     </button>
                   </div>
                   
-                  <div className="flex-1 overflow-y-auto space-y-3 pr-1" style={{ maxHeight: 'calc(100vh - 480px)' }}>
+                  <div className="flex-1 overflow-y-auto space-y-3 pb-4 pt-2 -mt-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     {topsisResults && topsisResults.length > 0 ? (
                       topsisResults.map((result, index) => {
                         const location = mapLocations.find(loc => loc.id === result.location_id);
@@ -655,10 +659,10 @@ const Redirection = React.forwardRef((props, ref) => {
                                 }
                               }
                             }}
-                            className={`p-3 rounded-2xl border transition-all duration-300 flex flex-col gap-2 cursor-pointer transform hover:-translate-y-1 hover:shadow-xl ${
+                            className={`p-3 rounded-2xl border transition-all duration-300 flex flex-col gap-2 cursor-pointer transform hover:-translate-y-1 hover:shadow-xl hover:z-10 ${
                               isTopResult
                                 ? 'bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border-amber-500/50 shadow-lg shadow-amber-500/20 relative overflow-hidden hover:border-amber-400'
-                                : 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-white/10 hover:border-indigo-500/50 hover:bg-slate-700/80'
+                                : 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-white/10 hover:border-indigo-500/50 hover:bg-slate-700/80 relative'
                             }`}
                           >
                             {isTopResult && (
