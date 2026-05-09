@@ -253,7 +253,7 @@ const Redirection = React.forwardRef((props, ref) => {
               minZoom={10}
               maxZoom={18}
               scrollWheelZoom={true}
-              zoomControl={true}
+              zoomControl={false}
               attributionControl={false}
               className="h-full w-full"
               style={{ height: '100%', width: '100%' }}
@@ -836,6 +836,11 @@ const styles = `
 
   .leaflet-container {
     background-color: #0f172a;
+  }
+
+  /* Hide default top-left zoom control */
+  .leaflet-top.leaflet-left .leaflet-control-zoom {
+    display: none !important;
   }
 
   /* Group Size Input Styling */
