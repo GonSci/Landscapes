@@ -204,6 +204,15 @@ const Redirection = React.forwardRef((props, ref) => {
       console.log('API Response:', data);
       setTopsisResults(data.top_3_results || []);
       setViewMode('results');
+
+      // Center to top 1 recommendation
+      if (data.top_3_results && data.top_3_results.length > 0 && mapRef.current) {
+        const topLocId = data.top_3_results[0].location_id;
+        const topLoc = mapLocations.find(loc => loc.id === topLocId);
+        if (topLoc) {
+          mapRef.current.setView([topLoc.lat, topLoc.lng], 16, { animate: true });
+        }
+      }
     } catch (error) {
       console.error('Error fetching recommendations:', error);
       alert(`Error: ${error.message}`);
@@ -259,7 +268,7 @@ const Redirection = React.forwardRef((props, ref) => {
                   let locationsToDisplay = mapLocations;
                   if (viewMode === 'results' && topsisResults && topsisResults.length > 0) {
                     const resultIds = topsisResults.map(r => r.location_id);
-                    locationsToDisplay = mapLocations.filter(loc => loc.id === selectedLocationId || resultIds.includes(loc.id));
+                    locationsToDisplay = mapLocations.filter(loc => resultIds.includes(loc.id));
                   }
                   return locationsToDisplay.map((location) => {
                     const isTopResult = viewMode === 'results' && topsisResults && topsisResults.length > 0 && topsisResults[0].location_id === location.id;
@@ -628,10 +637,18 @@ const Redirection = React.forwardRef((props, ref) => {
                         return (
                           <div
                             key={result.location_id}
-                            className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col gap-3 ${
+                            onMouseEnter={() => {
+                              if (mapRef.current && location) {
+                                mapRef.current.setView([location.lat, location.lng], 16, { animate: true });
+                                if (markerRefs.current[location.id]) {
+                                  markerRefs.current[location.id].openPopup();
+                                }
+                              }
+                            }}
+                            className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col gap-3 cursor-pointer transform hover:-translate-y-1 hover:shadow-xl ${
                               isTopResult
-                                ? 'bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border-amber-500/50 shadow-lg shadow-amber-500/20 relative overflow-hidden'
-                                : 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-white/10 hover:border-indigo-500/30'
+                                ? 'bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border-amber-500/50 shadow-lg shadow-amber-500/20 relative overflow-hidden hover:border-amber-400'
+                                : 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-white/10 hover:border-indigo-500/50 hover:bg-slate-700/80'
                             }`}
                           >
                             {isTopResult && (
