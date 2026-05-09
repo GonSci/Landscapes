@@ -225,6 +225,16 @@ const Redirection = React.forwardRef((props, ref) => {
   const handleEditPreferences = () => {
     setViewMode('preferences');
     setTopsisResults(null);
+    
+    // Reset map view to show all markers
+    if (mapRef.current && mapLocations && mapLocations.length > 0) {
+      try {
+        const bounds = L.latLngBounds(mapLocations.map(loc => [loc.lat, loc.lng]));
+        mapRef.current.fitBounds(bounds, { padding: [30, 30] });
+      } catch (e) {
+        console.error('Error fitting bounds:', e);
+      }
+    }
   };
 
   return (
@@ -629,7 +639,7 @@ const Redirection = React.forwardRef((props, ref) => {
                     </button>
                   </div>
                   
-                  <div className="flex-1 overflow-y-auto space-y-3">
+                  <div className="flex-1 overflow-y-auto space-y-3 pr-1" style={{ maxHeight: 'calc(100vh - 480px)' }}>
                     {topsisResults && topsisResults.length > 0 ? (
                       topsisResults.map((result, index) => {
                         const location = mapLocations.find(loc => loc.id === result.location_id);
@@ -645,31 +655,30 @@ const Redirection = React.forwardRef((props, ref) => {
                                 }
                               }
                             }}
-                            className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col gap-3 cursor-pointer transform hover:-translate-y-1 hover:shadow-xl ${
+                            className={`p-3 rounded-2xl border transition-all duration-300 flex flex-col gap-2 cursor-pointer transform hover:-translate-y-1 hover:shadow-xl ${
                               isTopResult
                                 ? 'bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border-amber-500/50 shadow-lg shadow-amber-500/20 relative overflow-hidden hover:border-amber-400'
                                 : 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-white/10 hover:border-indigo-500/50 hover:bg-slate-700/80'
                             }`}
                           >
                             {isTopResult && (
-                              <div className="absolute top-2 right-2 px-2.5 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                              <div className="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[8px] font-black uppercase tracking-widest rounded-lg shadow-lg">
                                 #1 Best Match
                               </div>
                             )}
                             
                             <div className="pr-20">
-                              <h5 className={`text-sm font-black ${isTopResult ? 'text-amber-100' : 'text-white'} mb-1`}>
+                              <h5 className={`text-sm font-black ${isTopResult ? 'text-amber-100' : 'text-white'} mb-0.5`}>
                                 #{index + 1} {location?.name || result?.name || 'Location'}
                               </h5>
-                              <p className="text-xs text-slate-400 mb-1">{location?.type || result?.type || 'Unknown'}</p>
+                              <p className="text-[10px] text-slate-400 mb-0">{location?.type || result?.type || 'Unknown'}</p>
                             </div>
 
                             {result.reason_text && (
-                              <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 mb-1">
-                                <p className="text-[10px] text-indigo-200 font-medium italic leading-relaxed">
-                                  <span className="font-black not-italic mr-1 text-indigo-300">WHY:</span> {result.reason_text}
-                                </p>
-                              </div>
+                              <p className="text-[10px] text-slate-500 italic mb-1 mt-0.5">
+                                <span className="mr-1">💡</span>
+                                {result.reason_text}
+                              </p>
                             )}
 
                             <div className="grid grid-cols-2 gap-2 text-[10px]">
@@ -688,7 +697,7 @@ const Redirection = React.forwardRef((props, ref) => {
                               <div className="flex items-center justify-between">
                                 <span className="text-slate-500">Level</span>
                                 <span className={`font-black uppercase text-[9px] ${
-                                  location?.crowdLevel?.toLowerCase() === 'low' ? 'text-emerald-400' :
+                                  (location?.crowdLevel?.toLowerCase() === 'low' || location?.crowdLevel?.toLowerCase() === 'sparse') ? 'text-emerald-400' :
                                   location?.crowdLevel?.toLowerCase() === 'moderate' ? 'text-amber-400' :
                                   'text-red-400'
                                 }`}>
@@ -697,7 +706,7 @@ const Redirection = React.forwardRef((props, ref) => {
                               </div>
                             </div>
 
-                            <div className="mt-1 pt-3 border-t border-white/5 flex justify-end">
+                            <div className="mt-1 pt-3 border-t border-white/5 flex gap-2">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -707,12 +716,29 @@ const Redirection = React.forwardRef((props, ref) => {
                                     window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank', 'noopener,noreferrer');
                                   }
                                 }}
-                                className="flex w-full items-center justify-center gap-2 px-4 py-2.5 bg-[#33ccff]/10 hover:bg-[#33ccff]/20 border border-[#33ccff]/30 text-[#33ccff] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300"
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#33ccff]/10 hover:bg-[#33ccff]/20 border border-[#33ccff]/30 text-[#33ccff] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 hover:-translate-y-0.5"
                               >
-                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                                   <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.556 16.59l-5.11-2.95a.89.89 0 0 1-.446-.77V7.11c0-.49.398-.888.89-.888s.89.398.89.889v5.24l4.57 2.64a.89.89 0 0 1 .326 1.218.89.89 0 0 1-1.22.38z"/>
                                 </svg>
-                                Navigate via Waze
+                                Waze
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const lat = result.latitude || location?.lat;
+                                  const lng = result.longitude || location?.lng;
+                                  if (lat && lng) {
+                                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`, '_blank', 'noopener,noreferrer');
+                                  }
+                                }}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#4285F4]/10 hover:bg-[#4285F4]/20 border border-[#4285F4]/30 text-[#4285F4] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 hover:-translate-y-0.5"
+                              >
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 0C5.383 0 0 5.383 0 12s5.383 12 12 12 12-5.383 12-12S18.617 0 12 0zm-.375 16.634l-5.698-3.29c-.392-.226-.392-.782 0-1.008l5.698-3.29c.392-.226.98.058.98.504v6.58c0 .446-.588.73-.98.504zm6.09-3.518l-5.698 3.29c-.392.226-.98-.058-.98-.504v-6.58c0-.446.588-.73.98-.504l5.698 3.29c.392.226.392.782 0 1.008z"/>
+                                </svg>
+                                Maps
                               </button>
                             </div>
                           </div>

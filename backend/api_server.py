@@ -394,17 +394,24 @@ def get_topsis_recommendations():
         # Sort by TOPSIS score (descending) - higher is better
         ranked_results.sort(key=lambda x: x['topsis_score'], reverse=True)
         
+        if ranked_results:
+            max_topsis_id = ranked_results[0]['location_id']
+            min_distance_id = min(ranked_results, key=lambda x: x['distance'])['location_id']
+            min_crowd_id = min(ranked_results, key=lambda x: x['crowd_level'])['location_id']
+        else:
+            max_topsis_id = min_distance_id = min_crowd_id = None
+            
         # Add dynamic reason_text
         for idx, result in enumerate(ranked_results):
-            crowd = result['crowd_level']
-            if idx == 0:
-                result['reason_text'] = "Best overall balance of short travel time and low crowd density."
-            elif idx == 1:
-                result['reason_text'] = "Slightly further away, but offers the most crowd relief (Sparse)." if crowd < 30 else "Strong alternative with manageable crowds."
-            elif idx == 2:
-                result['reason_text'] = "Ideal for your group size with stable crowd levels."
+            loc_id = result['location_id']
+            if loc_id == max_topsis_id:
+                result['reason_text'] = "Optimal balance of low crowds and proximity."
+            elif loc_id == min_distance_id:
+                result['reason_text'] = "Shortest travel time from your current position."
+            elif loc_id == min_crowd_id:
+                result['reason_text'] = "Recommended for maximum comfort and space (Quiet Zone)."
             else:
-                result['reason_text'] = "Good alternative option."
+                result['reason_text'] = "Solid alternative matching your preferences."
         
         # Return top 3
         top_3 = ranked_results[:3]
