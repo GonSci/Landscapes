@@ -4,6 +4,7 @@ import { MapPin, ChevronDown, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = 'http://localhost:5001/api';
+const VISION_URL = 'http://localhost:5002';
 
 const LiveView = ({ targetLocationId, clearTargetLocation }) => {
   const [detectedCount, setDetectedCount] = useState(0);
@@ -46,7 +47,7 @@ const LiveView = ({ targetLocationId, clearTargetLocation }) => {
   const countHistoryRef = useRef([]);
 
   const updateConfig = async (clahe, blur) => {
-    await fetch(`${API_URL}/yolo/config`, {
+    await fetch(`${VISION_URL}/yolo/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enable_clahe: clahe, enable_blur: blur })
@@ -251,7 +252,7 @@ const LiveView = ({ targetLocationId, clearTargetLocation }) => {
     
     const liveCountInterval = setInterval(async () => {
       try {
-        const response = await fetch(`${API_URL}/live-count`);
+        const response = await fetch(`${VISION_URL}/live-count`);
         if (response.ok) {
           const data = await response.json();
           const newCount = data.count || 0;
@@ -306,57 +307,13 @@ const LiveView = ({ targetLocationId, clearTargetLocation }) => {
     if (continuousDetection) return;
     
     setContinuousDetection(true);
-    countHistoryRef.current = [];
-    console.log('Continuous detection started with BoT-SORT tracking');
+    console.log('Continuous detection started via MJPEG stream');
     
-    // Request-gated detection loop:
-    // Fires every 100ms but SKIPS the tick if a request is already in-flight.
-    // This prevents the request flooding that caused flickering detections.
-    detectionIntervalRef.current = setInterval(async () => {
-      // Gate: skip this tick if previous request hasn't returned
-      if (isFetchingRef.current) return;
-      isFetchingRef.current = true;
-
-      try {
-        const response = await fetch(`${API_URL}/yolo/next-frame`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
-        });
-
-        const data = await response.json();
-        
-        if (response.ok) {
-          if (data.frame) {
-            setAnnotatedFrame(`data:image/jpeg;base64,${data.frame}`);
-          }
-
-          // Count smoothing: sliding-window median over last 5 counts
-          const rawCount = data.count || 0;
-          countHistoryRef.current.push(rawCount);
-          if (countHistoryRef.current.length > 5) {
-            countHistoryRef.current.shift();
-          }
-          const smoothedCount = median(countHistoryRef.current);
-          setDetectedCount(smoothedCount);
-        } else {
-          console.error('Detection API error:', data);
-        }
-      } catch (error) {
-        console.error('Error in continuous detection:', error);
-      } finally {
-        isFetchingRef.current = false;
-      }
-    }, 30); // Check every 30ms (maximize pull rate for real-time speed)
+    // Just point the image source to the MJPEG stream!
+    setAnnotatedFrame(`${VISION_URL}/video_feed`);
   };
 
   const stopContinuousDetection = () => {
-    if (detectionIntervalRef.current) {
-      clearInterval(detectionIntervalRef.current);
-      detectionIntervalRef.current = null;
-    }
-    isFetchingRef.current = false;
-    countHistoryRef.current = [];
     setContinuousDetection(false);
     setAnnotatedFrame(null);
     console.log('Continuous detection stopped');

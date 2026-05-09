@@ -5,6 +5,7 @@ This document explains how to run the refactored backend as two independent micr
 ## Architecture Overview
 
 ### 1. **vision_worker.py** - Vision Processing Service
+
 - **Purpose**: Continuously processes video frames using YOLOv8 detection
 - **Responsibilities**:
   - Initialize YOLOv8 model
@@ -16,6 +17,7 @@ This document explains how to run the refactored backend as two independent micr
 - **Imports**: OpenCV, YOLOv8, threading, database models
 
 ### 2. **api_server.py** - REST API Service
+
 - **Purpose**: Handles all HTTP requests and TOPSIS calculations
 - **Responsibilities**:
   - Serve REST API endpoints
@@ -28,6 +30,7 @@ This document explains how to run the refactored backend as two independent micr
 - **Imports**: Flask, CORS, database models (NO cv2, NO ultralytics)
 
 ### 3. **PostgreSQL Database** - The Bridge
+
 - `SurveillanceLog` table: Latest detection results written by vision_worker
 - `Location` table: Available destinations
 - `User` table: Authentication data
@@ -45,6 +48,7 @@ pip install -r requirements.txt
 ```
 
 Required packages:
+
 - `flask`, `flask-cors`
 - `sqlalchemy`, `psycopg2-binary`
 - `python-dotenv`
@@ -71,6 +75,7 @@ python3 vision_worker.py
 ```
 
 **Expected output:**
+
 ```
 [VISION] Loading YOLOv8 model...
 [VISION] ✓ GPU detected, using CUDA acceleration
@@ -83,6 +88,7 @@ python3 vision_worker.py
 ```
 
 **What it does:**
+
 - Loads YOLOv8 model (`best.pt`)
 - Continuously reads video frames
 - Detects people in each frame
@@ -98,6 +104,7 @@ python3 api_server.py
 ```
 
 **Expected output:**
+
 ```
 [API] Starting Travel AI REST API Server...
 [API] Server running on http://localhost:5001
@@ -107,6 +114,7 @@ python3 api_server.py
 ```
 
 **What it does:**
+
 - Initializes Flask app
 - Starts HTTP server on port 5001
 - Ready to receive requests from frontend
@@ -131,7 +139,7 @@ Runs on `http://localhost:5173`
 ```json
 {
   "start_location_id": 1,
-  "start_coords": [16.4023, 120.5960],
+  "start_coords": [16.4023, 120.596],
   "max_travel_time": 15,
   "travel_mode": "walking",
   "group_size": 2,
@@ -142,6 +150,7 @@ Runs on `http://localhost:5173`
 ```
 
 **Flow:**
+
 1. Frontend sends request to `http://localhost:5001/api/redirection`
 2. API Server (api_server.py) receives the request
 3. API queries `SurveillanceLog` for latest crowd data (written by vision_worker)
@@ -149,6 +158,7 @@ Runs on `http://localhost:5173`
 5. API returns Top 3 recommendations with scores
 
 **Response:**
+
 ```json
 {
   "top_3_results": [
@@ -196,7 +206,7 @@ Runs on `http://localhost:5173`
 │     │                                     ▼                     │
 │     │                              ┌──────────────┐             │
 │     │                              │ Video Stream │             │
-│     │                              │ (demo.mp4)   │             │
+│     │                              │  place.mp4   │             │
 │     │                              └──────────────┘             │
 │     │                                                           │
 │     └──────► Returns Top 3 results                              │
@@ -269,6 +279,7 @@ TERRAIN_MULTIPLIER = 1.4  # Mountainous terrain adjustment
 ### Vision Worker Logs
 
 Look for `[VISION]` prefix:
+
 ```
 [VISION] Loading YOLOv8 model...
 [VISION] Logged 15 people for Baguio Night Market
@@ -278,6 +289,7 @@ Look for `[VISION]` prefix:
 ### API Server Logs
 
 Look for `[API]` prefix:
+
 ```
 [API] Received TOPSIS request: {...}
 [API] Found 5 locations in database
@@ -289,16 +301,16 @@ Look for `[API]` prefix:
 ```bash
 # Check latest detections
 psql -U landscapes_user -d landscapes -c "
-  SELECT location_name, people_count, timestamp 
-  FROM surveillance_log 
-  ORDER BY timestamp DESC 
+  SELECT location_name, people_count, timestamp
+  FROM surveillance_log
+  ORDER BY timestamp DESC
   LIMIT 10;
 "
 
 # Check location data
 psql -U landscapes_user -d landscapes -c "
-  SELECT id, name, latitude, longitude 
-  FROM location 
+  SELECT id, name, latitude, longitude
+  FROM location
   LIMIT 5;
 "
 ```
@@ -308,18 +320,23 @@ psql -U landscapes_user -d landscapes -c "
 ## Stopping the Services
 
 **Stop vision_worker (Terminal 1):**
+
 ```bash
 Ctrl+C
 ```
+
 Cleanly closes video capture and database connections.
 
 **Stop api_server (Terminal 2):**
+
 ```bash
 Ctrl+C
 ```
+
 Cleanly shuts down Flask.
 
 **Stop frontend (Terminal 3):**
+
 ```bash
 Ctrl+C
 ```
@@ -329,25 +346,33 @@ Ctrl+C
 ## Troubleshooting
 
 ### Issue: "No locations available in database"
+
 **Solution:** Ensure `Location` table is populated. Run:
+
 ```bash
 python3 backend/create_db.py
 ```
 
 ### Issue: Vision worker logs nothing
+
 **Possible causes:**
+
 - Video file not found (check resolve_video_path)
 - YOLOv8 model not found (`best.pt` missing)
 - No people detected in video
 
 ### Issue: API returns 500 error on /api/redirection
+
 **Check:**
+
 1. Vision worker is running and populating `SurveillanceLog`
 2. Database connectivity: `psql -U landscapes_user -d landscapes -c "SELECT COUNT(*) FROM surveillance_log;"`
 3. API server logs for error messages
 
 ### Issue: "Connection refused" between services
+
 **Ensure:**
+
 1. PostgreSQL is running: `psql -U landscapes_user -d landscapes -c "\dt"`
 2. Both services use same `DATABASE_URL`
 3. No firewall blocking localhost connections

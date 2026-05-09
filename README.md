@@ -1,12 +1,12 @@
 # Landscapes
 
-Landscapes is a crowd-monitoring web app for Baguio locations.
+Landscapes is a crowd-monitoring web app for Baguio locations, enabling real-time detection and intelligent TOPSIS-based redirection for crowd distribution.
 
-- Frontend: React + Vite
-- Backend: Flask + YOLOv8
-- Live View: Real-time people detection from demo video or webcam
+- **Frontend**: React + Vite + Tailwind CSS
+- **Backend (API)**: Flask + PostgreSQL
+- **Backend (Vision)**: YOLOv8 + OpenCV for real-time people detection
 
-This file is the main setup guide for teammates using macOS or Windows.
+This file is the main setup guide for the microservices architecture, replacing the old monolithic setup.
 
 ## Project Structure
 
@@ -14,12 +14,13 @@ This file is the main setup guide for teammates using macOS or Windows.
 Landscapes/
 ├── frontend/                  # React app
 │   ├── src/
-│   └── public/assets/
-├── backend/                   # Flask + YOLO endpoints
-│   ├── app.py
+│   └── public/assets/         # Place demo_video.mp4 here
+├── backend/                   # Microservices backend
+│   ├── api_server.py          # REST API & TOPSIS logic
+│   ├── vision_worker.py       # YOLOv8 inference & Database logger
+│   ├── models.py              # PostgreSQL schema
 │   ├── requirements.txt
-│   └── test_yolo_setup.py
-└── start.bat                  # Optional Windows helper script
+│   └── run_migration.py       # Seeds location data
 ```
 
 ## Prerequisites
@@ -48,53 +49,13 @@ git clone https://github.com/GonSci/Landscapes.git
 cd Landscapes
 ```
 
-## Step 2: Setup and Run Backend
+## Step 2: PostgreSQL Database Setup
 
-Run backend in Terminal/Window 1.
-
-### macOS
-
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements.txt
-python3 create_db.py
-python3 app.py
-```
-
-### Windows PowerShell
-
-```powershell
-cd backend
-py -m venv venv
-.\venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python create_db.py
-python app.py
-```
-
-### Windows Command Prompt
-
-```bat
-cd backend
-py -m venv venv
-venv\Scripts\activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python create_db.py
-python app.py
-```
-
-### PostgreSQL Database Setup
-
-The backend uses PostgreSQL for user accounts, location data, and surveillance logs. You must have PostgreSQL running locally.
+The backend uses PostgreSQL for user accounts, location data, and surveillance logs. **You must have PostgreSQL running locally.**
 
 1. **Install PostgreSQL**:
    - **macOS**: `brew install postgresql@14`
-   - **Windows**: Download the installer from [EnterpriseDB](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads).
+   - **Windows**: Download the installer from EnterpriseDB.
 2. **Start the Service**:
    - **macOS**: `brew services start postgresql@14`
    - **Windows**: Ensure the PostgreSQL service is running in `services.msc`.
@@ -114,14 +75,14 @@ The backend uses PostgreSQL for user accounts, location data, and surveillance l
    ALTER DATABASE landscapes OWNER TO landscapes_user;
    ```
 
-### Backend Setup (Step-by-Step)
+## Step 3: Setup Backend Environment
 
 1. **Environment Configuration**:
-   - Copy `backend/.env.example` to `backend/.env`:
-     ```bash
-     cp backend/.env.example backend/.env
+   - Copy `backend/.env.example` to `backend/.env` (or create one):
+     ```env
+     DATABASE_URL=postgresql://landscapes_user:landscapes_pass123@localhost:5432/landscapes
+     FLASK_DEBUG=true
      ```
-   - Verify the `DATABASE_URL` in `.env` matches your local PostgreSQL credentials.
 
 2. **Install Dependencies**:
    ```bash
@@ -132,157 +93,74 @@ The backend uses PostgreSQL for user accounts, location data, and surveillance l
    pip install -r requirements.txt
    ```
 
-3. **Initialize Database Tables**:
-   This script creates the actual tables in your PostgreSQL database:
-   ```bash
-   python3 create_db.py
-   ```
-
-4. **Seed Location Data (CRITICAL)**:
-   This step populates the `locations` table with the actual Baguio places (Night Market, The Mansion, etc.). **If you skip this, the map and explore pages will be empty.**
+3. **Initialize Database Tables & Seed Locations**:
+   Starting the API server automatically creates tables, but you must run the migration to seed the `Location` data (Night Market, The Mansion, etc.). **If you skip this, the map and explore pages will be empty.**
    ```bash
    python3 run_migration.py
    ```
 
-5. **Verify AI Model**:
-   Ensure `backend/best.pt` exists. This is the YOLOv8 model used for people detection.
+4. **Verify AI Model**:
+   Ensure `backend/best.pt` exists. This is your fine-tuned YOLOv8 model used for people detection.
 
-6. **Start the Server**:
-   ```bash
-   python3 app.py
-   ```
-   Expected backend URL: [http://localhost:5001](http://localhost:5001)
+## Step 4: Run the Microservices
 
----
+The new architecture splits the backend into two independent services communicating via PostgreSQL. You need to run them in separate terminals.
 
-## Step 3: Setup and Run Frontend
-
-Run frontend in Terminal/Window 2.
-
-### macOS
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### Windows PowerShell / CMD
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
-Expected frontend URL:
-
-- http://localhost:3000
-
-## Step 4: Verify the App
-
-1. Check backend health:
-
-```bash
-curl http://localhost:5001/api/health
-```
-
-Expected response:
-
-```json
-{
-  "status": "healthy",
-  "message": "Travel AI API is running"
-}
-```
-
-2. Open frontend URL in browser.
-3. Go to Live View and start detection.
-
-## Video Requirement (Important)
-
-For Live View video mode, make sure this file exists:
-
-- `frontend/public/assets/demo_video.mp4`
-
-Check quickly:
-
-### macOS
-
-```bash
-ls -lah frontend/public/assets/demo_video.mp4
-```
-
-### Windows PowerShell
-
-```powershell
-Get-Item frontend/public/assets/demo_video.mp4
-```
-
-## Optional: Windows One-Command Startup
-
-From repo root, you can run:
-
-```bat
-start.bat
-```
-
-It will install missing dependencies and start both backend and frontend.
-
-## Environment Variables
-
-For current setup, `.env` is optional.
-
-- Template is available at `backend/.env.example`
-- No Hugging Face API key is required
-
-## Common Fixes
-
-### 1) "python: command not found" (macOS)
-
-Use `python3` instead of `python`.
-
-### 2) "ModuleNotFoundError: No module named flask"
-
-You are likely not in the backend virtual environment.
+### Terminal 1 - API Server
+Handles all REST endpoints, user authentication, and TOPSIS crowd-aware redirection algorithms.
 
 ```bash
 cd backend
 source venv/bin/activate
-python3 -m pip install -r requirements.txt
+python3 api_server.py
 ```
+*Runs on `http://localhost:5001`*
 
-### 3) "Video file not found"
+### Terminal 2 - Vision Worker
+Continuously runs the YOLOv8 model on the video feed and logs crowd counts to the database asynchronously.
 
-Ensure the file is in:
+```bash
+cd backend
+source venv/bin/activate
+python3 vision_worker.py
+```
+*No HTTP interface. Press `Ctrl+C` to stop.*
 
-- `frontend/public/assets/demo_video.mp4`
+## Step 5: Setup and Run Frontend
 
-### 4) Port 5001 already in use
-
-Stop the conflicting process or change backend port in `backend/app.py`.
-
-## Team Pull Workflow
-
-When teammates pull new changes:
-
-### Frontend
+Run the React frontend in Terminal 3.
 
 ```bash
 cd frontend
 npm install
+npm run dev
 ```
 
-### Backend
+Expected frontend URL: `http://localhost:5173` (or `3000` depending on Vite config).
 
-```bash
-cd backend
-source venv/bin/activate    # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python3 create_db.py        # Ensure tables exist
-python3 run_migration.py    # CRITICAL: Sync location data and latest schema
-```
+## Video Requirement (Important)
 
-**Note**: If we've updated the AI model, make sure you have the latest `best.pt` file in the `backend/` folder.
+For the Vision Worker and Live View to function, ensure your sample video is correctly placed:
 
-Then run backend and frontend again.
+- `frontend/public/assets/demo_video.mp4`
+
+## System Architecture Flow
+
+1. **Vision Worker (`vision_worker.py`)** runs YOLO tracking on `demo_video.mp4` and writes the `people_count` to the `SurveillanceLog` PostgreSQL table.
+2. **API Server (`api_server.py`)** receives POST requests from the Frontend for recommendations.
+3. **API Server** queries the latest `SurveillanceLog` data, applies the 50/50 TOPSIS algorithm (Crowd vs. Distance), and returns the optimal locations.
+4. **React Frontend** dynamically visualizes the interactive map and the UI dashboard cards.
+
+## Common Fixes
+
+### 1) "python: command not found" (macOS)
+Use `python3` instead of `python`.
+
+### 2) "ModuleNotFoundError: No module named flask"
+You are likely not in the backend virtual environment. Ensure you run `source venv/bin/activate` before running the scripts.
+
+### 3) "No locations available in database"
+You forgot to seed the database. Ensure you run `python3 run_migration.py`.
+
+### 4) "Connection refused" between services
+Ensure PostgreSQL is actually running and the `DATABASE_URL` in your `.env` matches your local credentials.

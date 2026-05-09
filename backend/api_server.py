@@ -15,6 +15,7 @@ from threading import Lock
 
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
+from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from extensions import db
@@ -33,6 +34,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+migrate = Migrate(app, db)
 
 with app.app_context():
     db.create_all()
@@ -160,8 +162,30 @@ def calculate_topsis_scores(s_plus, s_minus):
 # ── Basic Health & Info Endpoints ──────────────────────────────────────────────
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint."""
-    return jsonify({'status': 'healthy', 'message': 'Travel AI API is running'})
+    """Comprehensive health check endpoint."""
+    health_status = {
+        'status': 'healthy',
+        'api': 'running',
+        'database': 'unknown',
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    try:
+        # Check database connection by executing a simple query
+        db.session.execute(db.text('SELECT 1'))
+        health_status['database'] = 'connected'
+        
+        # Check if locations table has data
+        loc_count = Location.query.count()
+        health_status['locations_loaded'] = loc_count
+        
+    except Exception as e:
+        health_status['status'] = 'unhealthy'
+        health_status['database'] = 'disconnected'
+        health_status['error'] = str(e)
+        return jsonify(health_status), 503
+        
+    return jsonify(health_status), 200
 
 
 # ── Authentication Endpoints ──────────────────────────────────────────────────
@@ -208,6 +232,38 @@ def login():
             })
         return jsonify({'error': 'Invalid credentials'}), 401
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ── Vision Integration Endpoints ──────────────────────────────────────────────
+@app.route('/api/yolo/initialize', methods=['POST'])
+def initialize_yolo():
+    """Update active location in DB so vision worker can switch its video stream."""
+    try:
+        data = request.json
+        video_filename = data.get('video')
+        if not video_filename:
+            return jsonify({'error': 'Video filename required'}), 400
+            
+        location = Location.query.filter_by(video_filename=video_filename).first()
+        if not location:
+            return jsonify({'error': 'Location not found for this video'}), 404
+            
+        # Set all locations to inactive
+        Location.query.update({Location.is_active: False})
+        
+        # Set selected location to active
+        location.is_active = True
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Active location switched to {location.name}',
+            'location_id': location.id
+        })
+    except Exception as e:
+        db.session.rollback()
+        print(f"[API] Error initializing yolo: {e}")
         return jsonify({'error': str(e)}), 500
 
 
