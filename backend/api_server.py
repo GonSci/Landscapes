@@ -394,6 +394,18 @@ def get_topsis_recommendations():
         # Sort by TOPSIS score (descending) - higher is better
         ranked_results.sort(key=lambda x: x['topsis_score'], reverse=True)
         
+        # Add dynamic reason_text
+        for idx, result in enumerate(ranked_results):
+            crowd = result['crowd_level']
+            if idx == 0:
+                result['reason_text'] = "Best overall balance of short travel time and low crowd density."
+            elif idx == 1:
+                result['reason_text'] = "Slightly further away, but offers the most crowd relief (Sparse)." if crowd < 30 else "Strong alternative with manageable crowds."
+            elif idx == 2:
+                result['reason_text'] = "Ideal for your group size with stable crowd levels."
+            else:
+                result['reason_text'] = "Good alternative option."
+        
         # Return top 3
         top_3 = ranked_results[:3]
         print(f"[API] Top 3 results: {[r['name'] for r in top_3]}")

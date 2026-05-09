@@ -661,8 +661,16 @@ const Redirection = React.forwardRef((props, ref) => {
                               <h5 className={`text-sm font-black ${isTopResult ? 'text-amber-100' : 'text-white'} mb-1`}>
                                 #{index + 1} {location?.name || result?.name || 'Location'}
                               </h5>
-                              <p className="text-xs text-slate-400">{location?.type || result?.type || 'Unknown'}</p>
+                              <p className="text-xs text-slate-400 mb-1">{location?.type || result?.type || 'Unknown'}</p>
                             </div>
+
+                            {result.reason_text && (
+                              <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 mb-1">
+                                <p className="text-[10px] text-indigo-200 font-medium italic leading-relaxed">
+                                  <span className="font-black not-italic mr-1 text-indigo-300">WHY:</span> {result.reason_text}
+                                </p>
+                              </div>
+                            )}
 
                             <div className="grid grid-cols-2 gap-2 text-[10px]">
                               <div className="flex items-center justify-between">
@@ -687,6 +695,25 @@ const Redirection = React.forwardRef((props, ref) => {
                                   {location?.crowdLevel || 'Unknown'}
                                 </span>
                               </div>
+                            </div>
+
+                            <div className="mt-1 pt-3 border-t border-white/5 flex justify-end">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const lat = result.latitude || location?.lat;
+                                  const lng = result.longitude || location?.lng;
+                                  if (lat && lng) {
+                                    window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank', 'noopener,noreferrer');
+                                  }
+                                }}
+                                className="flex w-full items-center justify-center gap-2 px-4 py-2.5 bg-[#33ccff]/10 hover:bg-[#33ccff]/20 border border-[#33ccff]/30 text-[#33ccff] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300"
+                              >
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.556 16.59l-5.11-2.95a.89.89 0 0 1-.446-.77V7.11c0-.49.398-.888.89-.888s.89.398.89.889v5.24l4.57 2.64a.89.89 0 0 1 .326 1.218.89.89 0 0 1-1.22.38z"/>
+                                </svg>
+                                Navigate via Waze
+                              </button>
                             </div>
                           </div>
                         );
