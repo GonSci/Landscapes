@@ -355,7 +355,7 @@ const Redirection = React.forwardRef((props, ref) => {
           {/* Settings Sidebar - Right Side */}
           <div className="flex flex-col self-stretch" style={{ height: 'calc(100vh - 325px)' }}>
             {/* Settings Panel / Results View */}
-            <div className="rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-hidden flex flex-col flex-1">
+            <div className="rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col flex-1">
               
               {viewMode === 'preferences' ? (
                 /* PREFERENCES VIEW */
