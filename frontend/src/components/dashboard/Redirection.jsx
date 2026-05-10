@@ -355,13 +355,14 @@ const Redirection = React.forwardRef((props, ref) => {
           {/* Settings Sidebar - Right Side */}
           <div className="flex flex-col self-stretch" style={{ height: 'calc(100vh - 325px)' }}>
             {/* Settings Panel / Results View */}
-            <div className="rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col flex-1">
+            <div className="rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-hidden flex flex-col flex-1">
               
               {viewMode === 'preferences' ? (
                 /* PREFERENCES VIEW */
-                <>
-                  <h4 className="text-lg font-black text-white mb-4 tracking-tight">Your Preferences</h4>
+                <div className="flex flex-col h-full">
+                  <h4 className="text-lg font-black text-white mb-4 tracking-tight shrink-0">Your Preferences</h4>
               
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2 -mr-2 pb-2 custom-scrollbar">
               {/* SECTION: Trip Basics */}
               <div className="mb-3">
                 {/* Max Travel Time */}
@@ -587,13 +588,13 @@ const Redirection = React.forwardRef((props, ref) => {
                       <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 shadow-md ${paidAttractions ? 'translate-x-6' : 'translate-x-0'}`}></div>
                     </div>
                   </label>
+                  </div>
                 </div>
+
               </div>
 
-              <div className="border-t border-white/10 my-2.5"></div>
-
               {/* Get Recommendations Button */}
-              <div className="mt-auto relative group">
+              <div className="mt-4 pt-4 border-t border-white/10 shrink-0 relative group">
                   <div className="mb-2.5 px-1">
                     <p className="text-xs text-slate-400 font-medium">Selected Location:</p>
                     {selectedLocationId !== null ? (
@@ -629,7 +630,7 @@ const Redirection = React.forwardRef((props, ref) => {
                   </div>
                 )}
               </div>
-                </>
+                </div>
               ) : (
                 /* RESULTS VIEW */
                 <div className="flex flex-col gap-4 h-full">
