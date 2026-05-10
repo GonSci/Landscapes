@@ -272,11 +272,20 @@ def camera_thread(app_context, location_id, video_name, location_name):
                     if current_count > THREAD_MAX_COUNTS[location_id]:
                         THREAD_MAX_COUNTS[location_id] = current_count
 
-            # 4. Database Logging (Every 60s)
+            # 4. Database Logging (Every 60s or on Spike)
             now = time.time()
-            if now - last_log_time >= 60:
+            time_since_last_log = now - last_log_time
+
+            with STREAM_LOCK:
+                peak_count = THREAD_MAX_COUNTS[location_id]
+
+            # Dynamic Spike Detection thresholds per location
+            location_high_thresholds = {1: 15, 2: 38, 3: 14, 4: 15, 5: 66}
+            high_threshold = location_high_thresholds.get(location_id, 10)
+            is_high_density = peak_count >= high_threshold
+
+            if time_since_last_log >= 60 or (is_high_density and time_since_last_log >= 10):
                 with STREAM_LOCK:
-                    peak_count = THREAD_MAX_COUNTS[location_id]
                     THREAD_MAX_COUNTS[location_id] = 0
                 
                 conf_avg = sum(d['confidence'] for d in detections_pct) / len(detections_pct) if detections_pct else None
