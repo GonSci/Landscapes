@@ -181,7 +181,7 @@ const MapPreview = ({
                 transition={{ delay: 0.1 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-3.5 px-10 py-5 bg-white text-indigo-600 border-none rounded-2xl text-xl font-bold shadow-2xl transition-all duration-300 hover:bg-blue-50 hover:-translate-y-0.5 hover:shadow-3xl"
+                className="flex items-center gap-3.5 px-10 py-5 bg-[#1e1233] text-purple-400 border-none rounded-2xl text-xl font-bold shadow-2xl transition-all duration-300 hover:bg-[#2d1b4e] hover:-translate-y-0.5 hover:shadow-3xl"
               >
                 <Map size={24} />
                 <span>◇ Show Interactive Map ◇</span>
@@ -197,10 +197,10 @@ const MapPreview = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="absolute top-6 left-6 right-6 p-5 bg-white rounded-xl shadow-md z-20"
+              className="absolute top-6 left-6 right-6 p-5 bg-[#1e1233] rounded-xl shadow-md z-20"
             >
-              <h4 className="text-lg font-bold text-gray-800 mb-1">{selectedLocation.name}</h4>
-              <p className="text-sm text-gray-500 m-0">{selectedLocation.region}</p>
+              <h4 className="text-lg font-bold text-gray-200 mb-1">{selectedLocation.name}</h4>
+              <p className="text-sm text-gray-400 m-0">{selectedLocation.region}</p>
             </motion.div>
           )}
         </AnimatePresence>
