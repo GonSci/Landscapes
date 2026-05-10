@@ -9,6 +9,8 @@ import os
 import cv2
 import numpy as np
 from ultralytics import YOLO
+from sahi import AutoDetectionModel
+from sahi.predict import get_sliced_prediction
 import threading
 import time
 from datetime import datetime
@@ -140,13 +142,19 @@ def run_yolo_pipeline(frame, annotate=True):
 
     frame_proc = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
 
-    # Thread-safe YOLO Inference
+    # Thread-safe SAHI Inference
     with YOLO_LOCK:
-        results = YOLO_MODEL(
+        YOLO_MODEL.confidence_threshold = DETECTION_CONFIG['conf_threshold']
+        results = get_sliced_prediction(
             frame_proc,
-            classes=[0],
-            conf=DETECTION_CONFIG['conf_threshold'],
-            iou=DETECTION_CONFIG['iou_threshold'],
+            YOLO_MODEL,
+            slice_height=640,
+            slice_width=640,
+            overlap_height_ratio=0.15,
+            overlap_width_ratio=0.15,
+            postprocess_match_metric="IOU",
+            postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
+            postprocess_class_agnostic=True,
             verbose=False
         )
 
@@ -154,20 +162,21 @@ def run_yolo_pipeline(frame, annotate=True):
     detections_pixel = []
     detections_pct = []
 
-    for result in results:
-        for box in result.boxes:
-            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-            conf = float(box.conf[0])
+    for obj in results.object_prediction_list:
+        if obj.category.id != 0: continue # Only class 0 (person)
+        
+        x1, y1, x2, y2 = obj.bbox.minx, obj.bbox.miny, obj.bbox.maxx, obj.bbox.maxy
+        conf = obj.score.value
 
-            bw, bh = x2 - x1, y2 - y1
-            if bw > (w * 0.6) or bh > (h * 0.6): continue
-            if x1 <= 2 and y1 <= 2 and x2 >= (w - 2) and y2 >= (h - 2): continue
+        bw, bh = x2 - x1, y2 - y1
+        if bw > (w * 0.6) or bh > (h * 0.6): continue
+        if x1 <= 2 and y1 <= 2 and x2 >= (w - 2) and y2 >= (h - 2): continue
 
-            detections_pixel.append({'bbox': [int(x1), int(y1), int(x2), int(y2)], 'confidence': conf})
-            detections_pct.append({
-                'bbox': [float(x1)/w, float(y1)/h, float(x2)/w, float(y2)/h],
-                'confidence': conf
-            })
+        detections_pixel.append({'bbox': [int(x1), int(y1), int(x2), int(y2)], 'confidence': conf})
+        detections_pct.append({
+            'bbox': [float(x1)/w, float(y1)/h, float(x2)/w, float(y2)/h],
+            'confidence': conf
+        })
 
     output_frame = frame.copy()
     if annotate and detections_pixel:
@@ -235,7 +244,7 @@ def camera_thread(app_context, location_id, video_name, location_name):
             with active_location_lock:
                 is_active = (location_id == active_location_id)
                 
-            target_fps = 30.0 if is_active else 0.5 # 30 FPS if active, 1 frame per 2 sec if background
+            target_fps = 30.0 if is_active else 0.2 # 30 FPS if active, 1 frame per 5 sec if background
             sleep_time = 1.0 / target_fps
             
             # Wall-clock sync to skip frames and keep video playing in real-time speed
@@ -360,8 +369,13 @@ def db_polling_thread(app_context):
         time.sleep(1)
 
 if __name__ == '__main__':
-    print("[VISION] Loading YOLOv8 model...")
-    YOLO_MODEL = YOLO("best.pt")
+    print("[VISION] Loading SAHI YOLOv8 model...")
+    YOLO_MODEL = AutoDetectionModel.from_pretrained(
+        model_type='yolov8',
+        model_path='best.pt',
+        confidence_threshold=DETECTION_CONFIG['conf_threshold'],
+        device="cpu"
+    )
     
     with app.app_context():
         db.create_all()
