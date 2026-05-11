@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-05-11T07:18:52.893388",
+  "device": "mps",
+  "config": {
+    "conf": 0.5,
+    "iou": 0.45,
+    "tile_size": 640,
+    "overlap": 0.15
+  },
+  "results": [
+    {
+      "video": "mansion_entrance.mp4",
+      "frames_sampled": 30,
+      "mae": 1.47,
+      "mape": 17.5,
+      "map": 0.9438,
+      "avg_sahi_count": 10.0,
+      "avg_tier3_count": 11.4,
+      "avg_sahi_time": 0.228,
+      "avg_tier3_time": 0.402,
+      "speedup": 0.57
+    },
+    {
+      "video": "mansion.mp4",
+      "frames_sampled": 30,
+      "mae": 0.8,
+      "mape": 7.4,
+      "map": 0.955,
+      "avg_sahi_count": 10.5,
+      "avg_tier3_count": 11.1,
+      "avg_sahi_time": 0.247,
+      "avg_tier3_time": 0.193,
+      "speedup": 1.28
+    },
+    {
+      "video": "cathedral.mp4",
+      "frames_sampled": 30,
+      "mae": 2.27,
+      "mape": 23.9,
+      "map": 0.9347,
+      "avg_sahi_count": 10.5,
+      "avg_tier3_count": 12.8,
+      "avg_sahi_time": 0.255,
+      "avg_tier3_time": 0.183,
+      "speedup": 1.39
+    },
+    {
+      "video": "night_market.mp4",
+      "frames_sampled": 30,
+      "mae": 2.0,
+      "mape": 12.8,
+      "map": 0.8159,
+      "avg_sahi_count": 15.1,
+      "avg_tier3_count": 14.3,
+      "avg_sahi_time": 0.236,
+      "avg_tier3_time": 0.175,
+      "speedup": 1.35
+    },
+    {
+      "video": "burnham.mp4",
+      "frames_sampled": 30,
+      "mae": 0.57,
+      "mape": 4.9,
+      "map": 0.9327,
+      "avg_sahi_count": 11.0,
+      "avg_tier3_count": 10.6,
+      "avg_sahi_time": 0.236,
+      "avg_tier3_time": 0.169,
+      "speedup": 1.4
+    }
+  ]
+}
