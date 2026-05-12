@@ -6,6 +6,13 @@ import { Activity, Map as MapIcon, Compass } from 'lucide-react';
 
 const Dashboard = ({ targetLocationId, clearTargetLocation }) => {
   const [activeTab, setActiveTab] = useState('live');
+  const [redirectionLocationId, setRedirectionLocationId] = useState(null);
+  
+  const handleSwitchToRedirection = (id) => {
+    console.log('[Dashboard] Switching to redirection tab for location:', id);
+    setRedirectionLocationId(id);
+    setActiveTab('redirection');
+  };
 
   const tabs = [
     { id: 'live', label: 'Live Monitoring', icon: Activity, component: LiveView },
@@ -62,6 +69,9 @@ const Dashboard = ({ targetLocationId, clearTargetLocation }) => {
           <ActiveComponent 
             targetLocationId={targetLocationId} 
             clearTargetLocation={clearTargetLocation}
+            onTabChange={setActiveTab}
+            redirectionLocationId={redirectionLocationId}
+            onSwitchToRedirection={handleSwitchToRedirection}
           />
         </div>
       </div>

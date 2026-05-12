@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import Redirection from './Redirection';
 import { MapPin, ChevronDown, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_URL = 'http://localhost:5001/api';
 const VISION_URL = 'http://localhost:5002';
 
-const LiveView = ({ targetLocationId, clearTargetLocation }) => {
+const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection }) => {
   const [detectedCount, setDetectedCount] = useState(0);
   const [videoInitialized, setVideoInitialized] = useState(false);
   const [videoError, setVideoError] = useState(null);
@@ -628,18 +627,41 @@ const LiveView = ({ targetLocationId, clearTargetLocation }) => {
             </div>
 
             {/* Persistent System Recommendation */}
-            <div className={`mt-4 flex items-center gap-5 rounded-3xl ${recommendation.bg} border ${recommendation.border} px-6 py-5 animate-slideIn transition-all duration-700`}>
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-${recommendation.color}-500 text-white ${recommendation.shadow}`}>
-                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
-                  {recommendation.icon}
-                </svg>
+            <div className={`mt-4 flex flex-col gap-5 rounded-[32px] ${recommendation.bg} border ${recommendation.border} px-6 py-6 animate-slideIn transition-all duration-700`}>
+              <div className="flex items-center gap-5">
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-${recommendation.color}-500 text-white ${recommendation.shadow}`}>
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+                    {recommendation.icon}
+                  </svg>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[11px] font-black uppercase tracking-widest ${recommendation.textMuted}`}>{recommendation.title}</span>
+                  <p className="text-sm leading-relaxed text-slate-300">
+                    {recommendation.text}
+                  </p>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className={`text-[11px] font-black uppercase tracking-widest ${recommendation.textMuted}`}>{recommendation.title}</span>
-                <p className="text-sm leading-relaxed text-slate-300">
-                  {recommendation.text}
-                </p>
-              </div>
+
+              {/* Show alternative places button - ONLY FOR HIGH */}
+              {stableCrowdLevel.label === 'HIGH' && (
+                <div className="pt-2 border-t border-white/5">
+                  <button
+                    onClick={() => {
+                      console.log('[LiveView] Redirection triggered for ID:', activeLocationId);
+                      onSwitchToRedirection?.(activeLocationId);
+                    }}
+                    className="group flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 text-[11px] font-black uppercase tracking-[3px] transition-all duration-500 hover:bg-white/10 hover:border-white/20 hover:text-white hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] active:scale-[0.98]"
+                  >
+                    <svg className="w-4 h-4 transition-transform duration-500 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Show alternative places</span>
+                    <svg className="w-4 h-4 transition-transform duration-500 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

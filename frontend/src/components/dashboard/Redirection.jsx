@@ -7,7 +7,7 @@ import redirectionFallback from '../../data/redirection_fallback_locations.json'
 import CSRNet from './CSRNet';
 import { useLiveLocations } from '../../hooks/useLiveLocations';
 
-const Redirection = React.forwardRef((props, ref) => {
+const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
   const [baguioLocations, setBaguioLocations] = useState([]);
   const [hoveredLocation, setHoveredLocation] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
@@ -19,13 +19,31 @@ const Redirection = React.forwardRef((props, ref) => {
   const [placeCategory, setPlaceCategory] = useState('any');
   const [isTravelModeOpen, setIsTravelModeOpen] = useState(false);
   const [isPlaceCategoryOpen, setIsPlaceCategoryOpen] = useState(false);
-  const [viewMode, setViewMode] = useState('preferences'); // 'preferences' or 'results'
+  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('preferences');
   const [topsisResults, setTopsisResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+
   const markerRefs = useRef({});
   const mapRef = useRef(null);
   const travelModeRef = useRef(null);
   const placeCategoryRef = useRef(null);
+  const locationDropdownRef = useRef(null);
+
+
+  // Handle clicking outside the location dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target)) {
+        setIsLocationDropdownOpen(false);
+      }
+    };
+
+    if (isLocationDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isLocationDropdownOpen]);
 
   // Load Baguio locations for Hidden Gems section
   useEffect(() => {
@@ -68,6 +86,26 @@ const Redirection = React.forwardRef((props, ref) => {
   const mapLocations = (liveLocations && liveLocations.length > 0)
     ? liveLocations
     : redirectionFallback.locations;
+
+  // Synchronization with redirectionLocationId from Live View
+  useEffect(() => {
+    console.log('[Redirection] Received redirectionLocationId:', redirectionLocationId);
+    if (redirectionLocationId !== null) {
+      setSelectedLocationId(redirectionLocationId);
+      // Wait for map to be ready
+      const timer = setTimeout(() => {
+        const location = mapLocations.find(loc => loc.id === redirectionLocationId);
+        console.log('[Redirection] Centering map on:', location?.name);
+        if (location && mapRef.current) {
+          mapRef.current.setView([location.lat, location.lng], 17);
+          if (markerRefs.current[location.id]) {
+            markerRefs.current[location.id].openPopup();
+          }
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [redirectionLocationId, mapLocations]);
 
   // Fit map to show all markers on initial load only
   useEffect(() => {
@@ -255,7 +293,7 @@ const Redirection = React.forwardRef((props, ref) => {
             </div>
 
             {/* Leaflet Map */}
-            <div className="flex-1 overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)]" style={{ minHeight: 'calc(100vh - 400px)' }}>
+            <div className="flex-1 overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)]" style={{ minHeight: 'calc(100vh - 300px)' }}>
             <MapContainer
               ref={mapRef}
               center={[16.413, 120.604]}
@@ -353,7 +391,7 @@ const Redirection = React.forwardRef((props, ref) => {
           </div>
 
           {/* Settings Sidebar - Right Side */}
-          <div className="flex flex-col self-stretch" style={{ height: 'calc(100vh - 325px)' }}>
+          <div className="flex flex-col self-stretch" style={{ height: 'calc(100vh - 220px)' }}>
             {/* Settings Panel / Results View */}
             <div className="rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-hidden flex flex-col flex-1">
               
@@ -593,17 +631,57 @@ const Redirection = React.forwardRef((props, ref) => {
 
               </div>
 
-              {/* Get Recommendations Button */}
+              {/* Starting Location Dropdown */}
               <div className="mt-4 pt-4 border-t border-white/10 shrink-0 relative group">
                   <div className="mb-2.5 px-1">
-                    <p className="text-xs text-slate-400 font-medium">Selected Location:</p>
-                    {selectedLocationId !== null ? (
-                      <p className="text-sm font-black text-indigo-300 truncate">
-                        {mapLocations.find(loc => loc.id === selectedLocationId)?.name || 'Location'}
-                      </p>
-                    ) : (
-                      <p className="text-sm font-black text-slate-500 italic">None Selected</p>
-                    )}
+                    <p className="text-xs text-slate-400 font-medium mb-2">Starting Location:</p>
+                    <div className="relative" ref={locationDropdownRef}>
+                      <button
+                        onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-black transition-all duration-300 cursor-pointer backdrop-blur-sm shadow-lg flex items-center justify-between"
+                      >
+                        <span className="truncate">
+                          {selectedLocationId !== null 
+                            ? mapLocations.find(loc => loc.id === selectedLocationId)?.name || 'Select Location'
+                            : 'Select Location'}
+                        </span>
+                        <svg 
+                          className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isLocationDropdownOpen ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </button>
+
+                      {isLocationDropdownOpen && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[110] max-h-60 overflow-y-auto custom-scrollbar">
+                          {mapLocations.map((loc) => (
+                            <button
+                              key={loc.id}
+                              onClick={() => {
+                                setSelectedLocationId(loc.id);
+                                setIsLocationDropdownOpen(false);
+                                if (mapRef.current) {
+                                  mapRef.current.setView([loc.lat, loc.lng], 17);
+                                  if (markerRefs.current[loc.id]) {
+                                    markerRefs.current[loc.id].openPopup();
+                                  }
+                                }
+                              }}
+                              className={`w-full px-4 py-3 text-sm font-black text-left transition-all duration-200 flex items-center gap-3 ${
+                                selectedLocationId === loc.id
+                                  ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 text-indigo-100 border-l-2 border-indigo-400'
+                                  : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent'
+                              }`}
+                            >
+                              <span>{loc.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 <button 
                   onClick={handleGetRecommendations}
@@ -762,71 +840,7 @@ const Redirection = React.forwardRef((props, ref) => {
         </div>
       </div>
 
-      {/* Hidden Gems Nearby Section */}
-      <div className="mt-8 rounded-[32px] bg-white/5 border border-white/10 backdrop-blur-2xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.3)] sm:p-8">
-        <div className="flex flex-col gap-2 mb-8 text-center">
-          <h2 className="m-0 text-[10px] font-black uppercase tracking-[4px] text-slate-500">Intelligent Recommendations</h2>
-          <h3 className="m-0 text-2xl font-black bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
-            Hidden Gems Nearby
-          </h3>
-        </div>
-        
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.3fr_2fr] 2xl:grid-cols-[1.5fr_2fr]">
-          {/* Left Side - CSRNET Density Mapping */}
-          <CSRNet />
-
-          {/* Right Side - Location Cards */}
-          <div className="flex flex-col gap-4">
-              <div className="flex gap-5 overflow-x-auto pb-4 scroll-smooth custom-scrollbar">
-              {baguioLocations
-                .filter(loc => loc.currentCrowdLevel === 'low')
-                .map((location) => (
-                  <div 
-                    key={location.id} 
-                    className={`flex-[0_0_240px] overflow-hidden rounded-3xl border border-white/5 bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-500 cursor-pointer sm:flex-[0_0_260px] lg:flex-[0_0_300px] ${hoveredLocation === location.id ? 'translate-y-[-8px] border-[#667eea]/50 bg-white/10' : 'hover:bg-white/[0.07]'}`}
-                    onMouseEnter={() => handleLocationHover(location.id)}
-                    onMouseLeave={handleLocationHoverOut}
-                  >
-                    <div className="relative h-[140px] overflow-hidden sm:h-[160px]">
-                      <img 
-                        src={location.image} 
-                        alt={location.name}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        onError={(e) => {
-                            e.currentTarget.src = '/assets/images/placeholder.jpg';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1e] via-transparent to-transparent opacity-60"></div>
-                      <div className="absolute right-4 top-4 rounded-xl bg-emerald-500 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/30 backdrop-blur-md">
-                        Safe / Low
-                      </div>
-                    </div>
-                    <div className="p-5">
-                      <h4 className="mb-2 text-lg font-black text-white tracking-tight">
-                        {location.name}
-                      </h4>
-                      <p className="mb-4 line-clamp-2 overflow-hidden text-[12px] leading-relaxed text-slate-400">
-                        {location.description}
-                      </p>
-                      
-                      <div className="space-y-3 pt-4 border-t border-white/5">
-                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                          <span className="text-slate-500">Live Traffic</span>
-                          <span className="text-emerald-400">{location.detectedPeople} People</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                          <span className="text-slate-500">Proximity</span>
-                          <span className="text-slate-300">{location.distance} KM</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
       </div>
-    </div>
   );
 });
 
