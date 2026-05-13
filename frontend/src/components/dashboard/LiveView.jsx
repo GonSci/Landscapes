@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MapPin, ChevronDown, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import BarChart from './BarChart';
+import DonutChart from './DonutChart';
 
 const API_URL = 'http://localhost:5001/api';
 const VISION_URL = 'http://localhost:5002';
@@ -481,13 +483,6 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
 
 
 
-
-  const maxPeakVal = useMemo(() => {
-    if (!hourlyData || hourlyData.length === 0) return 10;
-    const max = Math.max(...hourlyData.map(d => d.value));
-    return max > 10 ? max : 10; // Baseline of 10 to prevent huge bars for tiny counts
-  }, [hourlyData]);
-
   return (
     <div className="text-white font-sans selection:bg-[#667eea]/30">
       <div className="animate-fadeInUp">
@@ -793,63 +788,7 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
                       </div>
                     </div>
 
-                    <div className="flex gap-4 items-start pr-2">
-                      {/* Y-Axis Labels */}
-                      <div className="flex flex-col justify-between h-24 text-[8px] font-black text-slate-600 uppercase tracking-widest mt-10 select-none">
-                        <span>{Math.round(maxPeakVal)}</span>
-                        <span>{Math.round(maxPeakVal / 2)}</span>
-                        <span>0</span>
-                      </div>
-
-                      <div className="flex-1 relative overflow-hidden">
-                        {/* Grid Lines (Fixed in background) */}
-                        <div className="absolute inset-x-0 top-10 h-24 flex flex-col justify-between pointer-events-none z-0">
-                          <div className="border-t border-white/5 w-full"></div>
-                          <div className="border-t border-white/5 w-full"></div>
-                          <div className="border-t border-white/10 w-full"></div>
-                        </div>
-
-                        {/* Scrollable Chart Area */}
-                        <div className="overflow-x-auto scrollbar-hide relative z-10 w-full">
-                          <div className="flex items-end gap-2 min-w-max pt-10 pb-2 px-1">
-                            {hourlyData.length > 0 ? (
-                              hourlyData.map((data, index) => (
-                                <div 
-                                  key={index}
-                                  className="group relative flex flex-col items-center gap-2 w-8"
-                                >
-                                  {/* Bar Container (Fixed to Y-axis height) */}
-                                  <div className="w-full h-24 flex items-end relative">
-                                    <div 
-                                      className={`w-full rounded-t-lg transition-all duration-700 ease-out relative group-hover:brightness-125 ${
-                                        data.value === 0 
-                                          ? 'bg-slate-800/30' 
-                                          : 'bg-gradient-to-t from-indigo-600 to-violet-400 shadow-[0_0_15px_rgba(99,102,241,0.3)]'
-                                      }`}
-                                      style={{ 
-                                        height: `${Math.max((data.value / maxPeakVal) * 100, 4)}%`,
-                                        minHeight: '4px'
-                                      }}
-                                    >
-                                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 rounded-lg bg-indigo-600 px-2 py-1 text-[9px] font-black text-white opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:-top-10 shadow-xl z-20 pointer-events-none">
-                                        {data.value}
-                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-indigo-600"></div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <span className="text-[7px] font-black uppercase tracking-tighter text-slate-600 whitespace-nowrap">{data.label}</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="flex flex-col items-center justify-center w-full h-full gap-2 min-h-[128px]">
-                                 <div className="w-1.5 h-1.5 rounded-full bg-slate-800 animate-pulse"></div>
-                                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-600">Syncing Trends...</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <BarChart data={hourlyData} />
                   </div>
                 </div>
               )}
@@ -879,82 +818,16 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
                   </div>
 
                   {/* Distribution Chart Card */}
-                  <div className="flex flex-col items-center justify-center gap-8 rounded-[32px] bg-white/5 border border-white/10 p-8 min-h-[300px]">
+                  <div className="flex flex-col items-center justify-center gap-8 rounded-[32px] bg-white/5 border border-white/10 p-8 min-h-[300px] w-full">
                     {loadingAnalytics ? (
                       <div className="flex flex-col items-center gap-4">
                         <div className="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Syncing Data...</span>
                       </div>
-                    ) : analyticsData.length > 0 && analyticsData.some(d => d.percentage > 0) ? (
-                      <>
-                        <div className="relative w-48 h-48">
-                          <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                            {analyticsData.reduce((acc, curr, i) => {
-                              const startAngle = acc.totalAngle;
-                              const sliceAngle = (curr.percentage / 100) * 360;
-                              acc.totalAngle += sliceAngle;
-                              
-                              const x1 = 50 + 40 * Math.cos((startAngle * Math.PI) / 180);
-                              const y1 = 50 + 40 * Math.sin((startAngle * Math.PI) / 180);
-                              const x2 = 50 + 40 * Math.cos(((startAngle + sliceAngle) * Math.PI) / 180);
-                              const y2 = 50 + 40 * Math.sin(((startAngle + sliceAngle) * Math.PI) / 180);
-                              
-                              acc.paths.push(
-                                <path
-                                  key={curr.name}
-                                  d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${sliceAngle > 180 ? 1 : 0} 1 ${x2} ${y2} Z`}
-                                  fill={curr.color}
-                                  className="transition-all duration-1000 ease-out hover:opacity-80 cursor-pointer"
-                                  style={{ filter: `drop-shadow(0 0 5px ${curr.color}44)` }}
-                                />
-                              );
-                              return acc;
-                            }, { paths: [], totalAngle: 0 }).paths}
-                            <circle cx="50" cy="50" r="25" fill="#0f172a" />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center flex-col gap-0.5">
-                            <span className="text-xs font-black text-white">Distribution</span>
-                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Places</span>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-4 w-full px-4">
-                          {analyticsData.map(item => (
-                            <div key={item.name} className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
-                                <span className="text-[10px] font-bold text-slate-300">{item.name}</span>
-                              </div>
-                              <span className="text-[10px] font-black text-white">{item.percentage}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center gap-4 py-12">
-                        <div className="p-4 bg-white/5 rounded-full border border-white/10">
-                          <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A2 2 0 013 15.488V5.83a2 2 0 011.161-1.812L9 2l5 2.5L19 2l5.447 2.724A2 2 0 0121 6.512v9.658a2 2 0 01-1.161 1.812L15 22l-5-2.5-1 0.5z" />
-                          </svg>
-                        </div>
-                        <p className="text-[10px] font-black uppercase tracking-[3px] text-slate-600">No data for selected period</p>
-                      </div>
+                     ) : (
+                      <DonutChart data={analyticsData} busiestLocation={busiestLocation} />
                     )}
                   </div>
-
-                  {/* Notification Bar */}
-                  {busiestLocation && busiestLocation.percentage > 0 && (
-                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 animate-pulse">
-                      <div className="p-2 bg-indigo-500/20 rounded-lg">
-                        <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <p className="text-[11px] font-bold text-indigo-300">
-                        {busiestLocation.name} has the highest crowd rate at {busiestLocation.percentage}%
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
 
