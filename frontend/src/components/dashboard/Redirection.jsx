@@ -14,6 +14,7 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
   const [maxTravelTime, setMaxTravelTime] = useState(15);
   const [travelMode, setTravelMode] = useState('walking');
   const [groupSize, setGroupSize] = useState(1);
+  const [priorityWeight, setPriorityWeight] = useState(0.5);
   const [environment, setEnvironment] = useState('any');
   const [paidAttractions, setPaidAttractions] = useState(false);
   const [placeCategory, setPlaceCategory] = useState('any');
@@ -224,6 +225,7 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
         environment: environment,
         place_category: placeCategory,
         paid_attractions: paidAttractions,
+        priority_weight: priorityWeight,
       };
 
       const response = await fetch('http://localhost:5001/api/redirection', {
@@ -525,6 +527,43 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Routing Priority */}
+                <div className="space-y-1.5 mb-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">Routing Priority</label>
+                    <span className="text-sm font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                      {priorityWeight === 0.5 ? 'Balanced' : priorityWeight < 0.5 ? 'Speed' : 'Comfort'}
+                    </span>
+                  </div>
+                  <div className="relative group">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={Math.round(priorityWeight * 100)}
+                      onChange={(e) => setPriorityWeight(Number(e.target.value) / 100)}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/30"
+                      style={{
+                        background: `linear-gradient(to right, rgb(79, 70, 229) 0%, rgb(79, 70, 229) ${priorityWeight * 100}%, rgb(55, 65, 81) ${priorityWeight * 100}%, rgb(55, 65, 81) 100%)`
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-start mt-1 px-0.5">
+                    <div className="text-left">
+                      <p className="text-[10px] font-semibold text-slate-400">Fastest Arrival</p>
+                      <p className="text-[9px] text-slate-600">Shortest distance</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] font-semibold text-slate-500">Balanced</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-semibold text-slate-400">Max Comfort</p>
+                      <p className="text-[9px] text-slate-600">Lowest crowd density</p>
+                    </div>
                   </div>
                 </div>
 
