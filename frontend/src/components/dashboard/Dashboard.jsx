@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import LiveView from './LiveView';
-import CSRNet from './CSRNet';
 import Redirection from './Redirection';
-import { Activity, Map as MapIcon, Compass } from 'lucide-react';
+import { Activity, Compass } from 'lucide-react';
 
 const Dashboard = ({ targetLocationId, clearTargetLocation }) => {
   const [activeTab, setActiveTab] = useState('live');
@@ -16,7 +15,6 @@ const Dashboard = ({ targetLocationId, clearTargetLocation }) => {
 
   const tabs = [
     { id: 'live', label: 'Live Monitoring', icon: Activity, component: LiveView },
-    { id: 'density', label: 'Density Mapping', icon: MapIcon, component: CSRNet },
     { id: 'redirection', label: 'Smart Redirection', icon: Compass, component: Redirection },
   ];
 

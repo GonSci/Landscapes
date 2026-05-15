@@ -241,7 +241,61 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
       }
 
       const data = await response.json();
-      console.log('API Response:', data);
+
+      // ── TOPSIS Calculation Breakdown (thesis transparency) ──────────────────
+      if (data.calculation_breakdown) {
+        const bd = data.calculation_breakdown;
+        const names = bd.location_names_in_order || [];
+
+        const makeMatrixRows = (matrix) =>
+          matrix.map((row, i) => ({
+            Location:              names[i] ?? `Alt ${i + 1}`,
+            'Travel Time (C1)':    row[0]?.toFixed(6) ?? row[0],
+            'Crowd Density (C2)':  row[1]?.toFixed(6) ?? row[1],
+          }));
+
+        console.groupCollapsed('🧮 TOPSIS Calculation Breakdown');
+
+        console.log('📐 Weights applied →',
+          `Travel Time: ${(bd['2_weights_applied'][0] * 100).toFixed(0)}%`,
+          `| Crowd Density: ${(bd['2_weights_applied'][1] * 100).toFixed(0)}%`);
+
+        console.group('① Raw Decision Matrix');
+        console.table(makeMatrixRows(bd['1_raw_matrix']));
+        console.groupEnd();
+
+        console.group('② Normalized Matrix');
+        console.table(makeMatrixRows(bd['3_normalized_matrix']));
+        console.groupEnd();
+
+        console.group('③ Weighted Normalized Matrix');
+        console.table(makeMatrixRows(bd['4_weighted_matrix']));
+        console.groupEnd();
+
+        const { PIS_A_plus, NIS_A_minus } = bd['5_ideal_solutions'];
+        console.log('✅ PIS A⁺ (ideal)     →', `[${PIS_A_plus.map(v => v.toFixed(6)).join(', ')}]`);
+        console.log('❌ NIS A⁻ (anti-ideal) →', `[${NIS_A_minus.map(v => v.toFixed(6)).join(', ')}]`);
+
+        const { S_plus, S_minus } = bd['6_separation_measures'];
+        console.group('④ Separation Measures');
+        console.table(names.map((name, i) => ({
+          Location:                name,
+          'S⁺ (from ideal)':       S_plus[i]?.toFixed(6),
+          'S⁻ (from anti-ideal)':  S_minus[i]?.toFixed(6),
+        })));
+        console.groupEnd();
+
+        console.group('⑤ Final TOPSIS Scores (Cᵢ = S⁻ / (S⁺ + S⁻))');
+        console.table(names.map((name, i) => ({
+          Location:    name,
+          'Cᵢ Score':  bd['7_final_topsis_scores'][i]?.toFixed(6),
+        })));
+        console.groupEnd();
+
+        console.groupEnd(); // 🧮 TOPSIS Calculation Breakdown
+      }
+      // ─────────────────────────────────────────────────────────────────────────
+
       setTopsisResults(data.top_3_results || []);
       setViewMode('results');
 
@@ -534,8 +588,10 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
                 <div className="space-y-1.5 mb-3">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-black uppercase tracking-widest text-slate-400">Routing Priority</label>
-                    <span className="text-sm font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                      {priorityWeight === 0.5 ? 'Balanced' : priorityWeight < 0.5 ? 'Speed' : 'Comfort'}
+                    <span className="text-xs font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tabular-nums">
+                      {Math.round(priorityWeight * 100)}% Speed
+                      <span className="text-slate-500 font-semibold"> | </span>
+                      {Math.round((1 - priorityWeight) * 100)}% Comfort
                     </span>
                   </div>
                   <div className="relative group">
@@ -543,7 +599,7 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
                       type="range"
                       min="0"
                       max="100"
-                      step="1"
+                      step="5"
                       value={Math.round(priorityWeight * 100)}
                       onChange={(e) => setPriorityWeight(Number(e.target.value) / 100)}
                       className="w-full h-2 rounded-lg appearance-none cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/30"
@@ -553,14 +609,14 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
                     />
                   </div>
                   <div className="flex justify-between items-start mt-1 px-0.5">
-                    <div className="text-left">
+                    <div className="text-left transition-opacity duration-200" style={{ opacity: 0.3 + priorityWeight * 0.7 }}>
                       <p className="text-[10px] font-semibold text-slate-400">Fastest Arrival</p>
                       <p className="text-[9px] text-slate-600">Shortest distance</p>
                     </div>
-                    <div className="text-center">
+                    <div className="text-center" style={{ opacity: 1 - Math.abs(priorityWeight - 0.5) * 1.8 }}>
                       <p className="text-[10px] font-semibold text-slate-500">Balanced</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right transition-opacity duration-200" style={{ opacity: 0.3 + (1 - priorityWeight) * 0.7 }}>
                       <p className="text-[10px] font-semibold text-slate-400">Max Comfort</p>
                       <p className="text-[9px] text-slate-600">Lowest crowd density</p>
                     </div>

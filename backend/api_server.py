@@ -337,6 +337,9 @@ def get_topsis_recommendations():
         start_coords = data.get('start_coords')
         max_travel_time = data.get('max_travel_time', 15)
         place_category = data.get('place_category', 'any')
+        travel_mode = data.get('travel_mode', 'walking')
+        priority_weight = float(data.get('priority_weight', 0.5))
+        priority_weight = max(0.0, min(1.0, priority_weight))  # Clamp to [0.0, 1.0]
         
         if not start_coords or len(start_coords) != 2:
             return jsonify({'error': 'Invalid start_coords format'}), 400
@@ -369,7 +372,12 @@ def get_topsis_recommendations():
             
             # Calculate travel time with Baguio terrain multiplier
             TERRAIN_MULTIPLIER = 1.4  # Baguio mountainous terrain
-            SPEED_KMH = 5.0  # Walking speed (default)
+            if travel_mode == 'driving':
+                SPEED_KMH = 18.0  # Driving speed in Baguio
+            elif travel_mode == 'commuting':
+                SPEED_KMH = 12.0  # Public transport speed
+            else:
+                SPEED_KMH = 5.0   # Walking speed (default)
             travel_time = (distance / SPEED_KMH * TERRAIN_MULTIPLIER) * 60  # Convert to minutes
             
             # Get crowd level from latest database logs
@@ -415,7 +423,9 @@ def get_topsis_recommendations():
         ]
         
         # ── TOPSIS Calculation ──
-        weights = [0.5, 0.5]  # Equal weight: travel time and crowd density
+        # Index 0 = Travel Time weight, Index 1 = Crowd Density weight
+        weights = [1.0 - priority_weight, priority_weight]
+        print(f"[API] TOPSIS weights — travel_time: {weights[0]:.2f}, crowd_density: {weights[1]:.2f} (priority_weight={priority_weight})")
         
         # Step 1: Normalize
         normalized = normalize_matrix(filtered_decision_matrix)
@@ -444,7 +454,8 @@ def get_topsis_recommendations():
                 'crowd_level': round(loc['crowd_density_percent'], 1),
                 'topsis_score': round(topsis_scores[idx], 4),
                 'latitude': loc['latitude'],
-                'longitude': loc['longitude']
+                'longitude': loc['longitude'],
+                'priority_weight': priority_weight,
             })
         
         # Sort by TOPSIS score (descending) - higher is better
@@ -473,10 +484,30 @@ def get_topsis_recommendations():
         top_3 = ranked_results[:3]
         print(f"[API] Top 3 results: {[r['name'] for r in top_3]}")
         
+        # ── TOPSIS Calculation Breakdown (for thesis transparency) ──
+        location_names_in_order = [loc['name'] for loc in filtered_locations]
+        calculation_breakdown = {
+            'location_names_in_order': location_names_in_order,
+            '1_raw_matrix':            filtered_decision_matrix,
+            '2_weights_applied':       weights,
+            '3_normalized_matrix':     normalized,
+            '4_weighted_matrix':       weighted,
+            '5_ideal_solutions': {
+                'PIS_A_plus':  ideal,
+                'NIS_A_minus': anti_ideal,
+            },
+            '6_separation_measures': {
+                'S_plus':  s_plus,
+                'S_minus': s_minus,
+            },
+            '7_final_topsis_scores':   topsis_scores,
+        }
+        
         return jsonify({
             'top_3_results': top_3,
             'total_considered': len(filtered_locations),
-            'total_locations': len(locations_with_metrics)
+            'total_locations': len(locations_with_metrics),
+            'calculation_breakdown': calculation_breakdown,
         }), 200
         
     except Exception as e:
