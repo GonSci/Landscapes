@@ -11,6 +11,7 @@ import numpy as np
 from ultralytics import YOLO
 from sahi import AutoDetectionModel
 from sahi.predict import get_sliced_prediction
+from sahi.models.base import DetectionModel
 import threading
 import time
 from datetime import datetime
@@ -36,6 +37,14 @@ DETECTION_CONFIG = {
 YOLO_MODEL = None
 YOLO_LOCK = threading.Lock()
 
+# Populated by detect_device() at startup — used throughout the module
+DEVICE_INFO = {
+    'device': 'cpu',        # 'cuda:0' | 'cpu'
+    'use_tensorrt': False,  # True only when GTX 1660 Super (or any CUDA GPU with .engine)
+    'gpu_name': None,       # e.g. 'NVIDIA GeForce GTX 1660 SUPER'
+    'backend': 'pytorch',   # 'tensorrt' | 'pytorch'
+}
+
 # Multi-Stream Globals
 THREAD_FRAMES = {}       # location_id -> jpeg frame bytes
 THREAD_COUNTS = {}       # location_id -> current count
@@ -48,6 +57,263 @@ last_log_time_lock = threading.Lock()
 
 active_location_id = 1
 active_location_lock = threading.Lock()
+
+
+# ── Device Detection ───────────────────────────────────────────────────────────
+def detect_device():
+    """
+    Probe the system for a CUDA-capable GPU.
+
+    Priority order:
+      1. CUDA GPU present + best.engine exists  →  TensorRT on cuda:0
+      2. CUDA GPU present, no .engine file      →  PyTorch (best.pt) on cuda:0
+      3. No CUDA GPU                            →  PyTorch (best.pt) on CPU
+
+    Returns a filled-in copy of DEVICE_INFO.
+    """
+    info = {
+        'device': 'cpu',
+        'use_tensorrt': False,
+        'gpu_name': None,
+        'backend': 'pytorch',
+    }
+
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            print("[VISION] No CUDA GPU detected — running on CPU with best.pt")
+            return info
+
+        gpu_name = torch.cuda.get_device_name(0)
+        info['device'] = 'cuda:0'
+        info['gpu_name'] = gpu_name
+        print(f"[VISION] GPU detected: {gpu_name}")
+
+        engine_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'best.engine')
+        engine_exists = os.path.exists(engine_path)
+
+        if engine_exists:
+            info['use_tensorrt'] = True
+            info['backend'] = 'tensorrt'
+            print(f"[VISION] TensorRT engine found at {engine_path} — using TensorRT backend")
+        else:
+            print(
+                f"[VISION] No best.engine found at {engine_path}. "
+                "Running PyTorch on GPU (best.pt). "
+                "Export with: model.export(format='engine', half=True) to enable TensorRT."
+            )
+
+    except ImportError:
+        print("[VISION] PyTorch not importable — falling back to CPU with best.pt")
+
+    return info
+
+
+# ── TensorRT SAHI Wrapper ──────────────────────────────────────────────────────
+class TensorRTDetectionModel(DetectionModel):
+    """
+    Subclasses SAHI's DetectionModel so get_sliced_prediction() works
+    identically to any native SAHI model — no manual ObjectPrediction
+    construction, no version-specific constructor arguments.
+
+    How it works:
+      - load_model()  loads the .engine via ultralytics YOLO
+      - perform_inference()  runs the engine on each tile and stores the
+        raw ultralytics Results object in self._original_predictions
+      - convert_original_predictions()  reads that raw result and fills
+        self._object_prediction_list_per_image using SAHI's own internal
+        format, which SAHI's postprocessing then merges across tiles
+
+    This approach is immune to ObjectPrediction signature changes because
+    SAHI owns all ObjectPrediction construction internally.
+    """
+
+    def __init__(self, engine_path: str, conf: float, device: str):
+        # DetectionModel.__init__ expects (model_path, confidence_threshold, device, ...)
+        # We call it with just the essentials; load_model() does the real work.
+        super().__init__(
+            model_path=engine_path,
+            confidence_threshold=conf,
+            device=device,
+            category_mapping={0: 'person'},
+            category_remapping=None,
+            load_at_init=False,   # we call load_model() ourselves below
+            image_size=None,
+        )
+        self.load_model()
+
+    # ── Required overrides ─────────────────────────────────────────────────────
+
+    def load_model(self):
+        """Load the TensorRT .engine file via ultralytics."""
+        from ultralytics import YOLO as UltralyticsYOLO
+        self.model = UltralyticsYOLO(self.model_path, task='detect')
+        self.set_model(self.model)
+        print(f"[VISION] TensorRT engine loaded from {self.model_path} on {self.device}")
+
+    def set_model(self, model):
+        """Store the underlying model and sync the category mapping."""
+        self.model = model
+        # SAHI uses self.category_names for label lookup
+        self.category_names = {0: 'person'}
+
+    def perform_inference(self, image: np.ndarray):
+        """
+        Run the TensorRT engine on a single tile (called by SAHI per-tile).
+        Stores the raw ultralytics Results so convert_original_predictions()
+        can turn them into SAHI's internal format.
+        """
+        self._original_predictions = self.model.predict(
+            source=image,
+            conf=self.confidence_threshold,
+            device=self.device,
+            classes=[0],   # person class only
+            verbose=False,
+            half=True,     # FP16 — required for a FP16 TensorRT engine
+        )
+
+    def convert_original_predictions(
+        self,
+        shift_amount=None,
+        full_shape=None,
+    ):
+        """
+        Translate the raw ultralytics Results stored by perform_inference()
+        into the list of dicts that SAHI's postprocessing pipeline expects.
+
+        SAHI reads self._object_prediction_list_per_image after this call.
+        Each element is a list of ObjectPrediction-compatible dicts with keys:
+          bbox, score, category_id, category_name, bool_mask, shift_amount, full_shape
+        """
+        from sahi.prediction import ObjectPrediction
+
+        if shift_amount is None:
+            shift_amount = [0, 0]
+
+        object_prediction_list = []
+        results = self._original_predictions
+
+        if results and results[0].boxes is not None:
+            boxes = results[0].boxes
+            img_h, img_w = results[0].orig_shape
+
+            if full_shape is None:
+                full_shape = [img_h, img_w]
+
+            for i in range(len(boxes)):
+                cls_id = int(boxes.cls[i].item())
+                conf   = float(boxes.conf[i].item())
+                x1, y1, x2, y2 = boxes.xyxy[i].tolist()
+
+                # Build ObjectPrediction using only the stable positional
+                # arguments that have existed across all SAHI versions:
+                #   bbox, score, category_id, category_name,
+                #   shift_amount, full_shape
+                # 'bool_mask' was removed in newer SAHI — we omit it entirely.
+                try:
+                    pred = ObjectPrediction(
+                        bbox=[x1, y1, x2, y2],
+                        score=conf,
+                        category_id=cls_id,
+                        category_name='person',
+                        shift_amount=shift_amount,
+                        full_shape=full_shape,
+                    )
+                except TypeError:
+                    # Older SAHI versions require bool_mask as positional arg
+                    pred = ObjectPrediction(
+                        bbox=[x1, y1, x2, y2],
+                        bool_mask=None,
+                        score=conf,
+                        category_id=cls_id,
+                        category_name='person',
+                        shift_amount=shift_amount,
+                        full_shape=full_shape,
+                    )
+
+                object_prediction_list.append(pred)
+
+        # SAHI expects a list-of-lists (one inner list per image in the batch)
+        self._object_prediction_list_per_image = [object_prediction_list]
+
+
+# ── Model Loader ───────────────────────────────────────────────────────────────
+def load_model(device_info: dict):
+    """
+    Load the appropriate model based on detected device.
+
+    Returns one of:
+      - TensorRTDetectionModel     (GTX 1660 Super or any GPU + .engine present)
+      - AutoDetectionModel (SAHI)  (GPU without .engine, or CPU fallback)
+
+    Also logs a clear summary of what is being used and why.
+    """
+    conf  = DETECTION_CONFIG['conf_threshold']
+    device = device_info['device']
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+
+    if device_info['use_tensorrt']:
+        # ── Path A: TensorRT ──────────────────────────────────────────────────
+        engine_path = os.path.join(backend_dir, 'best.engine')
+        print("[VISION] ══════════════════════════════════════════")
+        print(f"[VISION]  Backend  : TensorRT FP16")
+        print(f"[VISION]  Model    : {engine_path}")
+        print(f"[VISION]  Device   : {device}  ({device_info['gpu_name']})")
+        print("[VISION] ══════════════════════════════════════════")
+        return TensorRTDetectionModel(engine_path, conf=conf, device=device)
+
+    else:
+        # ── Path B: PyTorch via SAHI AutoDetectionModel ───────────────────────
+        pt_path = os.path.join(backend_dir, 'best.pt')
+        sahi_device = '0' if device == 'cuda:0' else 'cpu'
+
+        if device == 'cuda:0':
+            reason = "GPU detected but no best.engine — using PyTorch on GPU"
+        else:
+            reason = "No GPU detected — using PyTorch on CPU"
+
+        print("[VISION] ══════════════════════════════════════════")
+        print(f"[VISION]  Backend  : PyTorch")
+        print(f"[VISION]  Model    : {pt_path}")
+        print(f"[VISION]  Device   : {device}")
+        print(f"[VISION]  Reason   : {reason}")
+        print("[VISION] ══════════════════════════════════════════")
+
+        return AutoDetectionModel.from_pretrained(
+            model_type='yolov8',
+            model_path=pt_path,
+            confidence_threshold=conf,
+            device=sahi_device,
+        )
+
+
+# ── SAHI Inference Dispatcher ──────────────────────────────────────────────────
+def run_sahi_inference(model, frame_proc: np.ndarray, device_info: dict):
+    """
+    Unified inference call that works for both TensorRT and PyTorch backends.
+
+    For TensorRT (TensorRTDetectionModel):
+        We call get_sliced_prediction() the same way — SAHI will call
+        model.perform_inference() and model.convert_original_predictions()
+        on each tile, which our wrapper handles.
+
+    For PyTorch (AutoDetectionModel):
+        Standard SAHI call, unchanged from before.
+
+    Returns a SAHI PredictionResult with .object_prediction_list populated.
+    """
+    return get_sliced_prediction(
+        frame_proc,
+        model,
+        slice_height=640,
+        slice_width=640,
+        overlap_height_ratio=0.15,
+        overlap_width_ratio=0.15,
+        postprocess_match_metric="IOU",
+        postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
+        postprocess_class_agnostic=True,
+        verbose=False,
+    )
 
 
 # ── Path Helpers ───────────────────────────────────────────────────────────────
@@ -129,6 +395,10 @@ def draw_cctv_overlay(frame, people_count, fps):
     fps_size = cv2.getTextSize(fps_text, font, 0.6, 2)[0]
     cv2.putText(frame, fps_text, (w - fps_size[0] - 10, 30), font, 0.6, (0, 255, 255), 2)
 
+    # Backend label so you can see what's running during testing
+    backend_text = f"Backend: {DEVICE_INFO['backend'].upper()}"
+    cv2.putText(frame, backend_text, (10, 30), font, 0.5, (200, 200, 200), 1)
+
     # Date at bottom right
     date_size = cv2.getTextSize(timestamp, font, 0.6, 2)[0]
     cv2.putText(frame, timestamp, (w - date_size[0] - 10, h - 10), font, 0.6, (255, 255, 255), 2)
@@ -142,21 +412,10 @@ def run_yolo_pipeline(frame, annotate=True):
 
     frame_proc = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
 
-    # Thread-safe SAHI Inference
+    # Thread-safe SAHI Inference — works for both TensorRT and PyTorch backends
     with YOLO_LOCK:
         YOLO_MODEL.confidence_threshold = DETECTION_CONFIG['conf_threshold']
-        results = get_sliced_prediction(
-            frame_proc,
-            YOLO_MODEL,
-            slice_height=640,
-            slice_width=640,
-            overlap_height_ratio=0.15,
-            overlap_width_ratio=0.15,
-            postprocess_match_metric="IOU",
-            postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
-            postprocess_class_agnostic=True,
-            verbose=False
-        )
+        results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO)
 
     h, w = frame.shape[:2]
     detections_pixel = []
@@ -353,6 +612,11 @@ def update_yolo_config():
     if 'enable_blur' in data: DETECTION_CONFIG['enable_blur'] = data['enable_blur']
     return jsonify({'status': 'success', 'config': DETECTION_CONFIG})
 
+@app.route('/device-info', methods=['GET'])
+def device_info_route():
+    """Expose what backend/device is currently running — useful for debugging."""
+    return jsonify(DEVICE_INFO)
+
 def db_polling_thread(app_context):
     global active_location_id
     while True:
@@ -369,13 +633,24 @@ def db_polling_thread(app_context):
         time.sleep(1)
 
 if __name__ == '__main__':
-    print("[VISION] Loading SAHI YOLOv8 model...")
-    YOLO_MODEL = AutoDetectionModel.from_pretrained(
-        model_type='yolov8',
-        model_path='best.pt',
-        confidence_threshold=DETECTION_CONFIG['conf_threshold'],
-        device="cpu"
-    )
+    # ── Step 1: Detect device and choose backend ───────────────────────────────
+    DEVICE_INFO.update(detect_device())
+
+    # ── Step 2: Load the correct model with fallback chain ────────────────────
+    print("[VISION] Loading model...")
+    try:
+        YOLO_MODEL = load_model(DEVICE_INFO)
+    except Exception as e:
+        print(f"[VISION] Primary model load failed: {e}")
+        print("[VISION] Attempting CPU fallback with best.pt...")
+        try:
+            DEVICE_INFO.update({'device': 'cpu', 'use_tensorrt': False, 'backend': 'pytorch'})
+            YOLO_MODEL = load_model(DEVICE_INFO)
+        except Exception as fallback_err:
+            print(f"[VISION] FATAL: CPU fallback also failed: {fallback_err}")
+            raise
+
+    print(f"[VISION] Model ready. Backend={DEVICE_INFO['backend']} Device={DEVICE_INFO['device']}")
     
     with app.app_context():
         db.create_all()
