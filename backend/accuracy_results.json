@@ -1,0 +1,38 @@
+{
+    "results": [
+        {
+            "video": "night_market.mp4",
+            "ground_truth": 38,
+            "baseline": 16,
+            "occlusion_aware": 27,
+            "err_baseline": 22,
+            "err_oa": 11
+        },
+        {
+            "video": "cathedral.mp4",
+            "ground_truth": 24,
+            "baseline": 6,
+            "occlusion_aware": 20,
+            "err_baseline": 18,
+            "err_oa": 4
+        },
+        {
+            "video": "mansion_entrance.mp4",
+            "ground_truth": 18,
+            "baseline": 10,
+            "occlusion_aware": 16,
+            "err_baseline": 8,
+            "err_oa": 2
+        },
+        {
+            "video": "burnham.mp4",
+            "ground_truth": 12,
+            "baseline": 10,
+            "occlusion_aware": 17,
+            "err_baseline": 2,
+            "err_oa": 5
+        }
+    ],
+    "mae_baseline": 12.5,
+    "mae_oa": 5.5
+}

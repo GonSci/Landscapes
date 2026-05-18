@@ -5,7 +5,7 @@ import BarChart from './BarChart';
 import DonutChart from './DonutChart';
 
 const API_URL = 'http://localhost:5001/api';
-const VISION_URL = 'http://localhost:5002';
+const VISION_URL = 'http://localhost:5003';
 
 const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection }) => {
   const [detectedCount, setDetectedCount] = useState(0);
@@ -20,6 +20,8 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
   const [hoveredBar, setHoveredBar] = useState(null);
   const [claheEnabled, setClaheEnabled] = useState(true);
   const [blurEnabled, setBlurEnabled]   = useState(true);
+  const [boxesEnabled, setBoxesEnabled] = useState(true);
+  const [headDetEnabled, setHeadDetEnabled] = useState(true);
   const [stableCrowdLevel, setStableCrowdLevel] = useState({ label: 'SPARSE', color: '#3b82f6', percentage: 15 });
   const [analysisView, setAnalysisView] = useState('intelligence');
   const [analyticsData, setAnalyticsData] = useState([]);
@@ -47,11 +49,11 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
   const isFetchingRef = useRef(false);
   const countHistoryRef = useRef([]);
 
-  const updateConfig = async (clahe, blur) => {
+  const updateConfig = async (clahe, blur, boxes, headDet) => {
     await fetch(`${VISION_URL}/yolo/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enable_clahe: clahe, enable_blur: blur })
+      body: JSON.stringify({ enable_clahe: clahe, enable_blur: blur, show_boxes: boxes, enable_head_detection: headDet })
     });
   };
 
@@ -327,13 +329,28 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
     };
   }, []);
 
-  // Get crowd level based on detected count (10+ people = HIGH for demo)
+  // Crowd density thresholds derived from physical area measurements
+  // Area = ((nearWidth + farWidth) / 2) × depth  (trapezoidal FOV, in meters)
+  // Detection density tiers (people per 1000 m² of visible FOV):
+  //   Sparse   ≤ 1.0 p/1000m²  — virtually empty, free movement
+  //   Low      ≤ 3.0 p/1000m²  — light foot traffic
+  //   Moderate ≤ 6.0 p/1000m²  — noticeable crowd activity
+  //   High     > 6.0 p/1000m²  — dense crowd, restricted flow
+  //
+  // Location                    | Near(m) | Far(m) | Depth(m) | Area(m²)
+  // ----------------------------|---------|--------|----------|----------
+  // 1: Night Market (Food Stalls)  35        25      124       3,720
+  // 2: The Mansion                 71        64      172.5    11,644
+  // 3: The Mansion Entrance        35        38      116.5     4,252
+  // 4: Baguio Cathedral            45        67       81       4,536
+  // 5: Melvin Jones Burnham Park   25       261      144      20,592
+  // Burnham Park Events Place — EXCLUDED
   const locationThresholds = {
-    1: { sparse: 2, low: 8, moderate: 14 },
-    2: { sparse: 6, low: 22, moderate: 37 },
-    3: { sparse: 2, low: 7, moderate: 13 },
-    4: { sparse: 2, low: 8, moderate: 14 },
-    5: { sparse: 12, low: 39, moderate: 65 },
+    1: { sparse: 4,   low: 11,  moderate: 22  },  // Night Market — 3,720 m²
+    2: { sparse: 12,  low: 35,  moderate: 70  },  // The Mansion — 11,644 m²
+    3: { sparse: 4,   low: 13,  moderate: 26  },  // The Mansion Entrance — 4,252 m²
+    4: { sparse: 5,   low: 14,  moderate: 27  },  // Baguio Cathedral — 4,536 m²
+    5: { sparse: 21,  low: 62,  moderate: 124 },  // Melvin Jones Burnham Park — 20,592 m²
   };
 
   const getCrowdLevel = () => {
@@ -499,7 +516,7 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
 
             <div className="flex flex-wrap items-center gap-3 px-2">
               <button
-                onClick={() => { setClaheEnabled(p => !p); updateConfig(!claheEnabled, blurEnabled); }}
+                onClick={() => { setClaheEnabled(p => !p); updateConfig(!claheEnabled, blurEnabled, boxesEnabled, headDetEnabled); }}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
                   claheEnabled 
                   ? 'bg-gradient-to-r from-[#667eea] to-[#764ba2] border-transparent text-white shadow-lg shadow-indigo-500/20' 
@@ -510,7 +527,7 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
                 <span className={`w-1.5 h-1.5 rounded-full ${claheEnabled ? 'bg-white shadow-[0_0_8px_white]' : 'bg-slate-600'}`}></span>
               </button>
               <button
-                onClick={() => { setBlurEnabled(p => !p); updateConfig(claheEnabled, !blurEnabled); }}
+                onClick={() => { setBlurEnabled(p => !p); updateConfig(claheEnabled, !blurEnabled, boxesEnabled, headDetEnabled); }}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
                   blurEnabled 
                   ? 'bg-gradient-to-r from-[#667eea] to-[#764ba2] border-transparent text-white shadow-lg shadow-indigo-500/20' 
@@ -519,6 +536,28 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
               >
                 <span>Privacy Blur</span>
                 <span className={`w-1.5 h-1.5 rounded-full ${blurEnabled ? 'bg-white shadow-[0_0_8px_white]' : 'bg-slate-600'}`}></span>
+              </button>
+              <button
+                onClick={() => { setBoxesEnabled(p => !p); updateConfig(claheEnabled, blurEnabled, !boxesEnabled, headDetEnabled); }}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
+                  boxesEnabled 
+                  ? 'bg-gradient-to-r from-[#667eea] to-[#764ba2] border-transparent text-white shadow-lg shadow-indigo-500/20' 
+                  : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                }`}
+              >
+                <span>Det. Boxes</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${boxesEnabled ? 'bg-white shadow-[0_0_8px_white]' : 'bg-slate-600'}`}></span>
+              </button>
+              <button
+                onClick={() => { setHeadDetEnabled(p => !p); updateConfig(claheEnabled, blurEnabled, boxesEnabled, !headDetEnabled); }}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
+                  headDetEnabled 
+                  ? 'bg-gradient-to-r from-[#06b6d4] to-[#0891b2] border-transparent text-white shadow-lg shadow-cyan-500/20' 
+                  : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                }`}
+              >
+                <span>Occlusion Det.</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${headDetEnabled ? 'bg-white shadow-[0_0_8px_white]' : 'bg-slate-600'}`}></span>
               </button>
 
               {/* Location Selector Dropdown */}
