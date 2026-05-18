@@ -341,11 +341,15 @@ def resolve_video_path(video_name):
     return None
 
 # ── Image Processing Helpers ───────────────────────────────────────────────────
+
+# Issue 3 Fix: create once at module level instead of once per frame.
+# cv2.createCLAHE() allocates internal state; calling it 150×/sec was pure waste.
+_CLAHE = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+
 def apply_clahe(frame):
     lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    cl = clahe.apply(l)
+    cl = _CLAHE.apply(l)
     limg = cv2.merge((cl, a, b))
     return cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 
