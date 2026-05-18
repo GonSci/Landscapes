@@ -58,7 +58,7 @@ YOLO_MODEL = None
 # dedicated worker thread that is the *sole owner of the GPU*.
 # Camera threads drop frames in → pick annotated results out.  No lock needed.
 import queue as _queue
-INFERENCE_INPUT_QUEUE  = _queue.Queue(maxsize=10)   # (location_id, frame_proc, is_active, conf_threshold) tuples
+INFERENCE_INPUT_QUEUE  = _queue.Queue(maxsize=2)   # (location_id, frame_proc, is_active, conf_threshold) tuples
 INFERENCE_OUTPUT_QUEUES = {}                         # location_id -> Queue(maxsize=2)
 
 # Populated by detect_device() at startup — used throughout the module
@@ -496,7 +496,7 @@ def gpu_inference_worker():
 
 
 # ── YOLO Pipeline ──────────────────────────────────────────────────────────────
-def run_yolo_pipeline(frame, location_id, is_active=True, annotate=True):
+def run_yolo_pipeline(frame, location_id, last_results, is_active=True, annotate=True):
     """
     Per-camera pipeline.  CPU-bound work (CLAHE, annotation) stays here so the
     5 camera threads can do it in parallel.  Only the SAHI call goes through the
@@ -514,10 +514,20 @@ def run_yolo_pipeline(frame, location_id, is_active=True, annotate=True):
     # CPU: preprocessing
     frame_proc = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
 
-    # GPU (via worker): resolve per-location conf threshold then submit
+    # DECOUPLING FIX
     conf_threshold = LOCATION_CONF_THRESHOLDS.get(location_id, DETECTION_CONFIG['conf_threshold'])
-    INFERENCE_INPUT_QUEUE.put((location_id, frame_proc, is_active, conf_threshold))
-    results = INFERENCE_OUTPUT_QUEUES[location_id].get()
+
+    # 2. Try to send frame to GPU. If queue is full, don't wait. Drop it.
+    try:
+        INFERENCE_INPUT_QUEUE.put_nowait((location_id, frame_proc, is_active, conf_threshold))
+    except _queue.Full:
+        pass
+
+    # 3. Try to get new results. If none are ready, use the old ones.
+    try:
+        results = INFERENCE_OUTPUT_QUEUES[location_id].get_nowait()
+    except _queue.Empty:
+        results = last_results
 
     h, w = frame.shape[:2]
     detections_pixel = []
@@ -553,7 +563,7 @@ def run_yolo_pipeline(frame, location_id, is_active=True, annotate=True):
         output_frame = draw_detections_on_frame(output_frame, detections_pixel)
 
     fps = 1.0 / (time.time() - start_time)
-    return output_frame, detections_pct, detections_pixel, fps
+    return output_frame, detections_pct, detections_pixel, fps, results
 
 # ── Database Logging ───────────────────────────────────────────────────────────
 def log_detection_to_database(app_context, location_id, people_count, confidence_avg):
@@ -606,6 +616,8 @@ def camera_thread(app_context, location_id, video_name, location_name):
     playback_start_time = time.time()
     last_log_time = time.time() - 61
 
+    last_results = None
+
     while True:
         try:
             # Issue 5 Fix: timestamp the very start of the loop so the sleep at
@@ -634,10 +646,11 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 playback_start_time = time.time()
                 continue
-
-            # 2. Process frame (CPU pre/post-processing here; GPU call routed via worker)
-            # is_active controls tile strategy: 6 tiles for active stream, 1 for background
-            output_frame, detections_pct, detections_pixel, fps = run_yolo_pipeline(frame, location_id, is_active=is_active, annotate=True)
+            
+            # 2. Pass in last_results, and overwrite it with the output
+            output_frame, detections_pct, detections_pixel, fps, last_results = run_yolo_pipeline(
+                frame, location_id, last_results, is_active=is_active, annotate=True
+            )
             
             current_count = len(detections_pixel)
             
