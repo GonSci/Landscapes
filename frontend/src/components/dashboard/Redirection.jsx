@@ -4,7 +4,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import baguioData from '../../data/baguio_locations.json';
 import redirectionFallback from '../../data/redirection_fallback_locations.json';
-import CSRNet from './CSRNet';
 import { useLiveLocations } from '../../hooks/useLiveLocations';
 
 const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
