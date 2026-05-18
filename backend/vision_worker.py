@@ -41,7 +41,7 @@ YOLO_MODEL = None
 # dedicated worker thread that is the *sole owner of the GPU*.
 # Camera threads drop frames in → pick annotated results out.  No lock needed.
 import queue as _queue
-INFERENCE_INPUT_QUEUE  = _queue.Queue(maxsize=10)   # (location_id, frame_proc) tuples
+INFERENCE_INPUT_QUEUE  = _queue.Queue(maxsize=10)   # (location_id, frame_proc, is_active) tuples
 INFERENCE_OUTPUT_QUEUES = {}                         # location_id -> Queue(maxsize=2)
 
 # Populated by detect_device() at startup — used throughout the module
@@ -295,32 +295,56 @@ def load_model(device_info: dict):
 
 
 # ── SAHI Inference Dispatcher ──────────────────────────────────────────────────
-def run_sahi_inference(model, frame_proc: np.ndarray, device_info: dict):
+def run_sahi_inference(model, frame_proc: np.ndarray, device_info: dict, is_active: bool = True):
     """
     Unified inference call that works for both TensorRT and PyTorch backends.
 
-    For TensorRT (TensorRTDetectionModel):
-        We call get_sliced_prediction() the same way — SAHI will call
-        model.perform_inference() and model.convert_original_predictions()
-        on each tile, which our wrapper handles.
+    Two modes depending on whether the stream is currently being viewed:
 
-    For PyTorch (AutoDetectionModel):
-        Standard SAHI call, unchanged from before.
+    ACTIVE stream (is_active=True):
+        448×448 slices, 0.15 overlap → 6 tiles on 1024×576 footage.
+        Each tile upscales to 640×640 before inference, so a 20px person
+        appears ~45px to the model — solidly detectable.  6 GPU calls/frame
+        targets 10–15 FPS on the GTX 1660 Super at FP16.
 
-    Returns a SAHI PredictionResult with .object_prediction_list populated.
+        Why 448 not 384: 384×384 with 0.20 overlap gave 8 tiles → 5–9 FPS,
+        too slow.  448×448 with 0.15 overlap gives 6 tiles with only a minor
+        recall drop on boundary cases — the better FPS tradeoff.
+
+    BACKGROUND stream (is_active=False):
+        Single full-frame pass (no slicing) — 1 GPU call per frame.
+        Background streams only process 1 frame every 5 seconds for DB
+        logging; spending 6 GPU calls on each wastes time that the active
+        stream needs.  Full-frame recall is lower but counts for logging
+        at 0.2 FPS are good enough for the redirection algorithm.
     """
-    return get_sliced_prediction(
-        frame_proc,
-        model,
-        slice_height=640,
-        slice_width=640,
-        overlap_height_ratio=0.15,
-        overlap_width_ratio=0.15,
-        postprocess_match_metric="IOU",
-        postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
-        postprocess_class_agnostic=True,
-        verbose=False,
-    )
+    if is_active:
+        return get_sliced_prediction(
+            frame_proc,
+            model,
+            slice_height=448,
+            slice_width=448,
+            overlap_height_ratio=0.15,
+            overlap_width_ratio=0.15,
+            postprocess_match_metric="IOU",
+            postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
+            postprocess_class_agnostic=True,
+            verbose=False,
+        )
+    else:
+        # Single full-frame inference — 1 GPU call, fast, sufficient for logging
+        return get_sliced_prediction(
+            frame_proc,
+            model,
+            slice_height=frame_proc.shape[0],
+            slice_width=frame_proc.shape[1],
+            overlap_height_ratio=0.0,
+            overlap_width_ratio=0.0,
+            postprocess_match_metric="IOU",
+            postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
+            postprocess_class_agnostic=True,
+            verbose=False,
+        )
 
 
 # ── Path Helpers ───────────────────────────────────────────────────────────────
@@ -433,10 +457,10 @@ def gpu_inference_worker():
     print("[VISION] GPU inference worker started")
     while True:
         try:
-            location_id, frame_proc = INFERENCE_INPUT_QUEUE.get()
+            location_id, frame_proc, is_active = INFERENCE_INPUT_QUEUE.get()
             # Sync conf threshold from config (safe — only this thread reads model)
             YOLO_MODEL.confidence_threshold = DETECTION_CONFIG['conf_threshold']
-            results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO)
+            results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO, is_active)
             INFERENCE_OUTPUT_QUEUES[location_id].put(results)
         except Exception as e:
             print(f"[VISION] gpu_inference_worker error: {e}")
@@ -448,7 +472,7 @@ def gpu_inference_worker():
 
 
 # ── YOLO Pipeline ──────────────────────────────────────────────────────────────
-def run_yolo_pipeline(frame, location_id, annotate=True):
+def run_yolo_pipeline(frame, location_id, is_active=True, annotate=True):
     """
     Per-camera pipeline.  CPU-bound work (CLAHE, annotation) stays here so the
     5 camera threads can do it in parallel.  Only the SAHI call goes through the
@@ -457,6 +481,8 @@ def run_yolo_pipeline(frame, location_id, annotate=True):
     Args:
         frame       : raw BGR frame from the camera thread
         location_id : used to route results back to the correct output queue
+        is_active   : True when this stream is currently being viewed —
+                      controls whether 6-tile or single-pass inference is used
         annotate    : draw boxes and apply privacy blur when True
     """
     start_time = time.time()
@@ -464,8 +490,8 @@ def run_yolo_pipeline(frame, location_id, annotate=True):
     # CPU: preprocessing
     frame_proc = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
 
-    # GPU (via worker): submit and block until this location's result arrives
-    INFERENCE_INPUT_QUEUE.put((location_id, frame_proc))
+    # GPU (via worker): submit is_active so the worker picks the right tile strategy
+    INFERENCE_INPUT_QUEUE.put((location_id, frame_proc, is_active))
     results = INFERENCE_OUTPUT_QUEUES[location_id].get()
 
     h, w = frame.shape[:2]
@@ -582,7 +608,8 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 continue
 
             # 2. Process frame (CPU pre/post-processing here; GPU call routed via worker)
-            output_frame, detections_pct, detections_pixel, fps = run_yolo_pipeline(frame, location_id, annotate=True)
+            # is_active controls tile strategy: 6 tiles for active stream, 1 for background
+            output_frame, detections_pct, detections_pixel, fps = run_yolo_pipeline(frame, location_id, is_active=is_active, annotate=True)
             
             current_count = len(detections_pixel)
             
