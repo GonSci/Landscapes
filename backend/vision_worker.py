@@ -45,8 +45,8 @@ DETECTION_CONFIG = {
 #   Burnham Park (5)     -- wide open, people very far away  -> 0.25
 LOCATION_CONF_THRESHOLDS = {
     1: 0.35,  # Baguio Cathedral
-    2: 0.50,  # The Mansion
-    3: 0.40,  # Mansion Entrance
+    2: 0.40,  # The Mansion
+    3: 0.30,  # Mansion Entrance
     4: 0.35,  # Night Market
     5: 0.25,  # Burnham Park
 }
@@ -395,23 +395,30 @@ def apply_clahe(frame):
     return cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
 
 def apply_gaussian_blur(frame, detections_pixel, ksize=(51, 51)):
-    blurred = frame.copy()
+    # Issue 8 Fix: one full-frame blur + mask composite instead of
+    # N per-ROI GaussianBlur calls (N = number of detections).
+    # Before: 40 people → 40 kernel dispatches, each with its own
+    #         memory round-trip and adaptive kernel-size clamping.
+    # After:  always 2 operations regardless of crowd size —
+    #         one cv2.GaussianBlur on the full frame, one np.where composite.
     h_img, w_img = frame.shape[:2]
 
+    # Single blur of the whole frame — one kernel dispatch regardless of N.
+    blurred_full = cv2.GaussianBlur(frame, ksize, 0)
+
+    # Build a binary mask: filled white rectangles over every detection bbox.
+    mask = np.zeros((h_img, w_img), dtype=np.uint8)
     for det in detections_pixel:
         x1, y1, x2, y2 = det['bbox']
         x1, y1 = max(0, x1), max(0, y1)
         x2, y2 = min(w_img, x2), min(h_img, y2)
+        if x2 > x1 and y2 > y1:
+            cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
 
-        roi = blurred[y1:y2, x1:x2]
-        if roi.size == 0: continue
-
-        roi_h, roi_w = roi.shape[:2]
-        kw = max(3, min(ksize[0], roi_w) | 1)
-        kh = max(3, min(ksize[1], roi_h) | 1)
-        blurred[y1:y2, x1:x2] = cv2.GaussianBlur(roi, (kw, kh), 0)
-
-    return blurred
+    # Composite: blurred pixels where mask=255, original pixels everywhere else.
+    # mask3 expands (H, W) → (H, W, 1) so np.where broadcasts over all 3 BGR channels.
+    mask3 = mask[:, :, np.newaxis]
+    return np.where(mask3 == 255, blurred_full, frame)
 
 def draw_detections_on_frame(frame, detections_pixel):
     annotated = frame.copy()
