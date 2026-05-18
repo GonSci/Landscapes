@@ -493,7 +493,9 @@ def run_yolo_pipeline(frame, location_id, annotate=True):
             })
 
     # CPU: annotation
-    output_frame = frame.copy()
+    # Use frame_proc (CLAHE-enhanced or raw copy) so the streamed output
+    # visually matches what the model saw — toggling CLAHE is now visible.
+    output_frame = frame_proc
     if annotate and detections_pixel:
         if DETECTION_CONFIG['enable_blur']:
             output_frame = apply_gaussian_blur(output_frame, detections_pixel)
