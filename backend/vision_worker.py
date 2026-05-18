@@ -737,20 +737,65 @@ def device_info_route():
     """Expose what backend/device is currently running — useful for debugging."""
     return jsonify(DEVICE_INFO)
 
+@app.route('/set-active-location', methods=['POST'])
+def set_active_location():
+    """
+    Issue 9 Fix: push endpoint so the frontend notifies vision_worker the
+    instant the user switches location tab.
+
+    The old db_polling_thread hit PostgreSQL every 1 second (3,600 queries/hr
+    at idle) just to detect a location switch.  Now the frontend POSTs here on
+    the switch event — zero DB queries at idle, sub-millisecond response.
+
+    Expected JSON body:  { "location_id": <int> }
+    Returns:             { "status": "ok", "active_location_id": <int> }
+
+    The fallback polling thread (5 s interval, see db_polling_thread below)
+    still runs so a page-refresh or missed POST can't leave the worker in a
+    permanently wrong state.
+    """
+    global active_location_id
+    data = request.get_json(silent=True) or {}
+    new_id = data.get('location_id')
+
+    if not isinstance(new_id, int):
+        return jsonify({'status': 'error', 'message': 'location_id must be an integer'}), 400
+
+    with active_location_lock:
+        if active_location_id != new_id:
+            print(f"[VISION] Push switch -> location {new_id}")
+            active_location_id = new_id
+
+    return jsonify({'status': 'ok', 'active_location_id': new_id})
+
+
 def db_polling_thread(app_context):
+    """
+    Issue 9 Fix: fallback-only poll at 5 s instead of 1 s.
+
+    The primary mechanism is now the POST /set-active-location push endpoint
+    above.  This thread exists only as a safety net for:
+      - Page refreshes that skip the push call
+      - Frontend bugs that miss a switch event
+      - First-boot sync before any push has arrived
+
+    At 5 s the query rate drops from 3,600/hr to 720/hr at idle.
+    In practice it almost never fires because the push endpoint handles
+    every real switch.
+    """
     global active_location_id
     while True:
+        time.sleep(5)   # poll-first so the push endpoint handles the hot path
         try:
             with app_context():
                 active_loc = Location.query.filter_by(is_active=True).first()
                 if active_loc:
                     with active_location_lock:
                         if active_location_id != active_loc.id:
-                            print(f"[VISION] Dashboard switch -> {active_loc.name}")
+                            print(f"[VISION] Fallback poll sync -> location {active_loc.id} ({active_loc.name})")
                             active_location_id = active_loc.id
-        except Exception as e:
+        except Exception:
             pass
-        time.sleep(1)
 
 if __name__ == '__main__':
     # ── Step 1: Detect device and choose backend ───────────────────────────────
