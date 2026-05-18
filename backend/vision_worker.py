@@ -583,12 +583,15 @@ def camera_thread(app_context, location_id, video_name, location_name):
 
     while True:
         try:
+            # Issue 5 Fix: timestamp the very start of the loop so the sleep at
+            # the bottom can subtract elapsed time and only sleep the remainder.
+            loop_start = time.time()
+
             # 1. Determine priority and framerate based on active location
             with active_location_lock:
                 is_active = (location_id == active_location_id)
                 
             target_fps = 30.0 if is_active else 0.2 # 30 FPS if active, 1 frame per 5 sec if background
-            sleep_time = 1.0 / target_fps
             
             # Wall-clock sync to skip frames and keep video playing in real-time speed
             elapsed = time.time() - playback_start_time
@@ -645,8 +648,15 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 if log_detection_to_database(app_context, location_id, peak_count, conf_avg):
                     last_log_time = now
 
-            # Sleep to enforce frame rate and yield CPU
-            time.sleep(sleep_time)
+            # Issue 5 Fix: sleep only the remainder of the target frame budget.
+            # Before: sleep_time was always 1/30 = 33ms added ON TOP of however
+            # long inference took, capping real FPS well below 30.
+            # Now: if the loop took 80ms and target is 1/30=33ms, remainder
+            # is negative -> sleep(0) yields the GIL without blocking.
+            elapsed_this_loop = time.time() - loop_start
+            remainder = (1.0 / target_fps) - elapsed_this_loop
+            if remainder > 0:
+                time.sleep(remainder)
             
         except Exception as e:
             print(f"[VISION] Error in thread for {location_name}: {e}")
