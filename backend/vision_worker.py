@@ -35,7 +35,14 @@ DETECTION_CONFIG = {
 }
 
 YOLO_MODEL = None
-YOLO_LOCK = threading.Lock()
+
+# ── Issue 2 Fix: GPU Inference Worker ─────────────────────────────────────────
+# Replace YOLO_LOCK (which serialized 5 threads and starved 4 at a time) with a
+# dedicated worker thread that is the *sole owner of the GPU*.
+# Camera threads drop frames in → pick annotated results out.  No lock needed.
+import queue as _queue
+INFERENCE_INPUT_QUEUE  = _queue.Queue(maxsize=10)   # (location_id, frame_proc) tuples
+INFERENCE_OUTPUT_QUEUES = {}                         # location_id -> Queue(maxsize=2)
 
 # Populated by detect_device() at startup — used throughout the module
 DEVICE_INFO = {
@@ -405,38 +412,83 @@ def draw_cctv_overlay(frame, people_count, fps):
 
     return frame
 
-# ── YOLO Pipeline ──────────────────────────────────────────────────────────────
-def run_yolo_pipeline(frame, annotate=True):
+# ── GPU Inference Worker ───────────────────────────────────────────────────────
+def gpu_inference_worker():
+    """
+    Single thread that owns the GPU exclusively.
+
+    Reads (location_id, frame_proc) tuples from INFERENCE_INPUT_QUEUE, runs
+    SAHI inference, and puts the raw SAHI result into the matching per-location
+    output queue.  Because only this thread ever touches YOLO_MODEL there is no
+    lock anywhere — contention is eliminated by design.
+
+    Background streams (0.2 FPS) submit frames infrequently, so the worker is
+    idle most of the time and the active stream gets the GPU almost exclusively.
+    """
     global YOLO_MODEL
+    print("[VISION] GPU inference worker started")
+    while True:
+        try:
+            location_id, frame_proc = INFERENCE_INPUT_QUEUE.get()
+            # Sync conf threshold from config (safe — only this thread reads model)
+            YOLO_MODEL.confidence_threshold = DETECTION_CONFIG['conf_threshold']
+            results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO)
+            INFERENCE_OUTPUT_QUEUES[location_id].put(results)
+        except Exception as e:
+            print(f"[VISION] gpu_inference_worker error: {e}")
+            # Put a sentinel so camera_thread doesn't block forever
+            try:
+                INFERENCE_OUTPUT_QUEUES[location_id].put(None)
+            except Exception:
+                pass
+
+
+# ── YOLO Pipeline ──────────────────────────────────────────────────────────────
+def run_yolo_pipeline(frame, location_id, annotate=True):
+    """
+    Per-camera pipeline.  CPU-bound work (CLAHE, annotation) stays here so the
+    5 camera threads can do it in parallel.  Only the SAHI call goes through the
+    single GPU worker thread via the input/output queues.
+
+    Args:
+        frame       : raw BGR frame from the camera thread
+        location_id : used to route results back to the correct output queue
+        annotate    : draw boxes and apply privacy blur when True
+    """
     start_time = time.time()
 
+    # CPU: preprocessing
     frame_proc = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
 
-    # Thread-safe SAHI Inference — works for both TensorRT and PyTorch backends
-    with YOLO_LOCK:
-        YOLO_MODEL.confidence_threshold = DETECTION_CONFIG['conf_threshold']
-        results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO)
+    # GPU (via worker): submit and block until this location's result arrives
+    INFERENCE_INPUT_QUEUE.put((location_id, frame_proc))
+    results = INFERENCE_OUTPUT_QUEUES[location_id].get()
 
     h, w = frame.shape[:2]
     detections_pixel = []
     detections_pct = []
 
-    for obj in results.object_prediction_list:
-        if obj.category.id != 0: continue # Only class 0 (person)
-        
-        x1, y1, x2, y2 = obj.bbox.minx, obj.bbox.miny, obj.bbox.maxx, obj.bbox.maxy
-        conf = obj.score.value
+    if results is not None:
+        for obj in results.object_prediction_list:
+            if obj.category.id != 0:
+                continue  # person class only
 
-        bw, bh = x2 - x1, y2 - y1
-        if bw > (w * 0.6) or bh > (h * 0.6): continue
-        if x1 <= 2 and y1 <= 2 and x2 >= (w - 2) and y2 >= (h - 2): continue
+            x1, y1, x2, y2 = obj.bbox.minx, obj.bbox.miny, obj.bbox.maxx, obj.bbox.maxy
+            conf = obj.score.value
 
-        detections_pixel.append({'bbox': [int(x1), int(y1), int(x2), int(y2)], 'confidence': conf})
-        detections_pct.append({
-            'bbox': [float(x1)/w, float(y1)/h, float(x2)/w, float(y2)/h],
-            'confidence': conf
-        })
+            bw, bh = x2 - x1, y2 - y1
+            if bw > (w * 0.6) or bh > (h * 0.6):
+                continue
+            if x1 <= 2 and y1 <= 2 and x2 >= (w - 2) and y2 >= (h - 2):
+                continue
 
+            detections_pixel.append({'bbox': [int(x1), int(y1), int(x2), int(y2)], 'confidence': conf})
+            detections_pct.append({
+                'bbox': [float(x1)/w, float(y1)/h, float(x2)/w, float(y2)/h],
+                'confidence': conf,
+            })
+
+    # CPU: annotation
     output_frame = frame.copy()
     if annotate and detections_pixel:
         if DETECTION_CONFIG['enable_blur']:
@@ -523,8 +575,8 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 playback_start_time = time.time()
                 continue
 
-            # 2. Process frame
-            output_frame, detections_pct, detections_pixel, fps = run_yolo_pipeline(frame, annotate=True)
+            # 2. Process frame (CPU pre/post-processing here; GPU call routed via worker)
+            output_frame, detections_pct, detections_pixel, fps = run_yolo_pipeline(frame, location_id, annotate=True)
             
             current_count = len(detections_pixel)
             
@@ -659,6 +711,12 @@ if __name__ == '__main__':
         # Start DB Polling Thread
         threading.Thread(target=db_polling_thread, args=(app.app_context,), daemon=True).start()
         
+        # Issue 2 Fix: create per-location output queues, then start the single GPU worker
+        for loc in locations:
+            if loc.video_filename:
+                INFERENCE_OUTPUT_QUEUES[loc.id] = _queue.Queue(maxsize=2)
+        threading.Thread(target=gpu_inference_worker, daemon=True).start()
+
         # Start Camera Threads
         for loc in locations:
             if loc.video_filename:
