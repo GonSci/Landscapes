@@ -27,11 +27,28 @@ load_dotenv()
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 DETECTION_CONFIG = {
-    'conf_threshold': 0.5,
+    'conf_threshold': 0.35,  # global fallback only - per-location values below override this
     'iou_threshold': 0.45,
     'use_gpu': True,
     'enable_clahe': True,
     'enable_blur': True,
+}
+
+# Issue 6 Fix: per-location confidence thresholds.
+# 0.5 was too high for crowds -- partially occluded people, tile-edge detections,
+# and distant small figures are dropped at that cutoff. Each location gets a
+# value tuned to its scene type. Fine-tune these after observing live counts:
+#   Cathedral (1)        -- medium crowds, decent lighting  -> 0.35
+#   The Mansion (2)      -- outdoor, people spread/distant  -> 0.30
+#   Mansion Entrance (3) -- bottleneck, occlusion common    -> 0.30
+#   Night Market (4)     -- low light, dense, high occlusion -> 0.25
+#   Burnham Park (5)     -- wide open, people very far away  -> 0.25
+LOCATION_CONF_THRESHOLDS = {
+    1: 0.35,  # Baguio Cathedral
+    2: 0.50,  # The Mansion
+    3: 0.40,  # Mansion Entrance
+    4: 0.35,  # Night Market
+    5: 0.25,  # Burnham Park
 }
 
 YOLO_MODEL = None
@@ -41,7 +58,7 @@ YOLO_MODEL = None
 # dedicated worker thread that is the *sole owner of the GPU*.
 # Camera threads drop frames in → pick annotated results out.  No lock needed.
 import queue as _queue
-INFERENCE_INPUT_QUEUE  = _queue.Queue(maxsize=10)   # (location_id, frame_proc, is_active) tuples
+INFERENCE_INPUT_QUEUE  = _queue.Queue(maxsize=10)   # (location_id, frame_proc, is_active, conf_threshold) tuples
 INFERENCE_OUTPUT_QUEUES = {}                         # location_id -> Queue(maxsize=2)
 
 # Populated by detect_device() at startup — used throughout the module
@@ -457,9 +474,9 @@ def gpu_inference_worker():
     print("[VISION] GPU inference worker started")
     while True:
         try:
-            location_id, frame_proc, is_active = INFERENCE_INPUT_QUEUE.get()
-            # Sync conf threshold from config (safe — only this thread reads model)
-            YOLO_MODEL.confidence_threshold = DETECTION_CONFIG['conf_threshold']
+            location_id, frame_proc, is_active, conf_threshold = INFERENCE_INPUT_QUEUE.get()
+            # Apply the per-location threshold (safe -- only this thread touches YOLO_MODEL)
+            YOLO_MODEL.confidence_threshold = conf_threshold
             results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO, is_active)
             INFERENCE_OUTPUT_QUEUES[location_id].put(results)
         except Exception as e:
@@ -490,8 +507,9 @@ def run_yolo_pipeline(frame, location_id, is_active=True, annotate=True):
     # CPU: preprocessing
     frame_proc = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
 
-    # GPU (via worker): submit is_active so the worker picks the right tile strategy
-    INFERENCE_INPUT_QUEUE.put((location_id, frame_proc, is_active))
+    # GPU (via worker): resolve per-location conf threshold then submit
+    conf_threshold = LOCATION_CONF_THRESHOLDS.get(location_id, DETECTION_CONFIG['conf_threshold'])
+    INFERENCE_INPUT_QUEUE.put((location_id, frame_proc, is_active, conf_threshold))
     results = INFERENCE_OUTPUT_QUEUES[location_id].get()
 
     h, w = frame.shape[:2]
