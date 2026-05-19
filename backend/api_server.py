@@ -381,15 +381,40 @@ def get_topsis_recommendations():
             travel_time = (distance / SPEED_KMH * TERRAIN_MULTIPLIER) * 60  # Convert to minutes
             
             # Get crowd level from latest database logs
-            crowd_density = 50.0  # Default
+            crowd_density = 50.0  # Default fallback
+            raw_density   = 50.0  # before decay
+            decay_factor  = 1.0   # no decay applied to default
+            age_minutes   = 0.0
             latest_log = SurveillanceLog.query.filter_by(location_id=loc.id).order_by(
                 SurveillanceLog.timestamp.desc()
             ).first()
-            
+
             if latest_log:
-                # Estimate capacity as 2x the detected people for now
-                estimated_capacity = latest_log.people_count * 2 if latest_log.people_count > 0 else 100
-                crowd_density = (latest_log.people_count / estimated_capacity) * 100
+                # ── Improvement 1: Use real max_capacity stored on the Location model ──
+                # Previously: estimated_capacity = people_count * 2  (always gave 50% — useless)
+                # Now: use the actual venue capacity set in the database per location.
+                max_capacity = getattr(loc, 'max_capacity', None)
+                if max_capacity and max_capacity > 0:
+                    raw_density = (latest_log.people_count / max_capacity) * 100
+                else:
+                    # Graceful fallback if max_capacity was never set for this location
+                    raw_density = 50.0
+                    print(f"[API] WARNING: No max_capacity set for '{loc.name}' (id={loc.id}). "
+                          f"Defaulting crowd density to 50%. Set max_capacity in the DB.")
+                crowd_density = min(raw_density, 100.0)  # Cap at 100%
+
+                # ── Improvement 2: Time-decay — older readings are less trustworthy ──
+                # Formula: effective_density = density * e^(-λ * age_minutes)
+                # λ = 0.01 means a reading that is 69 min old is worth ~50% of a fresh one.
+                # A reading that is 2 min old loses only ~2% weight — essentially unchanged.
+                DECAY_LAMBDA = 0.01
+                age_minutes = (datetime.now() - latest_log.timestamp).total_seconds() / 60.0
+                age_minutes = max(age_minutes, 0.0)  # Guard against clock skew
+                decay_factor = math.exp(-DECAY_LAMBDA * age_minutes)
+                crowd_density = crowd_density * decay_factor
+                print(f"[API] '{loc.name}': raw_density={raw_density:.1f}%, "
+                      f"age={age_minutes:.1f}min, decay={decay_factor:.4f}, "
+                      f"effective_density={crowd_density:.1f}%")
             
             location_data = {
                 'id': loc.id,
@@ -399,7 +424,10 @@ def get_topsis_recommendations():
                 'longitude': loc.longitude,
                 'distance': distance,
                 'travel_time_minutes': travel_time,
-                'crowd_density_percent': crowd_density,
+                'crowd_density_percent': crowd_density,          # effective (after decay)
+                'crowd_density_raw': round(raw_density if latest_log else 50.0, 1),
+                'crowd_density_decay_factor': round(decay_factor if latest_log else 1.0, 4),
+                'crowd_reading_age_minutes': round(age_minutes if latest_log else 0.0, 1),
             }
             
             locations_with_metrics.append(location_data)
@@ -451,7 +479,10 @@ def get_topsis_recommendations():
                 'type': loc['type'],
                 'distance': round(loc['distance'], 2),
                 'travel_time_minutes': round(loc['travel_time_minutes'], 1),
-                'crowd_level': round(loc['crowd_density_percent'], 1),
+                'crowd_level': round(loc['crowd_density_percent'], 1),          # effective (decayed)
+                'crowd_level_raw': loc['crowd_density_raw'],                     # before decay
+                'crowd_decay_factor': loc['crowd_density_decay_factor'],         # e^(-λt)
+                'crowd_reading_age_minutes': loc['crowd_reading_age_minutes'],   # how old the log is
                 'topsis_score': round(topsis_scores[idx], 4),
                 'latitude': loc['latitude'],
                 'longitude': loc['longitude'],
@@ -501,6 +532,26 @@ def get_topsis_recommendations():
                 'S_minus': s_minus,
             },
             '7_final_topsis_scores':   topsis_scores,
+            # ── Improvement transparency ──
+            'crowd_density_inputs': [
+                {
+                    'location': loc['name'],
+                    'max_capacity_used': getattr(
+                        next((l for l in all_locations if l.id == loc['id']), None),
+                        'max_capacity', 'N/A'
+                    ),
+                    'raw_density_pct':      loc['crowd_density_raw'],
+                    'decay_factor':         loc['crowd_density_decay_factor'],
+                    'reading_age_minutes':  loc['crowd_reading_age_minutes'],
+                    'effective_density_pct': round(loc['crowd_density_percent'], 1),
+                }
+                for loc in filtered_locations
+            ],
+            'decay_settings': {
+                'lambda': 0.01,
+                'formula': 'effective_density = raw_density * exp(-0.01 * age_minutes)',
+                'half_life_minutes': round(math.log(2) / 0.01, 1),  # ≈ 69.3 min
+            },
         }
         
         return jsonify({
