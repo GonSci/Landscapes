@@ -636,14 +636,14 @@ def camera_thread(app_context, location_id, video_name, location_name):
     playback_start_time = time.time()
     last_log_time = time.time() - 61
 
-    # 1. INITIALIZE HERE: Before the loop starts so the first frame has a tracker
-    tracker = sv.ByteTrack(track_activation_threshold=0.25, lost_track_buffer=30, frame_rate=30)
+    # 1. INITIALIZE HERE: Tighter tracker parameters and track_ages dictionary
+    tracker = sv.ByteTrack(track_activation_threshold=0.35, lost_track_buffer=5, frame_rate=30)
     last_tracked_objects = []
+    track_ages = {} # <-- Keeps track of how long an ID has existed
 
     while True:
         try:
-            # Issue 5 Fix: timestamp the very start of the loop so the sleep at
-            # the bottom can subtract elapsed time and only sleep the remainder.
+            # Issue 5 Fix: timestamp the very start of the loop
             loop_start = time.time()
 
             # Determine priority and framerate based on active location
@@ -670,17 +670,44 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 playback_start_time = time.time()
                 last_log_time = time.time() - 61
 
-                # 2. RESET HERE: Clear the tracker when the video loops to prevent ID glitching
-                tracker = sv.ByteTrack(track_activation_threshold=0.25, lost_track_buffer=30, frame_rate=30)
+                # 2. RESET HERE: Clear everything when video loops (Updated to match tight parameters)
+                tracker = sv.ByteTrack(track_activation_threshold=0.35, lost_track_buffer=5, frame_rate=30)
                 last_tracked_objects = []
+                track_ages = {}
                 continue
 
-            # 3. PIPELINE CALL: This runs every single frame, passing the tracker back and forth
+            # 3. PIPELINE CALL: annotate=False so we can manually filter before drawing
             output_frame, detections_pct, detections_pixel, fps, last_tracked_objects = run_yolo_pipeline(
-                frame, location_id, tracker, last_tracked_objects, is_active=is_active, annotate=True
+                frame, location_id, tracker, last_tracked_objects, is_active=is_active, annotate=False
             )
 
-            current_count = len(detections_pixel)
+            # --- 4. TEMPORAL FILTERING LOGIC ---
+            confirmed_detections = []
+            current_ids = set()
+            
+            for det in detections_pixel:
+                tid = det['id']
+                current_ids.add(tid)
+                
+                # Increment age, default to 1 if new
+                track_ages[tid] = track_ages.get(tid, 0) + 1
+                
+                # Only trust the detection if it has survived for at least 3 frames
+                if track_ages[tid] >= 3:
+                    confirmed_detections.append(det)
+
+            # Cleanup old IDs from memory so the dictionary doesn't grow infinitely
+            track_ages = {tid: age for tid, age in track_ages.items() if tid in current_ids}
+
+            # Update the count based ONLY on confirmed people
+            current_count = len(confirmed_detections)
+
+            # Apply Blur and Draw boxes manually using ONLY the confirmed detections
+            if DETECTION_CONFIG['enable_blur'] and confirmed_detections:
+                output_frame = apply_gaussian_blur(output_frame, confirmed_detections)
+            if confirmed_detections:
+                output_frame = draw_detections_on_frame(output_frame, confirmed_detections)
+            # -----------------------------------
             
             # Draw CCTV overlay
             output_frame = draw_cctv_overlay(output_frame, current_count, fps)
