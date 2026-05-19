@@ -17,6 +17,7 @@ import time
 from datetime import datetime
 from dotenv import load_dotenv
 import math
+import supervision as sv
 
 from extensions import db
 from models import Location, SurveillanceLog
@@ -424,11 +425,12 @@ def draw_detections_on_frame(frame, detections_pixel):
     annotated = frame.copy()
     for det in detections_pixel:
         x1, y1, x2, y2 = det['bbox']
-        confidence = det['confidence']
+        track_id = det.get('id', 'Wait...')
+    
         color = (0, 255, 0)
         cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
 
-        label = f"Person {confidence:.2f}"
+        label = f"ID: {track_id}"
         label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         label_y = max(y1, label_size[1] + 10)
 
@@ -495,67 +497,83 @@ def gpu_inference_worker():
                 pass
 
 
-# ── YOLO Pipeline ──────────────────────────────────────────────────────────────
-def run_yolo_pipeline(frame, location_id, last_results, is_active=True, annotate=True):
-    """
-    Per-camera pipeline.  CPU-bound work (CLAHE, annotation) stays here so the
-    5 camera threads can do it in parallel.  Only the SAHI call goes through the
-    single GPU worker thread via the input/output queues.
-
-    Args:
-        frame       : raw BGR frame from the camera thread
-        location_id : used to route results back to the correct output queue
-        is_active   : True when this stream is currently being viewed —
-                      controls whether 6-tile or single-pass inference is used
-        annotate    : draw boxes and apply privacy blur when True
-    """
+def run_yolo_pipeline(frame, location_id, tracker, last_tracked_objects, is_active=True, annotate=True):
     start_time = time.time()
-
-    # CPU: preprocessing
     frame_proc = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
-
-    # DECOUPLING FIX
     conf_threshold = LOCATION_CONF_THRESHOLDS.get(location_id, DETECTION_CONFIG['conf_threshold'])
-
-    # 2. Try to send frame to GPU. If queue is full, don't wait. Drop it.
+    
+    # 1. Attempt to send frame to GPU
     try:
         INFERENCE_INPUT_QUEUE.put_nowait((location_id, frame_proc, is_active, conf_threshold))
     except _queue.Full:
         pass
 
-    # 3. Try to get new results. If none are ready, use the old ones.
+    # 2. Check for fresh GPU results
+    new_results = None
     try:
-        results = INFERENCE_OUTPUT_QUEUES[location_id].get_nowait()
+        new_results = INFERENCE_OUTPUT_QUEUES[location_id].get_nowait()
     except _queue.Empty:
-        results = last_results
+        pass 
 
     h, w = frame.shape[:2]
-    detections_pixel = []
-    detections_pct = []
+    current_tracked_objects = []
 
-    if results is not None:
-        for obj in results.object_prediction_list:
-            if obj.category.id != 0:
-                continue  # person class only
-
+    # 3. If GPU has new data, update ByteTrack
+    if new_results is not None:
+        xyxy = []
+        confidences = []
+        
+        for obj in new_results.object_prediction_list:
+            if obj.category.id != 0: continue 
+            
             x1, y1, x2, y2 = obj.bbox.minx, obj.bbox.miny, obj.bbox.maxx, obj.bbox.maxy
             conf = obj.score.value
-
+            
             bw, bh = x2 - x1, y2 - y1
-            if bw > (w * 0.6) or bh > (h * 0.6):
-                continue
-            if x1 <= 2 and y1 <= 2 and x2 >= (w - 2) and y2 >= (h - 2):
-                continue
+            if bw > (w * 0.6) or bh > (h * 0.6): continue
+            if x1 <= 2 and y1 <= 2 and x2 >= (w - 2) and y2 >= (h - 2): continue
+                
+            xyxy.append([x1, y1, x2, y2])
+            confidences.append(conf)
+            
+        if xyxy:
+            # Convert to Supervision format and update tracker
+            detections = sv.Detections(
+                xyxy=np.array(xyxy),
+                confidence=np.array(confidences),
+                class_id=np.zeros(len(xyxy), dtype=int)
+            )
+            tracked_dets = tracker.update_with_detections(detections)
+            
+            # The *_ absorbs the new 'data' field and any future additions by the library
+            for box, _, conf, _, track_id, *_ in tracked_dets:
+                current_tracked_objects.append({
+                    'bbox': [int(box[0]), int(box[1]), int(box[2]), int(box[3])],
+                    'confidence': float(conf),
+                    'id': int(track_id)
+                })
 
-            detections_pixel.append({'bbox': [int(x1), int(y1), int(x2), int(y2)], 'confidence': conf})
-            detections_pct.append({
-                'bbox': [float(x1)/w, float(y1)/h, float(x2)/w, float(y2)/h],
-                'confidence': conf,
-            })
+    else:
+        # GPU is busy. Reuse the last tracked objects to keep the stream fast.
+        current_tracked_objects = last_tracked_objects
 
-    # CPU: annotation
-    # Use frame_proc (CLAHE-enhanced or raw copy) so the streamed output
-    # visually matches what the model saw — toggling CLAHE is now visible.
+    # 4. Apply Privacy Padding for Rendering (Runs EVERY frame)
+    detections_pixel = []
+    detections_pct = []
+    
+    for obj in current_tracked_objects:
+        x1, y1, x2, y2 = obj['bbox']
+        track_id = obj['id']
+        
+        # 5% padding so people don't step out of the blur between GPU frames
+        pad_w, pad_h = int((x2 - x1) * 0.05), int((y2 - y1) * 0.05)
+        px1, py1 = max(0, x1 - pad_w), max(0, y1 - pad_h)
+        px2, py2 = min(w, x2 + pad_w), min(h, y2 + pad_h)
+        
+        detections_pixel.append({'bbox': [px1, py1, px2, py2], 'confidence': obj['confidence'], 'id': track_id})
+        detections_pct.append({'bbox': [float(px1)/w, float(py1)/h, float(px2)/w, float(py2)/h], 'confidence': obj['confidence']})
+
+    # CPU: Annotation & Blur
     output_frame = frame_proc
     if annotate and detections_pixel:
         if DETECTION_CONFIG['enable_blur']:
@@ -563,7 +581,9 @@ def run_yolo_pipeline(frame, location_id, last_results, is_active=True, annotate
         output_frame = draw_detections_on_frame(output_frame, detections_pixel)
 
     fps = 1.0 / (time.time() - start_time)
-    return output_frame, detections_pct, detections_pixel, fps, results
+    
+    # Return current_tracked_objects so the camera thread can hold onto them
+    return output_frame, detections_pct, detections_pixel, fps, current_tracked_objects
 
 # ── Database Logging ───────────────────────────────────────────────────────────
 def log_detection_to_database(app_context, location_id, people_count, confidence_avg):
@@ -616,7 +636,9 @@ def camera_thread(app_context, location_id, video_name, location_name):
     playback_start_time = time.time()
     last_log_time = time.time() - 61
 
-    last_results = None
+    # 1. INITIALIZE HERE: Before the loop starts so the first frame has a tracker
+    tracker = sv.ByteTrack(track_activation_threshold=0.25, lost_track_buffer=30, frame_rate=30)
+    last_tracked_objects = []
 
     while True:
         try:
@@ -624,7 +646,7 @@ def camera_thread(app_context, location_id, video_name, location_name):
             # the bottom can subtract elapsed time and only sleep the remainder.
             loop_start = time.time()
 
-            # 1. Determine priority and framerate based on active location
+            # Determine priority and framerate based on active location
             with active_location_lock:
                 is_active = (location_id == active_location_id)
                 
@@ -642,22 +664,28 @@ def camera_thread(app_context, location_id, video_name, location_name):
                     cap.grab()
 
             ret, frame = cap.read()
+            
             if not ret:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 playback_start_time = time.time()
+                last_log_time = time.time() - 61
+
+                # 2. RESET HERE: Clear the tracker when the video loops to prevent ID glitching
+                tracker = sv.ByteTrack(track_activation_threshold=0.25, lost_track_buffer=30, frame_rate=30)
+                last_tracked_objects = []
                 continue
-            
-            # 2. Pass in last_results, and overwrite it with the output
-            output_frame, detections_pct, detections_pixel, fps, last_results = run_yolo_pipeline(
-                frame, location_id, last_results, is_active=is_active, annotate=True
+
+            # 3. PIPELINE CALL: This runs every single frame, passing the tracker back and forth
+            output_frame, detections_pct, detections_pixel, fps, last_tracked_objects = run_yolo_pipeline(
+                frame, location_id, tracker, last_tracked_objects, is_active=is_active, annotate=True
             )
-            
+
             current_count = len(detections_pixel)
             
             # Draw CCTV overlay
             output_frame = draw_cctv_overlay(output_frame, current_count, fps)
 
-            # 3. Update Stream Globals
+            # Update Stream Globals
             ret, buffer = cv2.imencode('.jpg', output_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
             if ret:
                 with STREAM_LOCK:
@@ -666,7 +694,7 @@ def camera_thread(app_context, location_id, video_name, location_name):
                     if current_count > THREAD_MAX_COUNTS[location_id]:
                         THREAD_MAX_COUNTS[location_id] = current_count
 
-            # 4. Database Logging (Every 60s or on Spike)
+            # Database Logging (Every 60s or on Spike)
             now = time.time()
             time_since_last_log = now - last_log_time
 
@@ -687,10 +715,6 @@ def camera_thread(app_context, location_id, video_name, location_name):
                     last_log_time = now
 
             # Issue 5 Fix: sleep only the remainder of the target frame budget.
-            # Before: sleep_time was always 1/30 = 33ms added ON TOP of however
-            # long inference took, capping real FPS well below 30.
-            # Now: if the loop took 80ms and target is 1/30=33ms, remainder
-            # is negative -> sleep(0) yields the GIL without blocking.
             elapsed_this_loop = time.time() - loop_start
             remainder = (1.0 / target_fps) - elapsed_this_loop
             if remainder > 0:
