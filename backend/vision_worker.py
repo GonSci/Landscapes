@@ -35,20 +35,18 @@ DETECTION_CONFIG = {
 }
 
 # Issue 6 Fix: per-location confidence thresholds.
-# 0.5 was too high for crowds -- partially occluded people, tile-edge detections,
-# and distant small figures are dropped at that cutoff. Each location gets a
-# value tuned to its scene type. Fine-tune these after observing live counts:
-#   Cathedral (1)        -- medium crowds, decent lighting  -> 0.35
-#   The Mansion (2)      -- outdoor, people spread/distant  -> 0.30
-#   Mansion Entrance (3) -- bottleneck, occlusion common    -> 0.30
-#   Night Market (4)     -- low light, dense, high occlusion -> 0.25
-#   Burnham Park (5)     -- wide open, people very far away  -> 0.25
+# Each location gets a value tuned to its scene type and characteristics:
+#   Baguio Night Market (1)        -- low light, dense crowds, high occlusion -> 0.25
+#   The Mansion (2)                -- spread out, tiny background figures, trees -> 0.30
+#   The Mansion Entrance (3)       -- bottleneck, good lighting, gate/pillar noise -> 0.35
+#   Baguio Cathedral (4)           -- high false positive risk from arched columns -> 0.45
+#   Melvin Jones Burnham Park (5)  -- flat open field, very distant tiny figures -> 0.20
 LOCATION_CONF_THRESHOLDS = {
-    1: 0.35,  # Baguio Cathedral
-    2: 0.40,  # The Mansion
-    3: 0.30,  # Mansion Entrance
-    4: 0.35,  # Night Market
-    5: 0.25,  # Burnham Park
+    1: 0.25,  # Baguio Night Market
+    2: 0.30,  # The Mansion
+    3: 0.35,  # The Mansion Entrance
+    4: 0.45,  # Baguio Cathedral
+    5: 0.20,  # Melvin Jones Burnham Park
 }
 
 YOLO_MODEL = None
