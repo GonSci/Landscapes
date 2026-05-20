@@ -566,19 +566,28 @@ def get_hourly_logs():
 
         logs = query.order_by(SurveillanceLog.timestamp.desc()).all()
         
+        # ── THE NEW WEIGHTED/MEAN FIX ──
+        # Instead of storing a single integer, we store a list of all readings for that hour
         hourly_data = {}
         for log in logs:
             hour_key = f"{log.timestamp.hour}:00"
-            if hour_key not in hourly_data or log.people_count > hourly_data[hour_key]:
-                hourly_data[hour_key] = log.people_count
+            if hour_key not in hourly_data:
+                hourly_data[hour_key] = []
+            hourly_data[hour_key].append(log.people_count)
         
         result = []
         for i in range(hours):
             h = (reference_hour - i) % 24
             h_key = f"{h}:00"
+            
+            counts = hourly_data.get(h_key, [])
+            
+            # Calculate the mean (average) to smooth out YOLOv8 spikes
+            avg_value = sum(counts) / len(counts) if counts else 0
+            
             result.append({
                 'label': h_key,
-                'value': hourly_data.get(h_key, 0),
+                'value': round(avg_value),  # Round to a whole integer (can't have half a person)
                 'hour': h
             })
         result.reverse()
