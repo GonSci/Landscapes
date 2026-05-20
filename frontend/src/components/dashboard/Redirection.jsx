@@ -137,9 +137,59 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
     });
   };
 
+  // Helper function to determine crowd status based on exact thresholds
+  const getCrowdStatus = (locationName, peopleCount) => {
+    const count = peopleCount || 0;
+    const name = (locationName || "").toLowerCase();
+
+    if (name.includes("melvin jones") || name.includes("burnham")) {
+      if (count <= 296) return { statusText: "Sparse", color: "green" };
+      if (count <= 1037) return { statusText: "Low Crowd", color: "green" };
+      if (count <= 2233) return { statusText: "Moderate Crowd", color: "yellow" };
+      return { statusText: "High Crowd", color: "red" };
+    }
+    if (name.includes("night market") || name.includes("market")) {
+      if (count <= 40) return { statusText: "Sparse", color: "green" };
+      if (count <= 141) return { statusText: "Low Crowd", color: "green" };
+      if (count <= 303) return { statusText: "Moderate Crowd", color: "yellow" };
+      return { statusText: "High Crowd", color: "red" };
+    }
+    if (name.includes("cathedral")) {
+      if (count <= 92) return { statusText: "Sparse", color: "green" };
+      if (count <= 320) return { statusText: "Low Crowd", color: "green" };
+      if (count <= 686) return { statusText: "Moderate Crowd", color: "yellow" };
+      return { statusText: "High Crowd", color: "red" };
+    }
+    if (name.includes("wright")) {
+      if (count <= 108) return { statusText: "Sparse", color: "green" };
+      if (count <= 378) return { statusText: "Low Crowd", color: "green" };
+      if (count <= 809) return { statusText: "Moderate Crowd", color: "yellow" };
+      return { statusText: "High Crowd", color: "red" };
+    }
+    if (name.includes("mansion")) {
+      if (count <= 26) return { statusText: "Sparse", color: "green" };
+      if (count <= 92) return { statusText: "Low Crowd", color: "green" };
+      if (count <= 197) return { statusText: "Moderate Crowd", color: "yellow" };
+      return { statusText: "High Crowd", color: "red" };
+    }
+
+    // fallback
+    if (count <= 20) return { statusText: "Sparse", color: "green" };
+    if (count <= 50) return { statusText: "Low Crowd", color: "green" };
+    if (count <= 120) return { statusText: "Moderate Crowd", color: "yellow" };
+    return { statusText: "High Crowd", color: "red" };
+  };
+
   // Handle marker click - zoom in on marker
   const handleMarkerClick = (location) => {
     setSelectedLocationId(location.id);
+
+    // Log the raw effective density to console (Hidden Telemetry)
+    const effectiveDensity = location.effective_density_pm2 !== undefined && location.effective_density_pm2 !== null
+      ? location.effective_density_pm2
+      : (location.detectedPeople / (location.fov_area_m2 || 50.0));
+    console.log(`[Telemetry] Location: "${location.name}" | Effective Density: ${effectiveDensity.toFixed(6)} P/m²`);
+
     if (mapRef.current) {
       // Instant zoom without animation
       mapRef.current.setView([location.lat, location.lng], 17);
@@ -159,14 +209,14 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
     }
   };
 
-  // Get color based on crowd level
-  const getCrowdColor = (crowdLevel) => {
-    switch (crowdLevel) {
-      case 'low':
+  // Get color based on crowd status color name
+  const getCrowdColor = (color) => {
+    switch (color?.toLowerCase()) {
+      case 'green':
         return '#10b981'; // Emerald
-      case 'moderate':
+      case 'yellow':
         return '#f59e0b'; // Amber
-      case 'high':
+      case 'red':
         return '#ef4444'; // Red
       default:
         return '#8b5cf6'; // Purple fallback
@@ -375,68 +425,73 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
                   }
                   return locationsToDisplay.map((location) => {
                     const isTopResult = viewMode === 'results' && topsisResults && topsisResults.length > 0 && topsisResults[0].location_id === location.id;
-                    return (
-                <Marker 
-                  key={location.id} 
-                  position={[location.lat, location.lng]}
-                  icon={createCustomMarker(location.crowdLevel?.toLowerCase() || 'low', isTopResult)}
-                  eventHandlers={{
-                    click: () => handleMarkerClick(location),
-                  }}
-                  ref={(ref) => {
-                    if (ref) {
-                      markerRefs.current[location.id] = ref;
+                    const statusObj = getCrowdStatus(location.name, location.detectedPeople);
+                    
+                    let pillClass = "";
+                    if (statusObj.color === "green") {
+                      pillClass = "text-emerald-800 bg-emerald-100/95 font-semibold";
+                    } else if (statusObj.color === "yellow") {
+                      pillClass = "text-amber-800 bg-amber-100/95 font-semibold";
+                    } else if (statusObj.color === "red") {
+                      pillClass = "text-red-800 bg-red-100/95 font-semibold";
                     }
-                  }}
-                >
-                  <Popup 
-                    className="location-popup"
-                    eventHandlers={{
-                      close: handlePopupClose,
-                    }}
-                  >
-                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-white/10 p-4 min-w-[240px] shadow-2xl">
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <h4 className="text-base font-black text-white tracking-tight">
-                          {location.name}
-                        </h4>
-                      </div>
-                      
-                      <p className="text-xs text-slate-300 capitalize mb-3 font-medium">
-                        {location.type}
-                      </p>
 
-                      <div className="inline-block mb-3">
-                        <span 
-                          className={`rounded-lg px-3 py-1.5 text-xs font-black text-white uppercase tracking-widest ${
-                            location.crowdLevel?.toLowerCase() === 'low' || location.crowdLevel?.toLowerCase() === 'sparse'
-                              ? 'bg-emerald-500/80 shadow-lg shadow-emerald-500/30'
-                              : location.crowdLevel?.toLowerCase() === 'moderate'
-                                ? 'bg-amber-500/80 shadow-lg shadow-amber-500/30'
-                                : 'bg-red-500/80 shadow-lg shadow-red-500/30'
-                          }`}
+                    const formatAge = (ageMinutes) => {
+                      if (ageMinutes === undefined || ageMinutes === null) return "Just now";
+                      const mins = Math.round(ageMinutes);
+                      if (mins <= 0) return "Just now";
+                      if (mins === 1) return "1 min ago";
+                      return `${mins} mins ago`;
+                    };
+
+                    return (
+                      <Marker 
+                        key={location.id} 
+                        position={[location.lat, location.lng]}
+                        icon={createCustomMarker(statusObj.color, isTopResult)}
+                        eventHandlers={{
+                          click: () => handleMarkerClick(location),
+                        }}
+                        ref={(ref) => {
+                          if (ref) {
+                            markerRefs.current[location.id] = ref;
+                          }
+                        }}
+                      >
+                        <Popup 
+                          className="location-popup"
+                          eventHandlers={{
+                            close: handlePopupClose,
+                          }}
                         >
-                          {location.crowdLevel}
-                        </span>
-                      </div>
+                          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-white/10 p-4 min-w-[240px] shadow-2xl">
+                            <div className="flex items-center justify-between gap-2 mb-3">
+                              <h4 className="text-base font-black text-white tracking-tight">
+                                {location.name}
+                              </h4>
+                            </div>
+                            
+                            <p className="text-xs text-slate-400 capitalize mb-3 font-medium">
+                              {location.type}
+                            </p>
 
-                      <div className="space-y-2.5 border-t border-white/10 pt-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">People</span>
-                          <span className="text-xs font-black text-white">{location.detectedPeople}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Capacity</span>
-                          <span className="text-xs font-black text-white">{location.capacity}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Distance</span>
-                          <span className="text-xs font-black text-slate-200">{location.distance} km</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
+                            <div className="inline-block mb-3">
+                              <span className={`rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-widest ${pillClass}`}>
+                                {statusObj.statusText}
+                              </span>
+                            </div>
+
+                            <div className="space-y-2 border-t border-white/10 pt-3 text-xs">
+                              <div className="text-slate-300">
+                                Current Estimate: <span className="font-bold text-white">{location.detectedPeople} people</span>
+                              </div>
+                              <div className="text-slate-400">
+                                Last Updated: <span className="font-semibold text-slate-300">{formatAge(location.crowd_reading_age_minutes)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
                     );
                   });
                 })()

@@ -188,8 +188,13 @@ const getCrowdLevel = (count, thresholds) => {
   return "High";
 };
 
-const getCrowdPercent = (count, capacity) => {
-  return Math.min(100, Math.max(0, (count / capacity) * 100));
+const getCrowdPercent = (count, fovArea, capacity) => {
+  if (fovArea && fovArea > 0) {
+    const density = count / fovArea;
+    // 0.2 P/m² represents high crowd density (100% capacity/congested)
+    return Math.min(100, Math.max(0, (density / 0.2) * 100));
+  }
+  return Math.min(100, Math.max(0, (count / (capacity || 20)) * 100));
 };
 
 export const useLiveLocations = () => {
@@ -219,6 +224,7 @@ export const useLiveLocations = () => {
             lng: dbLoc.longitude,
             category: "Place", // Default for UI tabs
             ...staticData,
+            fov_area_m2: dbLoc.fov_area_m2,
             // Dynamic defaults
             detectedPeople: 0,
             crowdLevel: "Sparse",
@@ -260,11 +266,23 @@ export const useLiveLocations = () => {
             const liveStatus = liveMap[loc.id];
             if (liveStatus) {
               const count = liveStatus.people_count;
+              const timestamp = liveStatus.timestamp;
+              let ageMinutes = 0;
+              if (timestamp) {
+                const diffMs = new Date() - new Date(timestamp);
+                ageMinutes = Math.max(0, diffMs / 1000 / 60);
+              }
+              const density = count / (loc.fov_area_m2 || 50.0);
+              const decayFactor = Math.exp(-0.01 * ageMinutes);
+              const effectiveDensity = density * decayFactor;
               return {
                 ...loc,
                 detectedPeople: count,
+                timestamp: timestamp,
+                crowd_reading_age_minutes: ageMinutes,
+                effective_density_pm2: effectiveDensity,
                 crowdLevel: getCrowdLevel(count, loc.thresholds),
-                crowdPercent: getCrowdPercent(count, loc.capacity || 20)
+                crowdPercent: getCrowdPercent(count, loc.fov_area_m2, loc.capacity)
               };
             }
             return loc; // Retain last known value

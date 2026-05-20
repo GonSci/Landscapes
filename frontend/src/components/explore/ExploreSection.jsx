@@ -199,8 +199,9 @@ const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
                       style={{ width: `${crowdPercent}%` }}
                     ></div>
                   </div>
-                  <div className="mt-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-                    {location.detectedPeople} / {location.capacity} People
+                  <div className="mt-2 flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                    <span>Area: {location.fov_area_m2 || location.capacity || 50} m²</span>
+                    <span>Density: {(location.detectedPeople / (location.fov_area_m2 || location.capacity || 50.0)).toFixed(3)} P/m²</span>
                   </div>
                 </div>
 
