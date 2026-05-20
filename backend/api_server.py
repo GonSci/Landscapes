@@ -381,15 +381,23 @@ def get_topsis_recommendations():
             travel_time = (distance / SPEED_KMH * TERRAIN_MULTIPLIER) * 60  # Convert to minutes
             
             # Get crowd level from latest database logs
-            crowd_density = 50.0  # Default
+            raw_density_pm2 = 0.0
+            effective_density_pm2 = 0.0
+            age_minutes = 0.0
             latest_log = SurveillanceLog.query.filter_by(location_id=loc.id).order_by(
                 SurveillanceLog.timestamp.desc()
             ).first()
             
             if latest_log:
-                # Estimate capacity as 2x the detected people for now
-                estimated_capacity = latest_log.people_count * 2 if latest_log.people_count > 0 else 100
-                crowd_density = (latest_log.people_count / estimated_capacity) * 100
+                # Calculate raw_density_pm2 (People per Square Meter)
+                fov_area = loc.fov_area_m2 if (loc.fov_area_m2 is not None and loc.fov_area_m2 > 0) else 50.0
+                raw_density_pm2 = latest_log.people_count / fov_area
+                
+                # Apply time-decay logic
+                age_minutes = (datetime.now() - latest_log.timestamp).total_seconds() / 60.0
+                DECAY_LAMBDA = 0.01
+                decay_factor = math.exp(-DECAY_LAMBDA * age_minutes)
+                effective_density_pm2 = raw_density_pm2 * decay_factor
             
             location_data = {
                 'id': loc.id,
@@ -399,11 +407,13 @@ def get_topsis_recommendations():
                 'longitude': loc.longitude,
                 'distance': distance,
                 'travel_time_minutes': travel_time,
-                'crowd_density_percent': crowd_density,
+                'raw_density_pm2': raw_density_pm2,
+                'effective_density_pm2': effective_density_pm2,
+                'crowd_reading_age_minutes': age_minutes,
             }
             
             locations_with_metrics.append(location_data)
-            decision_matrix.append([travel_time, crowd_density])
+            decision_matrix.append([travel_time, effective_density_pm2])
         
         # Apply hard constraints
         filtered_locations = apply_hard_constraints(locations_with_metrics, max_travel_time, place_category)
@@ -418,7 +428,7 @@ def get_topsis_recommendations():
         
         # Rebuild decision matrix with filtered locations only
         filtered_decision_matrix = [
-            [loc['travel_time_minutes'], loc['crowd_density_percent']]
+            [loc['travel_time_minutes'], loc['effective_density_pm2']]
             for loc in filtered_locations
         ]
         
@@ -451,11 +461,14 @@ def get_topsis_recommendations():
                 'type': loc['type'],
                 'distance': round(loc['distance'], 2),
                 'travel_time_minutes': round(loc['travel_time_minutes'], 1),
-                'crowd_level': round(loc['crowd_density_percent'], 1),
+                'raw_density_pm2': round(loc['raw_density_pm2'], 4),
+                'effective_density_pm2': round(loc['effective_density_pm2'], 4),
+                'crowd_level': round(loc['effective_density_pm2'], 4),
                 'topsis_score': round(topsis_scores[idx], 4),
                 'latitude': loc['latitude'],
                 'longitude': loc['longitude'],
                 'priority_weight': priority_weight,
+                'crowd_reading_age_minutes': round(loc['crowd_reading_age_minutes'], 1),
             })
         
         # Sort by TOPSIS score (descending) - higher is better
@@ -487,6 +500,7 @@ def get_topsis_recommendations():
         # ── TOPSIS Calculation Breakdown (for thesis transparency) ──
         location_names_in_order = [loc['name'] for loc in filtered_locations]
         calculation_breakdown = {
+            'calculation_explanation': 'Crowd density is now calculated continuously as People per Square Meter (P/m²), using fov_area_m2 with time-decay. TOPSIS naturally handles this as a cost criterion.',
             'location_names_in_order': location_names_in_order,
             '1_raw_matrix':            filtered_decision_matrix,
             '2_weights_applied':       weights,
