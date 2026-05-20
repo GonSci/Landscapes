@@ -305,41 +305,51 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
 
         console.groupCollapsed('🧮 TOPSIS Calculation Breakdown');
 
-        console.log('📐 Weights applied →',
-          `Travel Time: ${(bd['2_weights_applied'][0] * 100).toFixed(0)}%`,
-          `| Crowd Density: ${(bd['2_weights_applied'][1] * 100).toFixed(0)}%`);
+        if (bd['2_weights_applied'] && bd['1_raw_matrix']) {
+          console.log('📐 Weights applied →',
+            `Travel Time: ${(bd['2_weights_applied'][0] * 100).toFixed(0)}%`,
+            `| Crowd Density: ${(bd['2_weights_applied'][1] * 100).toFixed(0)}%`);
 
-        console.group('① Raw Decision Matrix');
-        console.table(makeMatrixRows(bd['1_raw_matrix']));
-        console.groupEnd();
+          console.group('① Raw Decision Matrix');
+          console.table(makeMatrixRows(bd['1_raw_matrix']));
+          console.groupEnd();
 
-        console.group('② Normalized Matrix');
-        console.table(makeMatrixRows(bd['3_normalized_matrix']));
-        console.groupEnd();
+          console.group('② Normalized Matrix');
+          console.table(makeMatrixRows(bd['3_normalized_matrix']));
+          console.groupEnd();
 
-        console.group('③ Weighted Normalized Matrix');
-        console.table(makeMatrixRows(bd['4_weighted_matrix']));
-        console.groupEnd();
+          console.group('③ Weighted Normalized Matrix');
+          console.table(makeMatrixRows(bd['4_weighted_matrix']));
+          console.groupEnd();
 
-        const { PIS_A_plus, NIS_A_minus } = bd['5_ideal_solutions'];
-        console.log('✅ PIS A⁺ (ideal)     →', `[${PIS_A_plus.map(v => v.toFixed(6)).join(', ')}]`);
-        console.log('❌ NIS A⁻ (anti-ideal) →', `[${NIS_A_minus.map(v => v.toFixed(6)).join(', ')}]`);
+          if (bd['5_ideal_solutions']) {
+            const { PIS_A_plus, NIS_A_minus } = bd['5_ideal_solutions'];
+            console.log('✅ PIS A⁺ (ideal)     →', `[${PIS_A_plus.map(v => v.toFixed(6)).join(', ')}]`);
+            console.log('❌ NIS A⁻ (anti-ideal) →', `[${NIS_A_minus.map(v => v.toFixed(6)).join(', ')}]`);
+          }
 
-        const { S_plus, S_minus } = bd['6_separation_measures'];
-        console.group('④ Separation Measures');
-        console.table(names.map((name, i) => ({
-          Location:                name,
-          'S⁺ (from ideal)':       S_plus[i]?.toFixed(6),
-          'S⁻ (from anti-ideal)':  S_minus[i]?.toFixed(6),
-        })));
-        console.groupEnd();
+          if (bd['6_separation_measures']) {
+            const { S_plus, S_minus } = bd['6_separation_measures'];
+            console.group('④ Separation Measures');
+            console.table(names.map((name, i) => ({
+              Location:                name,
+              'S⁺ (from ideal)':       S_plus[i]?.toFixed(6),
+              'S⁻ (from anti-ideal)':  S_minus[i]?.toFixed(6),
+            })));
+            console.groupEnd();
+          }
 
-        console.group('⑤ Final TOPSIS Scores (Cᵢ = S⁻ / (S⁺ + S⁻))');
-        console.table(names.map((name, i) => ({
-          Location:    name,
-          'Cᵢ Score':  bd['7_final_topsis_scores'][i]?.toFixed(6),
-        })));
-        console.groupEnd();
+          if (bd['7_final_topsis_scores']) {
+            console.group('⑤ Final TOPSIS Scores (Cᵢ = S⁻ / (S⁺ + S⁻))');
+            console.table(names.map((name, i) => ({
+              Location:    name,
+              'Cᵢ Score':  bd['7_final_topsis_scores'][i]?.toFixed(6),
+            })));
+            console.groupEnd();
+          }
+        } else if (bd.calculation_explanation) {
+          console.log('ℹ️', bd.calculation_explanation);
+        }
 
         console.groupEnd(); // 🧮 TOPSIS Calculation Breakdown
       }

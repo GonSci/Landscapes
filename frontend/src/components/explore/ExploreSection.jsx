@@ -8,6 +8,14 @@ const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
   
   const { locations, isLoading, isStale, lastUpdated } = useLiveLocations();
 
+  const formatAge = (ageMinutes) => {
+    if (ageMinutes === undefined || ageMinutes === null) return "Just now";
+    const mins = Math.round(ageMinutes);
+    if (mins <= 0) return "Just now";
+    if (mins === 1) return "1 min ago";
+    return `${mins} mins ago`;
+  };
+
   const categories = [
     { id: 'all', name: 'All Places'},
     { id: 'park', name: 'Parks'},
@@ -200,8 +208,8 @@ const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
                     ></div>
                   </div>
                   <div className="mt-2 flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-                    <span>Area: {location.fov_area_m2 || location.capacity || 50} m²</span>
-                    <span>Density: {(location.detectedPeople / (location.fov_area_m2 || location.capacity || 50.0)).toFixed(3)} P/m²</span>
+                    <span>Estimated Crowd: {location.detectedPeople} people</span>
+                    <span>Last Updated: {formatAge(location.crowd_reading_age_minutes)}</span>
                   </div>
                 </div>
 

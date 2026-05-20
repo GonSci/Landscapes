@@ -425,8 +425,39 @@ def get_topsis_recommendations():
                 'top_3_results': [],
                 'message': 'No recommendations match your criteria'
             }), 200
+        # ── SINGLE RESULT EDGE CASE (SHORT-CIRCUIT) ──
+        elif len(filtered_locations) == 1:
+            print(f"[API] Only 1 location matches criteria. Bypassing TOPSIS.")
+            loc = filtered_locations[0]
+            
+            single_result = {
+                'location_id': loc['id'],
+                'name': loc['name'],
+                'type': loc['type'],
+                'distance': round(loc['distance'], 2),
+                'travel_time_minutes': round(loc['travel_time_minutes'], 1),
+                'raw_density_pm2': round(loc['raw_density_pm2'], 4),
+                'effective_density_pm2': round(loc['effective_density_pm2'], 4),
+                'crowd_level': round(loc['effective_density_pm2'], 4),
+                'topsis_score': 1.0,  # Default perfect score 
+                'latitude': loc['latitude'],
+                'longitude': loc['longitude'],
+                'priority_weight': priority_weight,
+                'crowd_reading_age_minutes': round(loc['crowd_reading_age_minutes'], 1),
+                'reason_text': "Only location matching your exact travel constraints."
+            }
+            
+            return jsonify({
+                'top_3_results': [single_result],
+                'total_considered': 1,
+                'total_locations': len(locations_with_metrics),
+                'calculation_breakdown': {
+                    'calculation_explanation': 'Bypassed TOPSIS calculation because only one location met the hard constraints.',
+                    'location_names_in_order': [loc['name']],
+                },
+            }), 200
         
-        # Rebuild decision matrix with filtered locations only
+        # Rebuild decision matrix with filtered locations only (for 2+ locations)
         filtered_decision_matrix = [
             [loc['travel_time_minutes'], loc['effective_density_pm2']]
             for loc in filtered_locations
@@ -581,7 +612,7 @@ def get_hourly_logs():
             h_key = f"{h}:00"
             
             counts = hourly_data.get(h_key, [])
-            
+    
             # Calculate the mean (average) to smooth out YOLOv8 spikes
             avg_value = sum(counts) / len(counts) if counts else 0
             
