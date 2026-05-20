@@ -361,7 +361,6 @@ def get_topsis_recommendations():
         
         # Build decision matrix
         locations_with_metrics = []
-        decision_matrix = []
         
         for loc in all_locations:
             if loc.id == start_location_id:
@@ -413,7 +412,6 @@ def get_topsis_recommendations():
             }
             
             locations_with_metrics.append(location_data)
-            decision_matrix.append([travel_time, effective_density_pm2])
         
         # Apply hard constraints
         filtered_locations = apply_hard_constraints(locations_with_metrics, max_travel_time, place_category)
