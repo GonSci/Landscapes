@@ -143,9 +143,9 @@ def update_existing_schema():
                         conn.execute(text("ALTER TABLE locations ADD COLUMN type VARCHAR(100);"))
                         print("  -> Added 'type' column to existing locations table.")
                     
-                    if 'max_capacity' not in columns:
-                        conn.execute(text("ALTER TABLE locations ADD COLUMN max_capacity INTEGER DEFAULT 100;"))
-                        print("  -> Added 'max_capacity' column to existing locations table.")
+                    if 'fov_area_m2' not in columns:
+                        conn.execute(text("ALTER TABLE locations ADD COLUMN fov_area_m2 FLOAT DEFAULT 100.0;"))
+                        print("  -> Added 'fov_area_m2' column to existing locations table.")
                         
                     if 'environment' not in columns:
                         conn.execute(text("ALTER TABLE locations ADD COLUMN environment VARCHAR(50);"))
@@ -169,17 +169,17 @@ def seed_database():
         from models import Location
         
         initial_locations = [
-            {"name": "Baguio Night Market", "district": "Harrison Rd", "latitude": 16.415, "longitude": 120.596, "video_filename": "night_market.mp4", "is_active": True, "type": "Shopping & Retail", "max_capacity": 150, "environment": "Outdoor"},
-            {"name": "Wright Park", "district": "Leonard Wood", "latitude": 16.415751141767018, "longitude": 120.61722329568951, "video_filename": "wright.mp4", "is_active": False, "type": "Nature & Outdoors", "max_capacity": 150, "environment": "Outdoor"},
-            {"name": "The Mansion Entrance", "district": "Leonard Wood", "latitude": 16.414, "longitude": 120.613, "video_filename": "mansion_entrance.mp4", "is_active": False, "type": "Museums & Arts", "max_capacity": 100, "environment": "Outdoor"},
-            {"name": "Baguio Cathedral", "district": "Session Rd", "latitude": 16.412, "longitude": 120.598, "video_filename": "cathedral.mp4", "is_active": False, "type": "Museums & Arts", "max_capacity": 500, "environment": "Indoor"},
-            {"name": "Melvin Jones Burnham Park", "district": "Burnham Park", "latitude": 16.411, "longitude": 120.594, "video_filename": "burnham.mp4", "is_active": False, "type": "Nature & Outdoors", "max_capacity": 500, "environment": "Outdoor"},
-            {"name": "Mt. Cloud Bookshop", "district": "Asin Rd", "latitude": 16.415853161865124, "longitude": 120.60853416441887, "video_filename": "mt_cloud_bookshop.mp4", "is_active": False, "type": "Shopping & Retail", "max_capacity": 80, "environment": "Indoor"},
-            {"name": "Ili-Likha Arts & Village", "district": "Chuntug Rd", "latitude": 16.4138531557859, "longitude": 120.5974293481474, "video_filename": "ili_likha_arts.mp4", "is_active": False, "type": "Museums & Arts", "max_capacity": 120, "environment": "Indoor"},
-            {"name": "Cafe by the Ruins", "district": "Chuntug Rd", "latitude": 16.412952681792103, "longitude": 120.5916397052069, "video_filename": "cafe_ruins.mp4", "is_active": False, "type": "Dining & Food", "max_capacity": 100, "environment": "Indoor"},
-            {"name": "Gypsy Baguio by Chef Waya", "district": "Upper Gen. Luna", "latitude": 16.413264927701736, "longitude": 120.58258758316477, "video_filename": "gypsy_baguio.mp4", "is_active": False, "type": "Dining & Food", "max_capacity": 90, "environment": "Indoor"},
-            {"name": "Baguio Orchidarium", "district": "Leonard Wood", "latitude": 16.410979486415332, "longitude": 120.5924255500515, "video_filename": "orchidarium.mp4", "is_active": False, "type": "Nature & Outdoors", "max_capacity": 150, "environment": "Outdoor"},
-            {"name": "Heritage Hill", "district": "Bokawkan Rd", "latitude": 16.403957133004596, "longitude": 120.58665803918751, "video_filename": "heritage_hill.mp4", "is_active": False, "type": "Museums & Arts", "max_capacity": 300, "environment": "Indoor"}
+            {"name": "Baguio Night Market", "district": "Harrison Rd", "latitude": 16.415, "longitude": 120.596, "video_filename": "night_market.mp4", "is_active": True, "type": "Shopping & Retail", "fov_area_m2": 198.14, "environment": "Outdoor"},
+            {"name": "Wright Park", "district": "Leonard Wood", "latitude": 16.415751141767018, "longitude": 120.61722329568951, "video_filename": "wright.mp4", "is_active": False, "type": "Nature & Outdoors", "fov_area_m2": 539.63, "environment": "Outdoor"},
+            {"name": "The Mansion Entrance", "district": "Leonard Wood", "latitude": 16.414, "longitude": 120.613, "video_filename": "mansion_entrance.mp4", "is_active": False, "type": "Museums & Arts", "fov_area_m2": 131.06, "environment": "Outdoor"},
+            {"name": "Baguio Cathedral", "district": "Session Rd", "latitude": 16.412, "longitude": 120.598, "video_filename": "cathedral.mp4", "is_active": False, "type": "Museums & Arts", "fov_area_m2": 457.50, "environment": "Indoor"},
+            {"name": "Melvin Jones Burnham Park", "district": "Burnham Park", "latitude": 16.411, "longitude": 120.594, "video_filename": "burnham.mp4", "is_active": False, "type": "Nature & Outdoors", "fov_area_m2": 1481.79, "environment": "Outdoor"},
+            {"name": "Mt. Cloud Bookshop", "district": "Asin Rd", "latitude": 16.415853161865124, "longitude": 120.60853416441887, "video_filename": "mt_cloud_bookshop.mp4", "is_active": False, "type": "Shopping & Retail", "fov_area_m2": 100.0, "environment": "Indoor"},
+            {"name": "Ili-Likha Arts & Village", "district": "Chuntug Rd", "latitude": 16.4138531557859, "longitude": 120.5974293481474, "video_filename": "ili_likha_arts.mp4", "is_active": False, "type": "Museums & Arts", "fov_area_m2": 100.0, "environment": "Indoor"},
+            {"name": "Cafe by the Ruins", "district": "Chuntug Rd", "latitude": 16.412952681792103, "longitude": 120.5916397052069, "video_filename": "cafe_ruins.mp4", "is_active": False, "type": "Dining & Food", "fov_area_m2": 100.0, "environment": "Indoor"},
+            {"name": "Gypsy Baguio by Chef Waya", "district": "Upper Gen. Luna", "latitude": 16.413264927701736, "longitude": 120.58258758316477, "video_filename": "gypsy_baguio.mp4", "is_active": False, "type": "Dining & Food", "fov_area_m2": 100.0, "environment": "Indoor"},
+            {"name": "Baguio Orchidarium", "district": "Leonard Wood", "latitude": 16.410979486415332, "longitude": 120.5924255500515, "video_filename": "orchidarium.mp4", "is_active": False, "type": "Nature & Outdoors", "fov_area_m2": 100.0, "environment": "Outdoor"},
+            {"name": "Heritage Hill", "district": "Bokawkan Rd", "latitude": 16.403957133004596, "longitude": 120.58665803918751, "video_filename": "heritage_hill.mp4", "is_active": False, "type": "Museums & Arts", "fov_area_m2": 100.0, "environment": "Indoor"}
         ]
         
         with app.app_context():

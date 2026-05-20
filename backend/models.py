@@ -29,7 +29,7 @@ class Location(db.Model):
     
     # TOPSIS-required columns for crowd-aware redirection
     type           = db.Column(db.String(100), nullable=True)  # e.g., "Dining", "Nature", "Culture"
-    max_capacity   = db.Column(db.Integer, default=100)        # For crowd density calculation
+    fov_area_m2    = db.Column(db.Float, nullable=True)        # For crowd density calculation
     environment    = db.Column(db.String(50), nullable=True)   # e.g., "Indoor", "Outdoor"
     
     # Relationship back to logs
@@ -46,7 +46,7 @@ class Location(db.Model):
             'is_active': self.is_active,
             'description': self.description,
             'type': self.type,
-            'max_capacity': self.max_capacity,
+            'fov_area_m2': self.fov_area_m2,
             'environment': self.environment
         }
 
