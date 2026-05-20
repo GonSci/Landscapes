@@ -18,20 +18,20 @@ const STATIC_LOCATION_ASSETS = {
       high: 15
     }
   },
-  2: { // The Mansion
-    name: "The Mansion",
-    image: "/assets/featured_images/the-mansion.jpg",
-    description: "Official summer residence of the President of the Philippines, known for its elegant gate and manicured lawns.",
-    business: "Philippine Gov",
-    bestTime: "7:00 AM - 5:00 PM",
-    capacity: 50,
-    distance: 4.2,
-    facilities: ["Photo Spots", "Gardens", "Street Parking"],
+  2: { // Wright Park
+    name: "Wright Park",
+    image: "/assets/featured_images/wright-park.jpg",
+    description: "Beautiful nature park with scenic walking paths, towering pine trees, and perfect for outdoor recreation and peaceful sightseeing.",
+    business: "Baguio Tourism",
+    bestTime: "8:00 AM - 6:00 PM",
+    capacity: 150,
+    distance: 3.8,
+    facilities: ["Walking Paths", "Photo Spots", "Nature Trails", "Parking"],
     thresholds: {
-      sparse: [0, 6],
-      low: [7, 22],
-      moderate: [23, 37],
-      high: 38
+      sparse: [0, 15],
+      low: [16, 50],
+      moderate: [51, 100],
+      high: 101
     }
   },
   3: { // The Mansion Entrance

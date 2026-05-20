@@ -170,7 +170,7 @@ def seed_database():
         
         initial_locations = [
             {"name": "Baguio Night Market", "district": "Harrison Rd", "latitude": 16.415, "longitude": 120.596, "video_filename": "night_market.mp4", "is_active": True, "type": "Shopping & Retail", "max_capacity": 150, "environment": "Outdoor"},
-            {"name": "The Mansion", "district": "Leonard Wood", "latitude": 16.414, "longitude": 120.612, "video_filename": "mansion.mp4", "is_active": False, "type": "Museums & Arts", "max_capacity": 200, "environment": "Indoor"},
+            {"name": "Wright Park", "district": "Leonard Wood", "latitude": 16.415751141767018, "longitude": 120.61722329568951, "video_filename": "wright.mp4", "is_active": False, "type": "Nature & Outdoors", "max_capacity": 150, "environment": "Outdoor"},
             {"name": "The Mansion Entrance", "district": "Leonard Wood", "latitude": 16.414, "longitude": 120.613, "video_filename": "mansion_entrance.mp4", "is_active": False, "type": "Museums & Arts", "max_capacity": 100, "environment": "Outdoor"},
             {"name": "Baguio Cathedral", "district": "Session Rd", "latitude": 16.412, "longitude": 120.598, "video_filename": "cathedral.mp4", "is_active": False, "type": "Museums & Arts", "max_capacity": 500, "environment": "Indoor"},
             {"name": "Melvin Jones Burnham Park", "district": "Burnham Park", "latitude": 16.411, "longitude": 120.594, "video_filename": "burnham.mp4", "is_active": False, "type": "Nature & Outdoors", "max_capacity": 500, "environment": "Outdoor"},

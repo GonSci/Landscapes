@@ -83,7 +83,7 @@ python3 vision_worker.py
 [VISION] Starting vision processing loop for: /path/to/demo_video.mp4
 [VISION] Video info: 1500 frames @ 30 FPS
 [VISION] Logged 12 people for Baguio Night Market
-[VISION] Logged 8 people for The Mansion
+[VISION] Logged 10 people for Wright Park
 ...
 ```
 

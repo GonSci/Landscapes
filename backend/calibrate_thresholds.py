@@ -78,9 +78,9 @@ def main():
         },
         {
             "id": 2,
-            "name": "The Mansion",
-            "filename": "mansion.mp4",
-            "desc": "Ground-level view, wide field with fountain, pine trees in background, tiny background figures.",
+            "name": "Wright Park",
+            "filename": "wright.mp4",
+            "desc": "Outdoor park environment with scattered visitors, natural lighting, trees, and variable crowd patterns.",
             "recommended": 0.30,
             "current": 0.40
         },

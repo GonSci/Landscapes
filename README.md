@@ -94,7 +94,7 @@ The backend uses PostgreSQL for user accounts, location data, and surveillance l
    ```
 
 3. **Initialize Database Tables & Seed Locations**:
-   Starting the API server automatically creates tables, but you must run the migration to seed the `Location` data (Night Market, The Mansion, etc.). **If you skip this, the map and explore pages will be empty.**
+   Starting the API server automatically creates tables, but you must run the migration to seed the `Location` data (Baguio Night Market, Wright Park, The Mansion Entrance, etc.). **If you skip this, the map and explore pages will be empty.**
    ```bash
    python3 run_migration.py
    ```
