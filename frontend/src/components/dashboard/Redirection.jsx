@@ -872,7 +872,9 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
                 /* RESULTS VIEW */
                 <div className="flex flex-col gap-4 h-full">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-lg font-black text-white tracking-tight">Top Recommendations</h4>
+                    <h4 className="text-lg font-black text-white tracking-tight">
+                      {topsisResults && topsisResults.length === 1 ? "Exact Match Found" : "Top Recommendations"}
+                    </h4>
                     <button
                       onClick={handleEditPreferences}
                       className="px-3 py-1.5 text-xs font-black uppercase tracking-widest bg-slate-700/50 border border-white/20 hover:border-indigo-500/50 text-slate-300 hover:text-indigo-200 rounded-lg transition-all duration-300"
@@ -883,7 +885,8 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
                   
                   <div className="flex-1 overflow-y-auto space-y-3 pb-4 pt-2 -mt-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     {topsisResults && topsisResults.length > 0 ? (
-                      topsisResults.map((result, index) => {
+                      <>
+                        {topsisResults.map((result, index) => {
                         const location = mapLocations.find(loc => loc.id === result.location_id);
                         const isTopResult = index === 0;
                         return (
@@ -985,12 +988,30 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
                             </div>
                           </div>
                         );
-                      })
-                    ) : (
-                      <div className="flex items-center justify-center h-32 text-slate-400">
-                        <p className="text-sm">No recommendations found</p>
-                      </div>
-                    )}
+                      })}
+                      {topsisResults.length === 1 && (
+                        <button
+                          onClick={() => {}}
+                          className="w-full mt-2 px-4 py-3 bg-slate-800/80 border border-slate-700/80 hover:border-indigo-500/50 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all duration-300 text-center"
+                        >
+                          Adjust preferences to see more alternatives
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center px-4 py-8">
+                      <h5 className="text-lg font-black text-white mb-2">No Matches Found</h5>
+                      <p className="text-xs text-slate-400 mb-6 max-w-[200px] mx-auto leading-relaxed">
+                        Your current preferences might be too strict for the current crowd conditions.
+                      </p>
+                      <button
+                        onClick={() => {}}
+                        className="px-6 py-3 bg-slate-800/80 border border-slate-700/80 hover:border-indigo-500/50 hover:bg-slate-700 text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-all duration-300"
+                      >
+                        Reset Filters
+                      </button>
+                    </div>
+                  )}
                   </div>
                 </div>
               )}
