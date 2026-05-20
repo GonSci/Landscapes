@@ -580,10 +580,8 @@ def run_yolo_pipeline(frame, location_id, tracker, last_tracked_objects, is_acti
             output_frame = apply_gaussian_blur(output_frame, detections_pixel)
         output_frame = draw_detections_on_frame(output_frame, detections_pixel)
 
-    fps = 1.0 / (time.time() - start_time)
-    
     # Return current_tracked_objects so the camera thread can hold onto them
-    return output_frame, detections_pct, detections_pixel, fps, current_tracked_objects
+    return output_frame, detections_pct, detections_pixel, current_tracked_objects
 
 # ── Database Logging ───────────────────────────────────────────────────────────
 def log_detection_to_database(app_context, location_id, people_count, confidence_avg):
@@ -639,18 +637,22 @@ def camera_thread(app_context, location_id, video_name, location_name):
     # 1. INITIALIZE HERE: Tighter tracker parameters and track_ages dictionary
     tracker = sv.ByteTrack(track_activation_threshold=0.35, lost_track_buffer=5, frame_rate=30)
     last_tracked_objects = []
-    track_ages = {} # <-- Keeps track of how long an ID has existed
+    track_ages = {}
+    
+    # NEW: Variables to stabilize FPS reporting and control background processing
+    display_fps = 30.0 
+    last_pipeline_run = 0.0
 
     while True:
         try:
-            # Issue 5 Fix: timestamp the very start of the loop
             loop_start = time.time()
 
-            # Determine priority and framerate based on active location
+            # Determine priority
             with active_location_lock:
                 is_active = (location_id == active_location_id)
                 
-            target_fps = 30.0 if is_active else 0.2 # 30 FPS if active, 1 frame per 5 sec if background
+            # THE FIX: Always target 30 FPS to drain the OpenCV buffer continuously
+            target_fps = 30.0 
             
             # Wall-clock sync to skip frames and keep video playing in real-time speed
             elapsed = time.time() - playback_start_time
@@ -659,7 +661,7 @@ def camera_thread(app_context, location_id, video_name, location_name):
 
             frames_to_skip = target_frame - current_frame
             if frames_to_skip > 0:
-                skip_count = min(frames_to_skip, int(fps_video)) # Skip up to 1s of frames
+                skip_count = min(frames_to_skip, int(fps_video))
                 for _ in range(skip_count):
                     cap.grab()
 
@@ -670,65 +672,72 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 playback_start_time = time.time()
                 last_log_time = time.time() - 61
 
-                # 2. RESET HERE: Clear everything when video loops (Updated to match tight parameters)
                 tracker = sv.ByteTrack(track_activation_threshold=0.35, lost_track_buffer=5, frame_rate=30)
                 last_tracked_objects = []
                 track_ages = {}
                 continue
 
-            # 3. PIPELINE CALL: annotate=False so we can manually filter before drawing
-            output_frame, detections_pct, detections_pixel, fps, last_tracked_objects = run_yolo_pipeline(
-                frame, location_id, tracker, last_tracked_objects, is_active=is_active, annotate=False
-            )
+            # THE FIX: Decide whether to run the heavy AI math.
+            now = time.time()
+            should_process_ai = is_active or (now - last_pipeline_run >= 5.0)
 
-            # --- 4. TEMPORAL FILTERING LOGIC ---
-            confirmed_detections = []
-            current_ids = set()
-            
-            for det in detections_pixel:
-                tid = det['id']
-                current_ids.add(tid)
+            # Default to the raw frame and the last known count for background streams
+            output_frame = frame.copy()
+            with STREAM_LOCK:
+                current_count = THREAD_COUNTS.get(location_id, 0)
+
+            if should_process_ai:
+                # 3. PIPELINE CALL: (Removed 'fps' from the return unpacking)
+                pipe_frame, detections_pct, detections_pixel, last_tracked_objects = run_yolo_pipeline(
+                    frame, location_id, tracker, last_tracked_objects, is_active=is_active, annotate=False
+                )
+
+                # --- 4. TEMPORAL FILTERING LOGIC ---
+                confirmed_detections = []
+                current_ids = set()
                 
-                # Increment age, default to 1 if new
-                track_ages[tid] = track_ages.get(tid, 0) + 1
+                for det in detections_pixel:
+                    tid = det['id']
+                    current_ids.add(tid)
+                    
+                    track_ages[tid] = track_ages.get(tid, 0) + 1
+                    
+                    if track_ages[tid] >= 3:
+                        confirmed_detections.append(det)
+
+                track_ages = {tid: age for tid, age in track_ages.items() if tid in current_ids}
+                current_count = len(confirmed_detections)
+
+                # Only apply blurs and overlays to the frames that actually ran AI
+                output_frame = pipe_frame
+                if DETECTION_CONFIG['enable_blur'] and confirmed_detections:
+                    output_frame = apply_gaussian_blur(output_frame, confirmed_detections)
+                if confirmed_detections:
+                    output_frame = draw_detections_on_frame(output_frame, confirmed_detections)
+                # -----------------------------------
                 
-                # Only trust the detection if it has survived for at least 3 frames
-                if track_ages[tid] >= 3:
-                    confirmed_detections.append(det)
+                last_pipeline_run = now
 
-            # Cleanup old IDs from memory so the dictionary doesn't grow infinitely
-            track_ages = {tid: age for tid, age in track_ages.items() if tid in current_ids}
-
-            # Update the count based ONLY on confirmed people
-            current_count = len(confirmed_detections)
-
-            # Apply Blur and Draw boxes manually using ONLY the confirmed detections
-            if DETECTION_CONFIG['enable_blur'] and confirmed_detections:
-                output_frame = apply_gaussian_blur(output_frame, confirmed_detections)
-            if confirmed_detections:
-                output_frame = draw_detections_on_frame(output_frame, confirmed_detections)
-            # -----------------------------------
-            
-            # Draw CCTV overlay
-            output_frame = draw_cctv_overlay(output_frame, current_count, fps)
+            # --- ALWAYS RUN: Keeps the video feed perfectly live and smooth ---
+            # Draw CCTV overlay using our smoothed display_fps
+            output_frame = draw_cctv_overlay(output_frame, current_count, display_fps)
 
             # Update Stream Globals
             ret, buffer = cv2.imencode('.jpg', output_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
             if ret:
                 with STREAM_LOCK:
                     THREAD_FRAMES[location_id] = buffer.tobytes()
-                    THREAD_COUNTS[location_id] = current_count
-                    if current_count > THREAD_MAX_COUNTS[location_id]:
-                        THREAD_MAX_COUNTS[location_id] = current_count
+                    # Only update the global counting metrics if we actually ran the AI
+                    if should_process_ai:
+                        THREAD_COUNTS[location_id] = current_count
+                        if current_count > THREAD_MAX_COUNTS[location_id]:
+                            THREAD_MAX_COUNTS[location_id] = current_count
 
-            # Database Logging (Every 60s or on Spike)
-            now = time.time()
-            time_since_last_log = now - last_log_time
-
+            # Database Logging (Runs every loop to ensure time accuracy)
+            time_since_last_log = time.time() - last_log_time
             with STREAM_LOCK:
-                peak_count = THREAD_MAX_COUNTS[location_id]
+                peak_count = THREAD_MAX_COUNTS.get(location_id, 0)
 
-            # Dynamic Spike Detection thresholds per location
             location_high_thresholds = {1: 15, 2: 38, 3: 14, 4: 15, 5: 66}
             high_threshold = location_high_thresholds.get(location_id, 10)
             is_high_density = peak_count >= high_threshold
@@ -737,15 +746,25 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 with STREAM_LOCK:
                     THREAD_MAX_COUNTS[location_id] = 0
                 
-                conf_avg = sum(d['confidence'] for d in detections_pct) / len(detections_pct) if detections_pct else None
+                # Use empty list if no detections yet to avoid breaking DB log
+                conf_avg = 1.0 # Background tasks log default confidence if no fresh data
+                if 'detections_pct' in locals() and detections_pct:
+                    conf_avg = sum(d['confidence'] for d in detections_pct) / len(detections_pct)
+                    
                 if log_detection_to_database(app_context, location_id, peak_count, conf_avg):
-                    last_log_time = now
+                    last_log_time = time.time()
 
-            # Issue 5 Fix: sleep only the remainder of the target frame budget.
+            # THE FIX: Strict Sleep Lock to 30 FPS
             elapsed_this_loop = time.time() - loop_start
             remainder = (1.0 / target_fps) - elapsed_this_loop
             if remainder > 0:
                 time.sleep(remainder)
+
+            # THE FIX: Calculate actual Wall-Clock FPS after the sleep
+            final_loop_time = time.time() - loop_start
+            true_fps = 1.0 / final_loop_time if final_loop_time > 0 else 30.0
+            # Smooth the FPS slightly so the UI number doesn't flicker wildly
+            display_fps = (display_fps * 0.9) + (true_fps * 0.1)
             
         except Exception as e:
             print(f"[VISION] Error in thread for {location_name}: {e}")
