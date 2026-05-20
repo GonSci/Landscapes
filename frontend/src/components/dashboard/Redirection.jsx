@@ -920,10 +920,25 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
                             </div>
 
                             {result.reason_text && (
-                              <p className="text-[10px] text-slate-500 italic mb-1 mt-0.5">
-                                <span className="mr-1">💡</span>
-                                {result.reason_text}
-                              </p>
+                              <div className="flex items-start gap-1.5 mb-1 mt-1.5">
+                                <svg 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  viewBox="0 0 24 24" 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  strokeWidth="2.5" 
+                                  strokeLinecap="round" 
+                                  strokeLinejoin="round" 
+                                  className={`w-3.5 h-3.5 mt-[1px] shrink-0 ${isTopResult ? 'text-amber-400/90' : 'text-slate-400'}`}
+                                >
+                                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                                  <path d="M5 3v4"/>
+                                  <path d="M7 5H3"/>
+                                </svg>
+                                <p className="text-[10px] text-slate-400 italic leading-snug mb-0">
+                                  {result.reason_text}
+                                </p>
+                              </div>
                             )}
 
                             <div className="grid grid-cols-2 gap-2 text-[10px]">

@@ -510,14 +510,25 @@ def get_topsis_recommendations():
         else:
             max_topsis_id = min_distance_id = min_crowd_id = None
             
-        # Add dynamic reason_text
+        # Add dynamic, compound reason_text
         for idx, result in enumerate(ranked_results):
             loc_id = result['location_id']
-            if loc_id == max_topsis_id:
-                result['reason_text'] = "Optimal balance of low crowds and proximity."
-            elif loc_id == min_distance_id:
+            
+            is_top = (loc_id == max_topsis_id)
+            is_closest = (loc_id == min_distance_id)
+            is_emptiest = (loc_id == min_crowd_id)
+            
+            if is_top and is_closest and is_emptiest:
+                result['reason_text'] = "The perfect match: Closest to you and currently the least crowded."
+            elif is_top and is_closest:
+                result['reason_text'] = "Top recommendation: Offers the absolute shortest travel time."
+            elif is_top and is_emptiest:
+                result['reason_text'] = "Top recommendation: Maximum comfort with the lowest crowd density."
+            elif is_top:
+                result['reason_text'] = "Optimal balance of manageable crowds and reasonable proximity."
+            elif is_closest:
                 result['reason_text'] = "Shortest travel time from your current position."
-            elif loc_id == min_crowd_id:
+            elif is_emptiest:
                 result['reason_text'] = "Recommended for maximum comfort and space (Quiet Zone)."
             else:
                 result['reason_text'] = "Solid alternative matching your preferences."
