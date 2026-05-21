@@ -6,6 +6,8 @@ and YOLO model sharing to prevent lag.
 """
 
 import os
+import sys
+import platform
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -63,6 +65,7 @@ INFERENCE_OUTPUT_QUEUES = {}                         # location_id -> Queue(maxs
 DEVICE_INFO = {
     'device': 'cpu',        # 'cuda:0' | 'cpu'
     'use_tensorrt': False,  # True only when GTX 1660 Super (or any CUDA GPU with .engine)
+    'use_coreml': False,    # True only when using an Apple Silicon Chip (M1 - M5)
     'gpu_name': None,       # e.g. 'NVIDIA GeForce GTX 1660 SUPER'
     'backend': 'pytorch',   # 'tensorrt' | 'pytorch'
 }
@@ -81,53 +84,56 @@ active_location_id = 1
 active_location_lock = threading.Lock()
 
 
-# ── Device Detection ───────────────────────────────────────────────────────────
 def detect_device():
     """
-    Probe the system for a CUDA-capable GPU.
-
+    Probe the system for hardware acceleration.
     Priority order:
-      1. CUDA GPU present + best.engine exists  →  TensorRT on cuda:0
-      2. CUDA GPU present, no .engine file      →  PyTorch (best.pt) on cuda:0
-      3. No CUDA GPU                            →  PyTorch (best.pt) on CPU
-
-    Returns a filled-in copy of DEVICE_INFO.
+      1. CUDA GPU + best.engine exists  → TensorRT on cuda:0
+      2. Apple Silicon + best.mlpackage → CoreML on ANE/GPU
+      3. CUDA GPU (no .engine)          → PyTorch on cuda:0
+      4. Apple Silicon (no mlpackage)   → PyTorch on MPS (Metal)
+      5. No acceleration                → PyTorch on CPU
     """
     info = {
         'device': 'cpu',
         'use_tensorrt': False,
+        'use_coreml': False,
         'gpu_name': None,
         'backend': 'pytorch',
     }
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
 
+    # -- Check for Nvidia CUDA --
     try:
         import torch
-        if not torch.cuda.is_available():
-            print("[VISION] No CUDA GPU detected — running on CPU with best.pt")
+        if torch.cuda.is_available():
+            info['device'] = 'cuda:0'
+            info['gpu_name'] = torch.cuda.get_device_name(0)
+            print(f"[VISION] Nvidia GPU detected: {info['gpu_name']}")
+
+            if os.path.exists(os.path.join(backend_dir, 'best.engine')):
+                info['use_tensorrt'] = True
+                info['backend'] = 'tensorrt'
+                print("[VISION] TensorRT engine found — using TensorRT backend")
             return info
-
-        gpu_name = torch.cuda.get_device_name(0)
-        info['device'] = 'cuda:0'
-        info['gpu_name'] = gpu_name
-        print(f"[VISION] GPU detected: {gpu_name}")
-
-        engine_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'best.engine')
-        engine_exists = os.path.exists(engine_path)
-
-        if engine_exists:
-            info['use_tensorrt'] = True
-            info['backend'] = 'tensorrt'
-            print(f"[VISION] TensorRT engine found at {engine_path} — using TensorRT backend")
-        else:
-            print(
-                f"[VISION] No best.engine found at {engine_path}. "
-                "Running PyTorch on GPU (best.pt). "
-                "Export with: model.export(format='engine', half=True) to enable TensorRT."
-            )
-
     except ImportError:
-        print("[VISION] PyTorch not importable — falling back to CPU with best.pt")
+        pass
 
+    # -- Check for Apple Silicon (M1-M5) --
+    if sys.platform == 'darwin' and platform.machine() == 'arm64':
+        info['gpu_name'] = 'Apple M-Series (ANE/GPU)'
+        info['device'] = 'mps' # Default to Metal Performance Shaders for PyTorch
+        print("[VISION] Apple Silicon detected.")
+
+        if os.path.exists(os.path.join(backend_dir, 'best.mlpackage')):
+            info['use_coreml'] = True
+            info['backend'] = 'coreml'
+            print("[VISION] CoreML package found — using CoreML backend")
+        else:
+            print("[VISION] No best.mlpackage found. Will fallback to PyTorch MPS (Metal).")
+        return info
+
+    print("[VISION] No hardware acceleration detected — running on CPU")
     return info
 
 
@@ -258,24 +264,96 @@ class TensorRTDetectionModel(DetectionModel):
         # SAHI expects a list-of-lists (one inner list per image in the batch)
         self._object_prediction_list_per_image = [object_prediction_list]
 
+# ── CoreML SAHI Wrapper ────────────────────────────────────────────────────────
+class CoreMLDetectionModel(DetectionModel):
+    """
+    Subclasses SAHI's DetectionModel for Apple Silicon (CoreML).
+    Bypasses SAHI's default initialization which crashes on exported packages.
+    """
+    def __init__(self, mlpackage_path: str, conf: float):
+        super().__init__(
+            model_path=mlpackage_path,
+            confidence_threshold=conf,
+            device='cpu', # ultralytics + coremltools routes this natively to ANE
+            category_mapping={0: 'person'},
+            category_remapping=None,
+            load_at_init=False,
+            image_size=None,
+        )
+        self.load_model()
 
-# ── Model Loader ───────────────────────────────────────────────────────────────
+    def load_model(self):
+        from ultralytics import YOLO as UltralyticsYOLO
+        # Explicitly define task='detect' to prevent Ultralytics from guessing
+        self.model = UltralyticsYOLO(self.model_path, task='detect')
+        self.set_model(self.model)
+        print(f"[VISION] CoreML package loaded from {self.model_path}")
+
+    def set_model(self, model):
+        self.model = model
+        self.category_names = {0: 'person'}
+
+    def perform_inference(self, image: np.ndarray):
+        self._original_predictions = self.model.predict(
+            source=image,
+            conf=self.confidence_threshold,
+            classes=[0],
+            verbose=False,
+            imgsz=800,  # <--- Forces Ultralytics to feed 800px inputs to the M5
+        )
+
+    def convert_original_predictions(self, shift_amount=None, full_shape=None):
+        from sahi.prediction import ObjectPrediction
+        if shift_amount is None: shift_amount = [0, 0]
+        
+        object_prediction_list = []
+        results = self._original_predictions
+
+        if results and results[0].boxes is not None:
+            boxes = results[0].boxes
+            img_h, img_w = results[0].orig_shape
+
+            if full_shape is None:
+                full_shape = [img_h, img_w]
+
+            for i in range(len(boxes)):
+                cls_id = int(boxes.cls[i].item())
+                conf   = float(boxes.conf[i].item())
+                x1, y1, x2, y2 = boxes.xyxy[i].tolist()
+
+                try:
+                    pred = ObjectPrediction(
+                        bbox=[x1, y1, x2, y2],
+                        score=conf,
+                        category_id=cls_id,
+                        category_name='person',
+                        shift_amount=shift_amount,
+                        full_shape=full_shape,
+                    )
+                except TypeError:
+                    pred = ObjectPrediction(
+                        bbox=[x1, y1, x2, y2],
+                        bool_mask=None,
+                        score=conf,
+                        category_id=cls_id,
+                        category_name='person',
+                        shift_amount=shift_amount,
+                        full_shape=full_shape,
+                    )
+                object_prediction_list.append(pred)
+
+        self._object_prediction_list_per_image = [object_prediction_list]
+
 def load_model(device_info: dict):
     """
     Load the appropriate model based on detected device.
-
-    Returns one of:
-      - TensorRTDetectionModel     (GTX 1660 Super or any GPU + .engine present)
-      - AutoDetectionModel (SAHI)  (GPU without .engine, or CPU fallback)
-
-    Also logs a clear summary of what is being used and why.
     """
     conf  = DETECTION_CONFIG['conf_threshold']
     device = device_info['device']
     backend_dir = os.path.dirname(os.path.abspath(__file__))
 
     if device_info['use_tensorrt']:
-        # ── Path A: TensorRT ──────────────────────────────────────────────────
+        # ── Path A: TensorRT (Production on GTX 1660 Super) ───────────────────
         engine_path = os.path.join(backend_dir, 'best.engine')
         print("[VISION] ══════════════════════════════════════════")
         print(f"[VISION]  Backend  : TensorRT FP16")
@@ -284,21 +362,27 @@ def load_model(device_info: dict):
         print("[VISION] ══════════════════════════════════════════")
         return TensorRTDetectionModel(engine_path, conf=conf, device=device)
 
-    else:
-        # ── Path B: PyTorch via SAHI AutoDetectionModel ───────────────────────
-        pt_path = os.path.join(backend_dir, 'best.pt')
-        sahi_device = '0' if device == 'cuda:0' else 'cpu'
+    elif device_info['use_coreml']:
+        # ── Path B: CoreML (Local Development on M-Series) ────────────────────
+        mlpackage_path = os.path.join(backend_dir, 'best.mlpackage')
+        print("[VISION] ══════════════════════════════════════════")
+        print(f"[VISION]  Backend  : CoreML")
+        print(f"[VISION]  Model    : {mlpackage_path}")
+        print(f"[VISION]  Device   : {device_info['gpu_name']}")
+        print("[VISION] ══════════════════════════════════════════")
+        
+        # Use our custom wrapper to bypass SAHI's .pt restrictions
+        return CoreMLDetectionModel(mlpackage_path, conf=conf)
 
-        if device == 'cuda:0':
-            reason = "GPU detected but no best.engine — using PyTorch on GPU"
-        else:
-            reason = "No GPU detected — using PyTorch on CPU"
+    else:
+        # ── Path C: PyTorch via SAHI AutoDetectionModel (Fallback) ────────────
+        pt_path = os.path.join(backend_dir, 'best.pt')
+        sahi_device = '0' if device == 'cuda:0' else device # handles 'mps' or 'cpu'
 
         print("[VISION] ══════════════════════════════════════════")
         print(f"[VISION]  Backend  : PyTorch")
         print(f"[VISION]  Model    : {pt_path}")
         print(f"[VISION]  Device   : {device}")
-        print(f"[VISION]  Reason   : {reason}")
         print("[VISION] ══════════════════════════════════════════")
 
         return AutoDetectionModel.from_pretrained(
@@ -307,7 +391,6 @@ def load_model(device_info: dict):
             confidence_threshold=conf,
             device=sahi_device,
         )
-
 
 # ── SAHI Inference Dispatcher ──────────────────────────────────────────────────
 def run_sahi_inference(model, frame_proc: np.ndarray, device_info: dict, is_active: bool = True):
