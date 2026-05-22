@@ -20,7 +20,8 @@ Landscapes/
 │   ├── vision_worker.py       # YOLOv8 inference & Database logger
 │   ├── models.py              # PostgreSQL schema
 │   ├── requirements.txt
-│   └── run_migration.py       # Seeds location data
+│   ├── reset_db.py            # Script to wipe database
+│   └── create_db.py           # Script to initialize and seed database
 ```
 
 ## Prerequisites
@@ -61,6 +62,7 @@ The backend uses PostgreSQL for user accounts, location data, and surveillance l
    - **Windows**: Ensure the PostgreSQL service is running in `services.msc`.
 3. **Initialize Database and User**:
    Open your terminal (or `psql` shell) and run:
+
    ```sql
    -- Create the database
    CREATE DATABASE landscapes;
@@ -85,6 +87,7 @@ The backend uses PostgreSQL for user accounts, location data, and surveillance l
      ```
 
 2. **Install Dependencies**:
+
    ```bash
    cd backend
    python3 -m venv venv
@@ -94,9 +97,11 @@ The backend uses PostgreSQL for user accounts, location data, and surveillance l
    ```
 
 3. **Initialize Database Tables & Seed Locations**:
-   Starting the API server automatically creates tables, but you must run the migration to seed the `Location` data (Baguio Night Market, Wright Park, The Mansion, etc.). **If you skip this, the map and explore pages will be empty.**
+   You must initialize the tables and seed the `Location` data (Baguio Night Market, Wright Park, The Mansion, etc.). **If you skip this, the map and explore pages will be empty.**
+
    ```bash
-   python3 run_migration.py
+   python3 reset_db.py   # (Optional) Only if you need to wipe existing tables
+   python3 create_db.py  # Creates tables and seeds initial location data
    ```
 
 4. **Verify AI Model**:
@@ -107,6 +112,7 @@ The backend uses PostgreSQL for user accounts, location data, and surveillance l
 The new architecture splits the backend into two independent services communicating via PostgreSQL. You need to run them in separate terminals.
 
 ### Terminal 1 - API Server
+
 Handles all REST endpoints, user authentication, and TOPSIS crowd-aware redirection algorithms.
 
 ```bash
@@ -114,9 +120,11 @@ cd backend
 source venv/bin/activate
 python3 api_server.py
 ```
-*Runs on `http://localhost:5001`*
+
+_Runs on `http://localhost:5001`_
 
 ### Terminal 2 - Vision Worker
+
 Continuously runs the YOLOv8 model on the video feed and logs crowd counts to the database asynchronously.
 
 ```bash
@@ -124,17 +132,33 @@ cd backend
 source venv/bin/activate
 python3 vision_worker.py
 ```
-*No HTTP interface. Press `Ctrl+C` to stop.*
+
+_No HTTP interface. Press `Ctrl+C` to stop._
 
 ## Step 5: Setup and Run Frontend
 
-Run the React frontend in Terminal 3.
+1. **Environment Configuration (Optional for Local Development)**:
+   - If you are just testing on your own computer, you do **not** need a `.env` file. The frontend will automatically fall back to using `localhost`.
+   - **If you want to test on other devices (like your mobile phone) on the same Wi-Fi network:**
+     1. Copy `frontend/.env.example` to `frontend/.env`.
+     2. Open the file and replace `localhost` with your computer's actual local IP address (e.g., `192.168.1.8`).
+        ```env
+        VITE_API_BASE_URL=http://192.168.1.x:5001
+        VITE_VISION_BASE_URL=http://192.168.x.8:5002
+        ```
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+2. **Run the React frontend in Terminal 3**:
+
+   ```bash
+   cd frontend
+   npm install
+
+   # For standard local testing:
+   npm run dev
+
+   # Or, if testing on mobile devices on your network:
+   npm run dev -- --host
+   ```
 
 Expected frontend URL: `http://localhost:5173` (or `3000` depending on Vite config).
 
@@ -151,16 +175,27 @@ For the Vision Worker and Live View to function, ensure your sample video is cor
 3. **API Server** queries the latest `SurveillanceLog` data, applies the 50/50 TOPSIS algorithm (Crowd vs. Distance), and returns the optimal locations.
 4. **React Frontend** dynamically visualizes the interactive map and the UI dashboard cards.
 
+## Database Management
+
+To easily manage or reset your database tables, you can use the provided scripts in the `backend/` directory:
+
+- **Reset Database**: Run `python3 reset_db.py` to drop all tables and wipe the database.
+- **Create & Seed Database**: Run `python3 create_db.py` to create the tables and populate them with the initial location data.
+
 ## Common Fixes
 
 ### 1) "python: command not found" (macOS)
+
 Use `python3` instead of `python`.
 
 ### 2) "ModuleNotFoundError: No module named flask"
+
 You are likely not in the backend virtual environment. Ensure you run `source venv/bin/activate` before running the scripts.
 
 ### 3) "No locations available in database"
-You forgot to seed the database. Ensure you run `python3 run_migration.py`.
+
+You forgot to seed the database. Ensure you run `python3 create_db.py`.
 
 ### 4) "Connection refused" between services
+
 Ensure PostgreSQL is actually running and the `DATABASE_URL` in your `.env` matches your local credentials.
