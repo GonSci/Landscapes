@@ -25,7 +25,7 @@ load_dotenv()
 
 # ── Flask Application Setup ────────────────────────────────────────────────────
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     'DATABASE_URL',
@@ -803,4 +803,4 @@ if __name__ == '__main__':
     print("[API] Starting Travel AI REST API Server...")
     print("[API] Server running on http://localhost:5001")
     # Disable debug mode and reloader to prevent high memory/CPU usage
-    app.run(debug=False, port=5001, use_reloader=False)
+    app.run(host='0.0.0.0', debug=False, port=5001, use_reloader=False)

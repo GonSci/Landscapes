@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BarChart from './BarChart';
 import DonutChart from './DonutChart';
 
-const API_URL = 'http://localhost:5001/api';
-const VISION_URL = 'http://localhost:5002';
+const API_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001'}/api`;
+const VISION_URL = import.meta.env.VITE_VISION_BASE_URL || 'http://localhost:5002';
 
 const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection }) => {
   const [detectedCount, setDetectedCount] = useState(0);
