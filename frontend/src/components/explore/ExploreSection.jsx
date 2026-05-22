@@ -18,13 +18,10 @@ const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
 
   const categories = [
     { id: 'all', name: 'All Places'},
-    { id: 'park', name: 'Parks'},
-    { id: 'viewpoint', name: 'Viewpoints' },
-    { id: 'street', name: 'Streets'},
-    { id: 'mall', name: 'Shopping Malls'},
-    { id: 'religious', name: 'Religious'},
-    { id: 'farm', name: 'Farms'},
-    { id: 'historical', name: 'Historical' }
+    { id: 'shopping-retail', name: 'Shopping & Retail'},
+    { id: 'nature-outdoors', name: 'Nature & Outdoors' },
+    { id: 'museum-arts', name: 'Museum & Arts'},
+    { id: 'dining-food', name: 'Dining & Food'}
   ];
 
   const crowdLevelOptions = [

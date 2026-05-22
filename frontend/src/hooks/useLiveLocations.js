@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 const STATIC_LOCATION_ASSETS = {
   1: { // Baguio Night Market
     name: "Baguio Night Market",
+    category: "shopping-retail",
     image: "/assets/featured_images/baguio-night-market.jpg", // Fallback image if not found
     description: "Bustling night market along Harrison Road featuring local street food, thrift shopping (ukay-ukay), and souvenirs.",
     business: "Baguio Tourism",
@@ -20,6 +21,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   2: { // Wright Park
     name: "Wright Park",
+    category: "nature-outdoors",
     image: "/assets/featured_images/wright-park.jpg",
     description: "Beautiful nature park with scenic walking paths, towering pine trees, and perfect for outdoor recreation and peaceful sightseeing.",
     business: "Baguio Tourism",
@@ -36,6 +38,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   3: { // The Mansion
     name: "The Mansion",
+    category: "museum-arts",
     image: "/assets/featured_images/the-mansion-entrance.jpg",
     description: "The grand entrance to The Mansion, a popular spot for photography and quick sightseeing.",
     business: "Philippine Gov",
@@ -52,6 +55,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   4: { // Baguio Cathedral
     name: "Baguio Cathedral",
+    category: "museum-arts",
     image: "/assets/featured_images/baguio-cathedral.jpg",
     description: "Rose-tinted twin-spired Catholic cathedral offering a peaceful atmosphere and panoramic city views.",
     business: "Baguio Cathedral",
@@ -68,6 +72,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   5: { // Melvin Jones Burnham Park
     name: "Melvin Jones Burnham Park",
+    category: "nature-outdoors",
     image: "/assets/featured_images/burnham-park.jpg",
     description: "The sprawling grandstand and football field within Burnham Park, a central hub for outdoor activities and events.",
     business: "Burnham Park Admin",
@@ -84,6 +89,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   6: { // Mt. Cloud Bookshop
     name: "Mt. Cloud Bookshop",
+    category: "shopping-retail",
     image: "/assets/featured_images/mt-cloud-bookshop.jpg",
     description: "Charming bookstore perched on a mountainside offering rare books, cozy reading spaces, and panoramic views.",
     business: "Mt. Cloud",
@@ -100,6 +106,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   7: { // Ili-Likha Arts & Village
     name: "Ili-Likha Arts & Village",
+    category: "museum-arts",
     image: "/assets/featured_images/ili-likha-art.jpg",
     description: "Artistic village showcasing local crafts, traditional art forms, and indigenous cultural heritage.",
     business: "Ili-Likha",
@@ -116,6 +123,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   8: { // Cafe by the Ruins
     name: "Cafe by the Ruins",
+    category: "dining-food",
     image: "/assets/featured_images/cafe-by-the-ruins.jpg",
     description: "Charming cafe nestled among historic ruins offering artisanal coffee and traditional Cordillera cuisine.",
     business: "Cafe Ruins",
@@ -132,6 +140,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   9: { // Gypsy Baguio by Chef Waya
     name: "Gypsy Baguio by Chef Waya",
+    category: "dining-food",
     image: "/assets/featured_images/gypsy-baguio.jpg",
     description: "Fusion restaurant by celebrity chef combining Asian flavors with international cuisine in bohemian ambiance.",
     business: "Gypsy Baguio",
@@ -148,6 +157,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   10: { // Baguio Orchidarium
     name: "Baguio Orchidarium",
+    category: "nature-outdoors",
     image: "/assets/featured_images/bagiuo-orchidarium.jpg",
     description: "Garden sanctuary featuring thousands of rare orchid species from around the world with guided tours available.",
     business: "Orchidarium",
@@ -164,6 +174,7 @@ const STATIC_LOCATION_ASSETS = {
   },
   11: { // Heritage Hill
     name: "Heritage Hill",
+    category: "museum-arts",
     image: "/assets/featured_images/heritage-hill.jpg",
     description: "Historical site featuring colonial-era buildings, museums, and scenic overlooks of the Baguio landscape.",
     business: "Heritage Hill",
