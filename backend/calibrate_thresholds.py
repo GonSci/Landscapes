@@ -86,7 +86,7 @@ def main():
         },
         {
             "id": 3,
-            "name": "The Mansion Entrance",
+            "name": "The Mansion",
             "filename": "mansion_entrance.mp4",
             "desc": "Ground-level, wide gate area, clustered crowds, golden hour lighting, gate/pillar occlusion.",
             "recommended": 0.35,
