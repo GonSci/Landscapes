@@ -28,7 +28,7 @@ cd backend
 2. Creates the `landscapes` database.
 3. Creates the `landscapes_user` and grants the necessary privileges.
 4. Reads your models in `models.py` and creates all corresponding tables via SQLAlchemy.
-5. Seeds the `locations` table with default data (e.g., Baguio Night Market, Wright Park, The Mansion Entrance) if the table is currently empty.
+5. Seeds the `locations` table with default data (e.g., Baguio Night Market, Wright Park, The Mansion) if the table is currently empty.
 
 ---
 

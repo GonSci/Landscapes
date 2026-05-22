@@ -34,8 +34,8 @@ const STATIC_LOCATION_ASSETS = {
       high: 101
     }
   },
-  3: { // The Mansion Entrance
-    name: "The Mansion Entrance",
+  3: { // The Mansion
+    name: "The Mansion",
     image: "/assets/featured_images/the-mansion-entrance.jpg",
     description: "The grand entrance to The Mansion, a popular spot for photography and quick sightseeing.",
     business: "Philippine Gov",

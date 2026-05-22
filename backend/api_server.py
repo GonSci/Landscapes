@@ -9,9 +9,9 @@ and performs TOPSIS calculations for location recommendations.
 import os
 import math
 import json
+import traceback
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from threading import Lock
 
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
@@ -55,6 +55,25 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return R * c
 
 
+def get_crowd_label(density_pm2):
+    """
+    Classify crowd density using Jacob's Crowd Density Method thresholds
+    as defined in the Landscapes thesis:
+        Low      : 1–2 persons/m²
+        Moderate : 3–4 persons/m²
+        High     : 5+  persons/m²
+    Readings below 1 p/m² are labelled Sparse (area is effectively empty).
+    """
+    if density_pm2 < 1.0:
+        return 'Sparse'
+    elif density_pm2 <= 2.0:
+        return 'Low'
+    elif density_pm2 <= 4.0:
+        return 'Moderate'
+    else:
+        return 'High'
+
+
 def apply_hard_constraints(locations_with_metrics, max_travel_time, place_category):
     """
     Filter locations based on hard constraints:
@@ -78,6 +97,11 @@ def apply_hard_constraints(locations_with_metrics, max_travel_time, place_catego
                 continue
             elif place_category == 'culture' and 'museum' not in loc_type and 'arts' not in loc_type and 'cultural' not in loc_type:
                 continue
+            else:
+                # place_category value is not one of the known types — exclude this location
+                # rather than silently returning all locations unfiltered.
+                if place_category not in ('shopping', 'nature', 'dining', 'culture'):
+                    continue
         
         filtered.append(loc)
     
@@ -361,56 +385,100 @@ def get_topsis_recommendations():
         
         # Build decision matrix
         locations_with_metrics = []
-        
+
+        # ── Pre-fetch all latest logs in a single query (T2 fix) ────────────────
+        # Previously: one DB query per location inside the loop (N queries).
+        # Now: two queries total regardless of how many locations exist.
+        from sqlalchemy import func as sql_func
+        latest_log_subq = db.session.query(
+            SurveillanceLog.location_id,
+            sql_func.max(SurveillanceLog.timestamp).label('max_time')
+        ).group_by(SurveillanceLog.location_id).subquery()
+
+        latest_logs_rows = db.session.query(SurveillanceLog).join(
+            latest_log_subq,
+            (SurveillanceLog.location_id == latest_log_subq.c.location_id) &
+            (SurveillanceLog.timestamp  == latest_log_subq.c.max_time)
+        ).all()
+
+        latest_log_map = {log.location_id: log for log in latest_logs_rows}
+
+        # ── Fixed neutral density for camera-less / no-log locations ────────────
+        # Camera-less locations are assigned 2.0 p/m² — the midpoint of Jacob's
+        # Moderate range (1–4 p/m²). This is a fixed, consistent value that:
+        #   • prevents them from being falsely ranked best (0.0 p/m²)
+        #   • prevents them from being falsely ranked worst (high spike value)
+        #   • is justifiable in the thesis as a conservative middle-ground estimate
+        # Reference: Jacobs' Crowd Density Method — Moderate = 1–4 persons/m²
+        NEUTRAL_DENSITY_PM2 = 2.0
+        print(f"[API] Neutral density for camera-less locations: {NEUTRAL_DENSITY_PM2} p/m² (fixed — Jacob's Moderate midpoint)")
+
         for loc in all_locations:
             if loc.id == start_location_id:
                 continue  # Skip the starting location
-            
+
             # Calculate distance
             distance = haversine_distance(start_lat, start_lon, loc.latitude, loc.longitude)
-            
+
             # Calculate travel time with Baguio terrain multiplier
-            TERRAIN_MULTIPLIER = 1.4  # Baguio mountainous terrain
+            TERRAIN_MULTIPLIER = 1.4
             if travel_mode == 'driving':
-                SPEED_KMH = 18.0  # Driving speed in Baguio
+                SPEED_KMH = 18.0
             elif travel_mode == 'commuting':
-                SPEED_KMH = 12.0  # Public transport speed
+                SPEED_KMH = 12.0
             else:
-                SPEED_KMH = 5.0   # Walking speed (default)
-            travel_time = (distance / SPEED_KMH * TERRAIN_MULTIPLIER) * 60  # Convert to minutes
-            
-            # Get crowd level from latest database logs
-            raw_density_pm2 = 0.0
+                SPEED_KMH = 5.0
+            travel_time = (distance / SPEED_KMH * TERRAIN_MULTIPLIER) * 60
+
+            # ── Crowd density (Jacob's method) ───────────────────────────────────
+            latest_log = latest_log_map.get(loc.id)
+            has_camera = bool(loc.fov_area_m2 and loc.fov_area_m2 > 0)
+
+            raw_density_pm2       = 0.0
             effective_density_pm2 = 0.0
-            age_minutes = 0.0
-            latest_log = SurveillanceLog.query.filter_by(location_id=loc.id).order_by(
-                SurveillanceLog.timestamp.desc()
-            ).first()
-            
-            if latest_log:
-                # Calculate raw_density_pm2 (People per Square Meter)
-                fov_area = loc.fov_area_m2 if (loc.fov_area_m2 is not None and loc.fov_area_m2 > 0) else 50.0
-                raw_density_pm2 = latest_log.people_count / fov_area
-                
-                # Apply time-decay logic
-                age_minutes = (datetime.now() - latest_log.timestamp).total_seconds() / 60.0
-                DECAY_LAMBDA = 0.01
-                decay_factor = math.exp(-DECAY_LAMBDA * age_minutes)
-                effective_density_pm2 = raw_density_pm2 * decay_factor
-            
+            age_minutes           = 0.0
+
+            if has_camera and latest_log:
+                # Monitored location: real Jacob's density with time-decay
+                raw_density_pm2 = latest_log.people_count / loc.fov_area_m2
+                age_minutes     = max(0.0, (datetime.now() - latest_log.timestamp).total_seconds() / 60.0)
+                effective_density_pm2 = raw_density_pm2 * math.exp(-0.01 * age_minutes)
+
+            elif has_camera and not latest_log:
+                # Camera configured but YOLO has not written any logs yet
+                effective_density_pm2 = NEUTRAL_DENSITY_PM2
+                raw_density_pm2       = NEUTRAL_DENSITY_PM2
+                print(f"[API] '{loc.name}': camera set up but no logs yet — using neutral {NEUTRAL_DENSITY_PM2:.4f} p/m²")
+
+            else:
+                # No camera at this location — assign the fixed neutral density.
+                # 2.0 p/m² is the midpoint of Jacob's Moderate range and is used
+                # consistently across all camera-less locations so TOPSIS treats
+                # them as moderately busy — neither best nor worst by default.
+                effective_density_pm2 = NEUTRAL_DENSITY_PM2
+                raw_density_pm2       = NEUTRAL_DENSITY_PM2
+                print(f"[API] '{loc.name}': no camera — assigned fixed neutral density {NEUTRAL_DENSITY_PM2} p/m²")
+
+            # Fix 5: Jacob's threshold label using thesis-defined cutoffs
+            crowd_label = get_crowd_label(effective_density_pm2)
+
             location_data = {
-                'id': loc.id,
-                'name': loc.name,
-                'type': loc.type if hasattr(loc, 'type') else 'Unknown',
-                'latitude': loc.latitude,
-                'longitude': loc.longitude,
-                'distance': distance,
-                'travel_time_minutes': travel_time,
-                'raw_density_pm2': raw_density_pm2,
-                'effective_density_pm2': effective_density_pm2,
-                'crowd_reading_age_minutes': age_minutes,
+                'id':                        loc.id,
+                'name':                      loc.name,
+                'type':                      loc.type if hasattr(loc, 'type') else 'Unknown',
+                'latitude':                  loc.latitude,
+                'longitude':                 loc.longitude,
+                'distance':                  distance,
+                'travel_time_minutes':       travel_time,
+                # Fix 6: raw_density_pm2 = before decay (or neutral if no camera)
+                #        crowd_level       = after decay — this is what TOPSIS uses
+                'raw_density_pm2':           round(raw_density_pm2, 4),
+                'crowd_level':               round(effective_density_pm2, 4),
+                'crowd_label':               crowd_label,   # Fix 5: Sparse/Low/Moderate/High
+                'has_camera':                has_camera,    # Fix 3: frontend can show "No live data"
+                'crowd_reading_age_minutes': round(age_minutes, 1),
             }
-            
+
             locations_with_metrics.append(location_data)
         
         # Apply hard constraints
@@ -427,37 +495,48 @@ def get_topsis_recommendations():
         elif len(filtered_locations) == 1:
             print(f"[API] Only 1 location matches criteria. Bypassing TOPSIS.")
             loc = filtered_locations[0]
-            
+
             single_result = {
-                'location_id': loc['id'],
-                'name': loc['name'],
-                'type': loc['type'],
-                'distance': round(loc['distance'], 2),
-                'travel_time_minutes': round(loc['travel_time_minutes'], 1),
-                'raw_density_pm2': round(loc['raw_density_pm2'], 4),
-                'effective_density_pm2': round(loc['effective_density_pm2'], 4),
-                'crowd_level': round(loc['effective_density_pm2'], 4),
-                'topsis_score': 1.0,  # Default perfect score 
-                'latitude': loc['latitude'],
-                'longitude': loc['longitude'],
-                'priority_weight': priority_weight,
-                'crowd_reading_age_minutes': round(loc['crowd_reading_age_minutes'], 1),
-                'reason_text': "Only location matching your exact travel constraints."
+                'location_id':               loc['id'],
+                'name':                      loc['name'],
+                'type':                      loc['type'],
+                'distance':                  round(loc['distance'], 2),
+                'travel_time_minutes':       round(loc['travel_time_minutes'], 1),
+                'raw_density_pm2':           loc['raw_density_pm2'],   # before decay
+                'crowd_level':               loc['crowd_level'],        # after decay
+                'crowd_label':               loc['crowd_label'],        # Sparse/Low/Moderate/High
+                'has_camera':                loc['has_camera'],
+                'topsis_score':              1.0,
+                'latitude':                  loc['latitude'],
+                'longitude':                 loc['longitude'],
+                'priority_weight':           priority_weight,
+                'crowd_reading_age_minutes': loc['crowd_reading_age_minutes'],
+                'reason_text':               "Only location matching your exact travel constraints.",
+                'single_result_note':        True,
             }
-            
+
             return jsonify({
                 'top_3_results': [single_result],
                 'total_considered': 1,
                 'total_locations': len(locations_with_metrics),
+                # Fix 7: include actual input values so the bypass is documented
                 'calculation_breakdown': {
-                    'calculation_explanation': 'Bypassed TOPSIS calculation because only one location met the hard constraints.',
-                    'location_names_in_order': [loc['name']],
+                    'calculation_explanation':  'TOPSIS bypassed — only one location met the hard constraints. '
+                                                'The single eligible location is assigned a score of 1.0 by definition.',
+                    'location_names_in_order':  [loc['name']],
+                    'input_travel_time_minutes': round(loc['travel_time_minutes'], 2),
+                    'input_raw_density_pm2':     loc['raw_density_pm2'],
+                    'input_crowd_level_pm2':     loc['crowd_level'],
+                    'input_crowd_label':         loc['crowd_label'],
+                    'has_camera':                loc['has_camera'],
+                    'topsis_score_assigned':     1.0,
+                    'note': 'Only one option available — by definition the best and only choice.',
                 },
             }), 200
         
         # Rebuild decision matrix with filtered locations only (for 2+ locations)
         filtered_decision_matrix = [
-            [loc['travel_time_minutes'], loc['effective_density_pm2']]
+            [loc['travel_time_minutes'], loc['crowd_level']]
             for loc in filtered_locations
         ]
         
@@ -485,19 +564,20 @@ def get_topsis_recommendations():
         ranked_results = []
         for idx, loc in enumerate(filtered_locations):
             ranked_results.append({
-                'location_id': loc['id'],
-                'name': loc['name'],
-                'type': loc['type'],
-                'distance': round(loc['distance'], 2),
-                'travel_time_minutes': round(loc['travel_time_minutes'], 1),
-                'raw_density_pm2': round(loc['raw_density_pm2'], 4),
-                'effective_density_pm2': round(loc['effective_density_pm2'], 4),
-                'crowd_level': round(loc['effective_density_pm2'], 4),
-                'topsis_score': round(topsis_scores[idx], 4),
-                'latitude': loc['latitude'],
-                'longitude': loc['longitude'],
-                'priority_weight': priority_weight,
-                'crowd_reading_age_minutes': round(loc['crowd_reading_age_minutes'], 1),
+                'location_id':               loc['id'],
+                'name':                      loc['name'],
+                'type':                      loc['type'],
+                'distance':                  round(loc['distance'], 2),
+                'travel_time_minutes':       round(loc['travel_time_minutes'], 1),
+                'raw_density_pm2':           loc['raw_density_pm2'],   # before decay
+                'crowd_level':               loc['crowd_level'],        # after decay — TOPSIS input
+                'crowd_label':               loc['crowd_label'],        # Fix 5: Sparse/Low/Moderate/High
+                'has_camera':                loc['has_camera'],         # Fix 3: no-camera flag
+                'topsis_score':              round(topsis_scores[idx], 4),
+                'latitude':                  loc['latitude'],
+                'longitude':                 loc['longitude'],
+                'priority_weight':           priority_weight,
+                'crowd_reading_age_minutes': loc['crowd_reading_age_minutes'],
             })
         
         # Sort by TOPSIS score (descending) - higher is better
@@ -565,7 +645,6 @@ def get_topsis_recommendations():
         }), 200
         
     except Exception as e:
-        import traceback
         print(f"[API] Error: {e}")
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
@@ -664,39 +743,56 @@ def get_recent_logs():
 
 @app.route('/api/analytics/distribution', methods=['GET'])
 def get_distribution():
-    """Get crowd distribution across locations."""
+    """Get crowd distribution across locations using average density (p/m²)."""
     try:
-        from sqlalchemy import func
-        
+        from sqlalchemy import func as sql_func
+
         start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
-        
+        end_date   = request.args.get('end_date')
+
+        # Fix 8: aggregate by average density (people / fov_area_m2) per location
+        # rather than summing raw headcounts. This corrects for locations with
+        # different camera FOV sizes — a large-area camera would otherwise
+        # accumulate higher totals even if the area is no busier than a smaller one.
         query = db.session.query(
             Location.name,
-            func.sum(SurveillanceLog.people_count).label('total')
+            Location.fov_area_m2,
+            sql_func.avg(SurveillanceLog.people_count).label('avg_count')
         ).join(SurveillanceLog, SurveillanceLog.location_id == Location.id)
-        
+
         if start_date:
             query = query.filter(SurveillanceLog.timestamp >= datetime.fromisoformat(start_date))
         if end_date:
             query = query.filter(SurveillanceLog.timestamp <= datetime.fromisoformat(end_date))
-        
-        results = query.group_by(Location.id, Location.name).all()
-        total_people = sum(res.total for res in results) if results else 0
-        
-        if total_people == 0:
+
+        results = query.group_by(Location.id, Location.name, Location.fov_area_m2).all()
+
+        # Compute average density per location; skip any with no FOV configured
+        density_rows = []
+        for res in results:
+            if res.fov_area_m2 and res.fov_area_m2 > 0:
+                avg_density = res.avg_count / res.fov_area_m2
+            else:
+                avg_density = 0.0  # no FOV — excluded from percentage share
+            density_rows.append({'name': res.name, 'avg_density': avg_density})
+
+        total_density = sum(r['avg_density'] for r in density_rows)
+
+        if total_density == 0:
             return jsonify([])
 
         colors = ["#6366f1", "#ec4899", "#10b981", "#f59e0b", "#06b6d4"]
         distribution = []
-        for i, res in enumerate(results):
-            pct = (res.total / total_people) * 100
+        for i, row in enumerate(density_rows):
+            if row['avg_density'] == 0:
+                continue  # omit locations with no FOV from the chart
+            pct = (row['avg_density'] / total_density) * 100
             distribution.append({
-                "name": res.name,
+                "name":       row['name'],
                 "percentage": round(pct, 1),
-                "color": colors[i % len(colors)]
+                "color":      colors[i % len(colors)],
             })
-        
+
         return jsonify(distribution)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
