@@ -150,8 +150,8 @@ function App() {
         onLogin={handleLogin}
       />
 
-      {/* Add padding-top to offset fixed navbar (approx 72px) */}
-      <div className="app-content pt-[72px]">
+      {/* Add padding-top to offset fixed navbar (approx 72px) except on map page where we want full screen */}
+      <div className={`app-content ${currentPage === 'map' ? '' : 'pt-[72px]'}`}>
         {currentPage === 'home' && (
           <div className="page home-page">
             <Home onNavigate={handleNavigate} currentUser={currentUser} />

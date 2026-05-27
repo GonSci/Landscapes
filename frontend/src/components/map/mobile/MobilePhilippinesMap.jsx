@@ -243,7 +243,7 @@ const MobilePhilippinesMap = ({ userProfile, currentUser, focusLocation, isSideb
             animate={{ opacity: 1, y: 0, x: "-50%" }}
             exit={{ opacity: 0, y: -20, x: "-50%" }}
             transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-            className="absolute top-6 left-1/2 z-[500] bg-[#1e293b]/90 backdrop-blur-md p-1 rounded-full border border-white/10 flex shadow-xl"
+            className="absolute top-[85px] left-1/2 z-[500] bg-[#1e293b]/90 backdrop-blur-md p-1 rounded-full border border-white/10 flex shadow-xl"
           >
             <button 
               onClick={() => setActiveTab('explore')}

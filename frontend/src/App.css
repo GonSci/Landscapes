@@ -47,7 +47,7 @@
 .map-layout {
   display: flex;
   gap: 0;
-  height: calc(100dvh - 72px);
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -157,7 +157,7 @@
 @media (max-width: 1024px) {
   .map-layout {
     position: relative;
-    height: calc(100dvh - 72px);
+    height: 100dvh;
     overflow: hidden;
   }
 
@@ -204,7 +204,11 @@
   }
 
   .map-layout {
-    height: calc(100dvh - 72px);
+    height: 100dvh;
+  }
+
+  .map-page {
+    padding: 0 !important;
   }
 
   .map-sidebar {
