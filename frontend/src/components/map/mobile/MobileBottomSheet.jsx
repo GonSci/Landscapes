@@ -132,12 +132,25 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'exp
             </div>
           </>
         ) : (
-          <div className="h-full">
-            <UserProfile 
-              profile={userProfile}
-              compactMode={true}
-              currentUser={currentUser}
-            />
+          <div className="flex flex-col h-full pb-6">
+            {/* Header */}
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">Explore Baguio City</h2>
+                <p className="text-sm text-slate-400">
+                  Manage your <span className="text-indigo-400">checklist</span> for destinations in Baguio City.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex-1 -mx-6 mt-2">
+              <UserProfile 
+                profile={userProfile}
+                compactMode={true}
+                currentUser={currentUser}
+                isMobileSheet={true}
+              />
+            </div>
           </div>
         )}
       </div>

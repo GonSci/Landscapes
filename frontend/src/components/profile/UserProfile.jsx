@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { db } from '../../firebase'; 
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
-const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = false, currentUser }) => { //NEW: Added currentUser prop
+const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = false, currentUser, isMobileSheet = false }) => {
   const [showAddChecklistModal, setShowAddChecklistModal] = useState(false);
   const [checklistForm, setChecklistForm] = useState({ name: '', icon: '✓' });
   const [expandedChecklistId, setExpandedChecklistId] = useState(null);
@@ -353,22 +353,22 @@ const UserProfile = ({ profile, onToggleAI, expanded = false, compactMode = fals
 
   return (
     <div
-      className={`flex h-full flex-col gap-2 overflow-y-auto bg-[#0a0f1e]/80 backdrop-blur-2xl border-white/5 px-3 py-3 shadow-2xl transition-all duration-300 custom-scrollbar ${compactMode ? 'border-r-0' : 'border-r'}`}
+      className={`flex h-full flex-col gap-2 overflow-y-auto ${isMobileSheet ? 'bg-transparent border-0 px-6 custom-scrollbar-hide' : `bg-[#0a0f1e]/80 backdrop-blur-2xl px-3 py-3 shadow-2xl border-white/5 ${compactMode ? 'border-r-0' : 'border-r'}`} transition-all duration-300 custom-scrollbar`}
     >
-      <div
-        className={`flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-white shadow-xl ${compactMode ? 'px-4 py-3' : 'px-5 py-4'}`}
-      >
-        <div className="flex-1">
-          <h3 className={`m-0 font-black tracking-tight ${compactMode ? 'text-[0.95rem]' : 'text-[1.05rem]'}`}>
-            My Travel Journey
-          </h3>
-          <p className={`m-0 mt-0.5 font-bold text-white/80 ${compactMode ? 'text-[10px] uppercase tracking-wider' : 'text-[0.8rem]'}`}>
-            Track your adventures
-          </p>
+      {!isMobileSheet && (
+        <div
+          className={`flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md text-white shadow-xl ${compactMode ? 'px-4 py-3' : 'px-5 py-4'}`}
+        >
+          <div className="flex-1">
+            <h3 className={`m-0 font-black tracking-tight ${compactMode ? 'text-[0.95rem]' : 'text-[1.05rem]'}`}>
+              My Travel Journey
+            </h3>
+            <p className={`m-0 mt-0.5 font-bold text-white/80 ${compactMode ? 'text-[10px] uppercase tracking-wider' : 'text-[0.8rem]'}`}>
+              Track your adventures
+            </p>
+          </div>
         </div>
-      </div>
-
-
+      )}
 
       {/* Travel Checklist Section */}
       <div className="flex flex-col gap-0 px-1">
