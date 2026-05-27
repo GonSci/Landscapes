@@ -4,7 +4,7 @@ import MobileBottomSheet from './MobileBottomSheet';
 import { MapPin, ListChecks } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const MobilePhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onViewLiveFeed }) => {
+const MobilePhilippinesMap = ({ userProfile, currentUser, focusLocation, isSidebarOpen, onViewLiveFeed }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
@@ -12,6 +12,7 @@ const MobilePhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onVie
   const [mapLoaded, setMapLoaded] = useState(false);
   const [showFeatures, setShowFeatures] = useState(true);
   const [bottomSheetState, setBottomSheetState] = useState('minimized');
+  const [activeTab, setActiveTab] = useState('explore');
 
   const { locations } = useLiveLocations();
 
@@ -244,11 +245,17 @@ const MobilePhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onVie
             transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
             className="absolute top-6 left-1/2 z-[500] bg-[#1e293b]/90 backdrop-blur-md p-1 rounded-full border border-white/10 flex shadow-xl"
           >
-            <button className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-indigo-500 text-white font-medium text-sm transition-all shadow-lg">
+            <button 
+              onClick={() => setActiveTab('explore')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-medium text-sm transition-all ${activeTab === 'explore' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
               <MapPin size={16} />
               Places
             </button>
-            <button className="flex items-center gap-2 px-6 py-2.5 rounded-full text-slate-400 font-medium text-sm transition-all hover:text-white">
+            <button 
+              onClick={() => setActiveTab('checklist')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-medium text-sm transition-all ${activeTab === 'checklist' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
               <ListChecks size={16} />
               Checklist
             </button>
@@ -268,7 +275,13 @@ const MobilePhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onVie
         )}
       </div>
 
-      <MobileBottomSheet onViewLiveFeed={onViewLiveFeed} onSnapStateChange={setBottomSheetState} />
+      <MobileBottomSheet 
+        onViewLiveFeed={onViewLiveFeed} 
+        onSnapStateChange={setBottomSheetState}
+        activeTab={activeTab}
+        userProfile={userProfile}
+        currentUser={currentUser}
+      />
 
       <style dangerouslySetInnerHTML={{__html: `
         .dark-popup .leaflet-popup-content-wrapper {

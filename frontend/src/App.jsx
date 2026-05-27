@@ -198,6 +198,7 @@ function App() {
                 
                 <PhilippinesMap
                   userProfile={userProfile}
+                  currentUser={currentUser}
                   focusLocation={focusLocation}
                   isSidebarOpen={isSidebarOpen}
                   onViewLiveFeed={handleViewLiveFeed}

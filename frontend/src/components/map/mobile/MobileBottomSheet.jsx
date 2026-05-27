@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Clock, ChevronDown } from 'lucide-react';
 import { useLiveLocations } from '../../../hooks/useLiveLocations';
+import UserProfile from '../../profile/UserProfile';
 
 const getCrowdLevelStyles = (level) => {
   const normalized = (level || '').toLowerCase();
@@ -18,7 +19,7 @@ const getCrowdLevelStyles = (level) => {
   }
 };
 
-const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange }) => {
+const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'explore', userProfile, currentUser }) => {
   const { locations } = useLiveLocations();
   const [snapState, setSnapState] = useState('minimized');
 
@@ -66,67 +67,79 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange }) => {
         <div className="w-14 h-1.5 bg-white/30 rounded-full" />
       </div>
 
-      {/* Content Area - stopPropagation prevents the drag from taking over when the user tries to scroll the list */}
+      {/* Content Area */}
       <div 
         className="flex-1 overflow-y-auto overflow-x-hidden px-6 pb-6 hide-scrollbar"
         onPointerDown={(e) => e.stopPropagation()} 
         onTouchStart={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-1">Explore Baguio City</h2>
-            <p className="text-sm text-slate-400">
-              Click the <span className="text-indigo-400">glowing markers</span> to discover destinations.
-            </p>
-          </div>
-          <button className="flex items-center gap-1 text-xs font-bold text-white tracking-wider bg-white/5 py-1 px-2 rounded-lg">
-            ALL<br/>LEVELS
-            <ChevronDown size={14} className="ml-1 text-slate-400" />
-          </button>
-        </div>
-
-        {/* Location Cards */}
-        <div className="space-y-4">
-          {locations.map((loc) => (
-            <div 
-              key={loc.id} 
-              className="flex gap-4 p-0 bg-transparent rounded-xl cursor-pointer group"
-              onClick={() => onViewLiveFeed && onViewLiveFeed(loc.id)}
-            >
-              <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-slate-800 border border-white/5 shadow-inner">
-                <img 
-                  src={loc.image} 
-                  alt={loc.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://images.unsplash.com/photo-1542314831-c6a4d14093c2?w=500&q=80';
-                  }}
-                />
+        {activeTab === 'explore' ? (
+          <>
+            {/* Header */}
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">Explore Baguio City</h2>
+                <p className="text-sm text-slate-400">
+                  Click the <span className="text-indigo-400">glowing markers</span> to discover destinations.
+                </p>
               </div>
-              <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className="text-white font-semibold text-base truncate pr-2">{loc.name}</h3>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${getCrowdLevelStyles(loc.crowdLevel)}`}>
-                    {loc.crowdLevel || 'MODERATE'}
-                  </span>
-                </div>
-                <p className="text-slate-400 text-sm truncate mb-2">{loc.description || `Beautiful destination in Baguio`}</p>
-                <div className="flex items-center gap-4 text-xs font-medium text-slate-300">
-                  <div className="flex items-center gap-1.5 uppercase tracking-wider">
-                    <MapPin size={12} className="text-slate-400" />
-                    {loc.category || 'Baguio Tourism'}
-                  </div>
-                  <div className="flex items-center gap-1.5 uppercase tracking-wider">
-                    <Clock size={12} className="text-slate-400" />
-                    8:00 AM - 6:00 PM
-                  </div>
-                </div>
-              </div>
+              <button className="flex items-center gap-1 text-xs font-bold text-white tracking-wider bg-white/5 py-1 px-2 rounded-lg">
+                ALL<br/>LEVELS
+                <ChevronDown size={14} className="ml-1 text-slate-400" />
+              </button>
             </div>
-          ))}
-        </div>
+
+            {/* Location Cards */}
+            <div className="space-y-4">
+              {locations.map((loc) => (
+                <div 
+                  key={loc.id} 
+                  className="flex gap-4 p-0 bg-transparent rounded-xl cursor-pointer group"
+                  onClick={() => onViewLiveFeed && onViewLiveFeed(loc.id)}
+                >
+                  <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-slate-800 border border-white/5 shadow-inner">
+                    <img 
+                      src={loc.image} 
+                      alt={loc.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1542314831-c6a4d14093c2?w=500&q=80';
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0 py-1 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="text-white font-semibold text-base truncate pr-2">{loc.name}</h3>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${getCrowdLevelStyles(loc.crowdLevel)}`}>
+                        {loc.crowdLevel || 'MODERATE'}
+                      </span>
+                    </div>
+                    <p className="text-slate-400 text-sm truncate mb-2">{loc.description || `Beautiful destination in Baguio`}</p>
+                    <div className="flex items-center gap-4 text-xs font-medium text-slate-300">
+                      <div className="flex items-center gap-1.5 uppercase tracking-wider">
+                        <MapPin size={12} className="text-slate-400" />
+                        {loc.category || 'Baguio Tourism'}
+                      </div>
+                      <div className="flex items-center gap-1.5 uppercase tracking-wider">
+                        <Clock size={12} className="text-slate-400" />
+                        8:00 AM - 6:00 PM
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="h-full">
+            <UserProfile 
+              profile={userProfile}
+              compactMode={true}
+              currentUser={currentUser}
+            />
+          </div>
+        )}
       </div>
     </motion.div>
   );
