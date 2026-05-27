@@ -37,18 +37,20 @@ const MobileNavbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`flex flex-col items-center justify-center transition-all duration-300 w-[110px] h-[60px] rounded-full ${
-                  isActive 
-                    ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-lg shadow-indigo-500/20' 
-                    : 'text-slate-400 hover:text-white'
-                }`}
+                className="flex flex-1 flex-col items-center justify-center h-[54px] text-slate-400 hover:text-white transition-colors duration-300 focus:outline-none"
                 aria-current={isActive ? 'page' : undefined}
                 title={item.label}
               >
-                <item.Icon size={isActive ? 22 : 20} strokeWidth={isActive ? 2.5 : 2} className="mb-1" />
-                <span className="text-[10px] font-semibold tracking-wide">
-                  {item.label}
-                </span>
+                <div className={`flex flex-col items-center justify-center transition-all duration-300 w-[110px] h-[46px] rounded-full ${
+                  isActive 
+                    ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-lg shadow-indigo-500/20' 
+                    : 'bg-transparent'
+                }`}>
+                  <item.Icon size={isActive ? 20 : 18} strokeWidth={isActive ? 2.5 : 2} className="mb-1" />
+                  <span className="text-[9px] font-semibold tracking-wide whitespace-nowrap">
+                    {item.label}
+                  </span>
+                </div>
               </button>
             );
           })}
