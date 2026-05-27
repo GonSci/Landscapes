@@ -36,9 +36,8 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'exp
   }, [snapState, onSnapStateChange]);
 
   const variants = {
-    minimized: { height: '140px' },
-    half: { height: '60vh' },
-    full: { height: '90vh' }
+    minimized: { height: '175px' }, 
+    full: { height: '75vh' }
   };
 
   const handleDragEnd = (event, info) => {
@@ -46,18 +45,16 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'exp
     
     if (info.offset.y < -threshold) {
       // Swipe Up
-      if (snapState === 'minimized') setSnapState('half');
-      else if (snapState === 'half') setSnapState('full');
+      if (snapState === 'minimized') setSnapState('full');
     } else if (info.offset.y > threshold) {
       // Swipe Down
-      if (snapState === 'full') setSnapState('half');
-      else if (snapState === 'half') setSnapState('minimized');
+      if (snapState === 'full') setSnapState('minimized');
     }
   };
 
   return (
     <motion.div 
-      className="absolute bottom-0 left-0 right-0 z-[9999] flex flex-col bg-[#121626] rounded-t-[24px] shadow-[0_-10px_40px_rgba(0,0,0,0.8)] border-t border-white/10"
+      className="absolute bottom-0 left-0 right-0 z-[1500] flex flex-col bg-[#121626] rounded-t-[24px] shadow-[0_-10px_40px_rgba(0,0,0,0.8)] border-t border-white/10"
       initial="minimized"
       animate={snapState}
       variants={variants}
@@ -68,14 +65,14 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'exp
       onDragEnd={handleDragEnd}
       dragDirectionLock
     >
-      {/* Drag Handle Area (Only this area initiates drag cleanly without disrupting scrolling) */}
-      <div className="flex-none pt-4 pb-4 w-full flex justify-center cursor-grab active:cursor-grabbing">
+      {/* Drag Handle Area */}
+      <div className="w-full flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
         <div className="w-14 h-1.5 bg-white/30 rounded-full" />
       </div>
 
       {/* Content Area */}
       <div 
-        className="flex-1 overflow-y-auto overflow-x-hidden px-6 pb-6 hide-scrollbar"
+        className={`flex-1 overflow-x-hidden px-6 pb-[100px] hide-scrollbar ${snapState === 'minimized' ? 'overflow-hidden' : 'overflow-y-auto'}`}
         onPointerDown={(e) => e.stopPropagation()} 
         onTouchStart={(e) => e.stopPropagation()}
       >
@@ -199,7 +196,7 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'exp
             </motion.div>
           </>
         ) : (
-          <div className="flex flex-col h-full pb-6">
+          <div className="flex flex-col h-full">
             {/* Header */}
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -211,7 +208,7 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'exp
             </div>
             
             <motion.div 
-              className="flex-1 -mx-6 mt-2"
+              className="flex-1 -mx-6 mt-2 pb-[100px]"
               animate={{ 
                 opacity: snapState === 'minimized' ? 0 : 1, 
                 pointerEvents: snapState === 'minimized' ? 'none' : 'auto' 
