@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLiveLocations } from '../../../hooks/useLiveLocations';
 import MobileBottomSheet from './MobileBottomSheet';
 import { MapPin, ListChecks } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const MobilePhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onViewLiveFeed }) => {
   const mapRef = useRef(null);
@@ -10,6 +11,7 @@ const MobilePhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onVie
   const featureMarkersRef = useRef([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [showFeatures, setShowFeatures] = useState(true);
+  const [bottomSheetState, setBottomSheetState] = useState('minimized');
 
   const { locations } = useLiveLocations();
 
@@ -233,16 +235,26 @@ const MobilePhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onVie
     <div className="flex flex-col h-full bg-[#0f172a] border-2 border-white/5 border-l-0 overflow-hidden relative">
       
       {/* Floating Toggle Overlay */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[500] bg-[#1e293b]/90 backdrop-blur-md p-1 rounded-full border border-white/10 flex shadow-xl">
-        <button className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-indigo-500 text-white font-medium text-sm transition-all shadow-lg">
-          <MapPin size={16} />
-          Places
-        </button>
-        <button className="flex items-center gap-2 px-6 py-2.5 rounded-full text-slate-400 font-medium text-sm transition-all hover:text-white">
-          <ListChecks size={16} />
-          Checklist
-        </button>
-      </div>
+      <AnimatePresence>
+        {bottomSheetState !== 'minimized' && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -20, x: "-50%" }}
+            transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+            className="absolute top-6 left-1/2 z-[500] bg-[#1e293b]/90 backdrop-blur-md p-1 rounded-full border border-white/10 flex shadow-xl"
+          >
+            <button className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-indigo-500 text-white font-medium text-sm transition-all shadow-lg">
+              <MapPin size={16} />
+              Places
+            </button>
+            <button className="flex items-center gap-2 px-6 py-2.5 rounded-full text-slate-400 font-medium text-sm transition-all hover:text-white">
+              <ListChecks size={16} />
+              Checklist
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div 
         ref={mapRef} 
@@ -256,7 +268,7 @@ const MobilePhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onVie
         )}
       </div>
 
-      <MobileBottomSheet onViewLiveFeed={onViewLiveFeed} />
+      <MobileBottomSheet onViewLiveFeed={onViewLiveFeed} onSnapStateChange={setBottomSheetState} />
 
       <style dangerouslySetInnerHTML={{__html: `
         .dark-popup .leaflet-popup-content-wrapper {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Clock, ChevronDown } from 'lucide-react';
 import { useLiveLocations } from '../../../hooks/useLiveLocations';
@@ -18,9 +18,15 @@ const getCrowdLevelStyles = (level) => {
   }
 };
 
-const MobileBottomSheet = ({ onViewLiveFeed }) => {
+const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange }) => {
   const { locations } = useLiveLocations();
   const [snapState, setSnapState] = useState('minimized');
+
+  useEffect(() => {
+    if (onSnapStateChange) {
+      onSnapStateChange(snapState);
+    }
+  }, [snapState, onSnapStateChange]);
 
   const variants = {
     minimized: { height: '140px' },
