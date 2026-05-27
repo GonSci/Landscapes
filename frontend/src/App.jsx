@@ -162,10 +162,10 @@ function App() {
           <div className="page map-page">
             <div className="map-layout">
               <div 
-                className={`transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 h-full border-r border-white/10 relative z-20 overflow-hidden ${
+                className={`hidden lg:block transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] shrink-0 h-full border-r border-white/10 relative z-20 overflow-hidden ${
                   isSidebarOpen 
-                    ? 'w-full lg:w-[380px] bg-[rgba(10,15,30,0.8)] backdrop-blur-2xl' 
-                    : 'w-0 lg:w-[56px] bg-slate-900/40 backdrop-blur-md'
+                    ? 'w-[380px] bg-[rgba(10,15,30,0.8)] backdrop-blur-2xl' 
+                    : 'w-[56px] bg-slate-900/40 backdrop-blur-md'
                 }`}
               >
                 <div className={`absolute top-0 left-0 w-full lg:w-[380px] h-full transition-opacity duration-200 ${isSidebarOpen ? 'opacity-100 pointer-events-auto delay-100' : 'opacity-0 pointer-events-none'}`}>
@@ -194,18 +194,7 @@ function App() {
               </div>
 
               <div className="map-main relative">
-                {/* Mobile-only floating toggle button */}
-                {!isSidebarOpen && (
-                  <button 
-                    onClick={() => setIsSidebarOpen(true)}
-                    className="flex lg:hidden absolute top-4 left-4 z-[400] bg-slate-900/80 backdrop-blur-md p-2.5 rounded-xl shadow-xl hover:bg-slate-800 transition-colors border border-white/10 cursor-pointer items-center justify-center text-white"
-                    title="Expand Sidebar"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                )}
+
                 
                 <PhilippinesMap
                   userProfile={userProfile}
