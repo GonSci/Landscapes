@@ -96,10 +96,11 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange }) => {
             >
               <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-slate-800 border border-white/5 shadow-inner">
                 <img 
-                  src={loc.image_url || '/placeholder-image.jpg'} 
+                  src={loc.image} 
                   alt={loc.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   onError={(e) => {
+                    e.target.onerror = null;
                     e.target.src = 'https://images.unsplash.com/photo-1542314831-c6a4d14093c2?w=500&q=80';
                   }}
                 />
