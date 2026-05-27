@@ -58,14 +58,27 @@ function LoginButton({ currentUser, onNavigate, onLogin, currentPage }) {
                     </button>
                 </div>
             ) : (
-                <button
-                    onClick={() => setShowAuthModal(true)}
-                    className="group relative inline-flex items-center gap-3 overflow-hidden whitespace-nowrap rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-[2px] text-slate-300 transition-all duration-500 hover:border-[#667eea]/50 hover:bg-white/[0.08] hover:text-white hover:shadow-[0_0_20px_rgba(102,126,234,0.2)]"
-                >
-                    <User size={14} className="text-[#667eea] group-hover:scale-110 transition-transform duration-300" strokeWidth={3} />
-                    <span>Login or Signup</span>
-                    <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-full"></div>
-                </button>
+                <>
+                    {/* Mobile: Minimalist Icon */}
+                    <button
+                        onClick={() => setShowAuthModal(true)}
+                        className="p-2 bg-transparent border-none outline-none focus:outline-none transition-colors duration-300 rounded-full hover:bg-white/10 active:bg-white/20 md:hidden"
+                        title="Login or Signup"
+                        aria-label="Login or Signup"
+                    >
+                        <User size={22} className="text-slate-200 transition-colors duration-300 hover:text-white" strokeWidth={2.5} />
+                    </button>
+
+                    {/* Desktop: Pill Button */}
+                    <button
+                        onClick={() => setShowAuthModal(true)}
+                        className="group relative hidden md:inline-flex items-center gap-3 overflow-hidden whitespace-nowrap rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-[2px] text-slate-300 transition-all duration-500 hover:border-[#667eea]/50 hover:bg-white/[0.08] hover:text-white hover:shadow-[0_0_20px_rgba(102,126,234,0.2)]"
+                    >
+                        <User size={14} className="text-[#667eea] group-hover:scale-110 transition-transform duration-300" strokeWidth={3} />
+                        <span>Login or Signup</span>
+                        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-full"></div>
+                    </button>
+                </>
             )}
         </div>
     );
