@@ -7,7 +7,7 @@ import UserProfile from './components/profile/UserProfile';
 import ExploreSection from './components/explore/ExploreSection';
 import Home from './components/landingPage/Home';
 import Dashboard from './components/dashboard/Dashboard';
-import MapSidebar from './components/map/MapSidebar';
+import MapSidebar from './components/map/desktop/MapSidebar';
 
 import { db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import UserProfile from '../profile/UserProfile';
-import { useLiveLocations } from '../../hooks/useLiveLocations';
+import UserProfile from '../../profile/UserProfile';
+import { useLiveLocations } from '../../../hooks/useLiveLocations';
 
 const MapSidebar = ({ userProfile, currentUser, onLocationClick, onSidebarToggle }) => {
   const [activeTab, setActiveTab] = useState('explore');
