@@ -409,7 +409,7 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
             </div>
 
             {/* Leaflet Map */}
-            <div className="flex-1 overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)]" style={{ minHeight: 'calc(100vh - 300px)' }}>
+            <div className="flex-1 overflow-hidden rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.1)]" style={{ minHeight: 'calc(100dvh - 300px)' }}>
             <MapContainer
               ref={mapRef}
               center={[16.413, 120.604]}
@@ -512,7 +512,7 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
           </div>
 
           {/* Settings Sidebar - Right Side */}
-          <div className="flex flex-col self-stretch" style={{ height: 'calc(100vh - 220px)' }}>
+          <div className="flex flex-col self-stretch" style={{ height: 'calc(100dvh - 220px)' }}>
             {/* Settings Panel / Results View */}
             <div className="rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-white/10 p-5 overflow-hidden flex flex-col flex-1">
               

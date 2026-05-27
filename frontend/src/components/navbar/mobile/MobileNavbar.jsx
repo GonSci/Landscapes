@@ -29,7 +29,7 @@ const MobileNavbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
       </nav>
 
       {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 w-full z-[2000] bg-[#0a0f1e]/95 backdrop-blur-xl border-t border-white/10 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+      <nav className="fixed bottom-0 left-0 w-full z-[2000] bg-[#0a0f1e]/95 backdrop-blur-xl border-t border-white/10 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-3 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="flex justify-around items-center px-2">
           {menuItems.map(item => {
             const isActive = currentPage === item.id;

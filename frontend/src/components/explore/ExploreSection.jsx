@@ -46,7 +46,7 @@ const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
     .sort((a, b) => a.detectedPeople - b.detectedPeople); // Sort by crowd (low to high)
 
   return (
-    <div className="min-h-[calc(100vh-100px)] bg-[#0a0f1e] px-3 py-5 text-white sm:px-4 md:px-5 md:py-8 lg:px-6 lg:py-10">
+    <div className="min-h-[calc(100dvh-100px)] bg-[#0a0f1e] px-3 py-5 text-white sm:px-4 md:px-5 md:py-8 lg:px-6 lg:py-10">
       {/* Header */}
       <div className="relative z-10 mb-8 text-center md:mb-12">
         <h2 className="mb-4 inline-block animate-fadeInDown bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text pb-1 text-3xl font-black leading-[1.1] tracking-tight text-transparent sm:text-4xl lg:text-[48px]">
