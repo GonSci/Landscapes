@@ -15,7 +15,7 @@ const AuthModal = ({ onClose, onLoginSuccess }) => {
     setError(null);
 
     const endpoint = isLogin ? '/api/login' : '/api/register';
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+    const API_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`;
 
     try {
       const response = await fetch(`${API_URL}${endpoint}`, {

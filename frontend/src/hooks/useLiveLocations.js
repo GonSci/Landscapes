@@ -221,7 +221,7 @@ export const useLiveLocations = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`;
         const response = await fetch(`${API_BASE_URL}/api/locations`);
         if (!response.ok) throw new Error('Failed to fetch base locations');
         const data = await response.json();
@@ -261,7 +261,7 @@ export const useLiveLocations = () => {
   useEffect(() => {
     const fetchLiveStatus = async () => {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`;
         const response = await fetch(`${API_BASE_URL}/api/locations/live-status`);
         if (!response.ok) throw new Error('Failed to fetch live status');
         

@@ -177,7 +177,7 @@ function App() {
                   />
                 </div>
                 
-                <div className={`absolute top-0 left-0 w-[56px] hidden lg:flex flex-col items-center py-4 h-full transition-opacity duration-200 ${!isSidebarOpen ? 'opacity-100 pointer-events-auto delay-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className={`absolute top-0 left-0 w-[56px] hidden lg:flex flex-col items-center pb-4 pt-[110px] h-full transition-opacity duration-200 ${!isSidebarOpen ? 'opacity-100 pointer-events-auto delay-100' : 'opacity-0 pointer-events-none'}`}>
                   <button 
                     onClick={() => setIsSidebarOpen(true)}
                     className="p-2.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"

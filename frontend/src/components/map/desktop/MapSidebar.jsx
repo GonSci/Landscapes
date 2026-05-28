@@ -16,7 +16,7 @@ const MapSidebar = ({ userProfile, currentUser, onLocationClick, onSidebarToggle
   return (
     <div className="flex flex-col h-full w-full bg-[#0a0f1e]/80 backdrop-blur-2xl overflow-hidden pointer-events-auto border-r border-white/5 shadow-2xl">
       {/* Header / Tabs */}
-      <div className="flex items-center gap-2 m-4 mb-2 mt-9">
+      <div className="flex items-center gap-2 m-4 mb-2 mt-[110px]">
         {/* Collapse Button */}
         <button 
           onClick={onSidebarToggle}

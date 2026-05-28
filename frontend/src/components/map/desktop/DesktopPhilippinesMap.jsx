@@ -229,7 +229,7 @@ const DesktopPhilippinesMap = ({ userProfile, focusLocation, isSidebarOpen, onVi
 
   return (
     <div className="flex flex-col h-full bg-[#0f172a] border-2 border-white/5 border-l-0 overflow-hidden relative">
-      <div className="bg-[#0a0f1e]/80 backdrop-blur-2xl px-8 py-7 border-b border-white/5 z-10 shadow-lg">
+      <div className="bg-[#0a0f1e]/80 backdrop-blur-2xl px-8 pb-7 pt-[110px] border-b border-white/5 z-10 shadow-lg">
         <div className="flex justify-between items-center gap-6 flex-wrap">
           <div className="flex-1 min-w-80">
             <h2 className="text-3xl font-black text-white mt-2 mb-2 tracking-tight">Explore Baguio City</h2>

@@ -277,7 +277,7 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
         priority_weight: priorityWeight,
       };
 
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`;
       const response = await fetch(`${API_BASE_URL}/api/redirection`, {
         method: 'POST',
         headers: {
