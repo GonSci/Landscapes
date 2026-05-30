@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
-import { useLiveLocations } from '../../hooks/useLiveLocations';
 
-const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
+const ExploreDesktop = ({ onNavigate, onViewLiveFeed, userProfile, locations, isLoading, isStale, lastUpdated }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCrowdLevel, setSelectedCrowdLevel] = useState('All');
   const [isCrowdDropdownOpen, setIsCrowdDropdownOpen] = useState(false);
   
-  const { locations, isLoading, isStale, lastUpdated } = useLiveLocations();
-
   const formatAge = (ageMinutes) => {
     if (ageMinutes === undefined || ageMinutes === null) return "Just now";
     const mins = Math.round(ageMinutes);
@@ -34,8 +31,8 @@ const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
 
   // Filter by category
   const currentData = selectedCategory === 'all' 
-    ? locations 
-    : locations.filter(loc => loc.category && loc.category.toLowerCase() === selectedCategory);
+    ? (locations || [])
+    : (locations || []).filter(loc => loc.category && loc.category.toLowerCase() === selectedCategory);
 
   const filteredData = currentData
     .filter(loc => {
@@ -240,4 +237,4 @@ const ExploreSection = ({ onNavigate, onViewLiveFeed }) => {
   );
 };
 
-export default ExploreSection;
+export default ExploreDesktop;

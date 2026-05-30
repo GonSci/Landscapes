@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DesktopNavbar from './desktop/DesktopNavbar';
 import MobileNavbar from './mobile/MobileNavbar';
 
-const Navbar = (props) => {
+const NavbarContainer = (props) => {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -27,4 +27,4 @@ const Navbar = (props) => {
   return <DesktopNavbar {...props} />;
 };
 
-export default Navbar;
+export default NavbarContainer;

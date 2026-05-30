@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DesktopPhilippinesMap from './desktop/DesktopPhilippinesMap';
 import MobilePhilippinesMap from './mobile/MobilePhilippinesMap';
 
-const PhilippinesMap = (props) => {
+const PhilippinesMapContainer = (props) => {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -27,4 +27,4 @@ const PhilippinesMap = (props) => {
   return <DesktopPhilippinesMap {...props} />;
 };
 
-export default PhilippinesMap;
+export default PhilippinesMapContainer;

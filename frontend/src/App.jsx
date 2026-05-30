@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Navbar from './components/navbar/Navbar';
-import PhilippinesMap from './components/map/PhilippinesMap';
+import NavbarContainer from './components/navbar/NavbarContainer';
+import PhilippinesMapContainer from './components/map/PhilippinesMapContainer';
 import UserProfile from './components/profile/UserProfile';
 
-import ExploreSection from './components/explore/ExploreSection';
+import ExploreContainer from './components/explore/ExploreContainer';
 import Home from './components/landingPage/Home';
 import Dashboard from './components/dashboard/Dashboard';
 import MapSidebar from './components/map/desktop/MapSidebar';
@@ -143,7 +143,7 @@ function App() {
 
   return (
     <div className="App">
-      <Navbar
+      <NavbarContainer
         currentPage={currentPage}
         onNavigate={handleNavigate}
         currentUser={currentUser}
@@ -196,7 +196,7 @@ function App() {
               <div className="map-main relative">
 
                 
-                <PhilippinesMap
+                <PhilippinesMapContainer
                   userProfile={userProfile}
                   currentUser={currentUser}
                   focusLocation={focusLocation}
@@ -210,7 +210,7 @@ function App() {
 
         {currentPage === 'explore' && (
           <div className="page explore-page">
-            <ExploreSection 
+            <ExploreContainer 
               onNavigate={handleNavigate}
               userProfile={userProfile}
               onViewLiveFeed={handleViewLiveFeed}

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { ChevronLeft, ChevronRight, MapPin, ArrowRight } from 'lucide-react';
 import baguioData from '../../data/baguio_locations.json';
-import MapPreview from '../map/MapPreview';
+import MapPreview from './MapPreview';
 import './FeaturedDestinations.css';
 
 const ITEMS_PER_PAGE = 6;
