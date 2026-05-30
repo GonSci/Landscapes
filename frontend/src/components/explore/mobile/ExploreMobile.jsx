@@ -88,7 +88,7 @@ const ExploreMobile = ({ onNavigate, onViewLiveFeed, userProfile, locations = []
         {recommended.length > 0 && (
           <section className="mb-6">
             <h2 className="text-xl font-bold px-4 mb-3">Recommended For You</h2>
-            <div className="flex flex-nowrap overflow-x-auto gap-4 px-4 pb-4 snap-x snap-mandatory touch-pan-y [&::-webkit-scrollbar]:hidden">
+            <div className="flex flex-nowrap overflow-x-auto gap-4 px-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden">
               {recommended.map(loc => <LocationCard key={loc.id} location={loc} />)}
             </div>
           </section>
@@ -99,7 +99,7 @@ const ExploreMobile = ({ onNavigate, onViewLiveFeed, userProfile, locations = []
           return (
             <section key={cat} className="mb-6">
               <h2 className="text-xl font-bold px-4 mb-3">{formatCategory(cat)}</h2>
-              <div className="flex flex-nowrap overflow-x-auto gap-4 px-4 pb-4 snap-x snap-mandatory touch-pan-y [&::-webkit-scrollbar]:hidden">
+              <div className="flex flex-nowrap overflow-x-auto gap-4 px-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden">
                 {categoriesMap[cat].map(loc => <LocationCard key={loc.id} location={loc} />)}
               </div>
             </section>
