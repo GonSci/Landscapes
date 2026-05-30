@@ -24,6 +24,7 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'exp
   const [snapState, setSnapState] = useState('minimized');
   const [crowdFilter, setCrowdFilter] = useState('All');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const contentRef = React.useRef(null);
 
   const filteredLocations = crowdFilter === 'All' 
     ? locations 
@@ -32,6 +33,9 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'exp
   useEffect(() => {
     if (onSnapStateChange) {
       onSnapStateChange(snapState);
+    }
+    if (snapState === 'minimized' && contentRef.current) {
+      contentRef.current.scrollTop = 0;
     }
   }, [snapState, onSnapStateChange]);
 
@@ -72,6 +76,7 @@ const MobileBottomSheet = ({ onViewLiveFeed, onSnapStateChange, activeTab = 'exp
 
       {/* Content Area */}
       <div 
+        ref={contentRef}
         className={`flex-1 overflow-x-hidden px-6 pb-[100px] hide-scrollbar ${snapState === 'minimized' ? 'overflow-hidden' : 'overflow-y-auto'}`}
         onPointerDown={(e) => e.stopPropagation()} 
         onTouchStart={(e) => e.stopPropagation()}
