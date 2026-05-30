@@ -4,6 +4,12 @@
   padding: 0;
 }
 
+body, html {
+  background-color: #121626;
+  margin: 0;
+  padding: 0;
+}
+
 .App {
   min-height: 100dvh;
   background: #0a0f1e; /* Uniform deep slate-black */
@@ -200,7 +206,7 @@
 
 @media (max-width: 768px) {
   .page {
-    padding: 12px;
+    padding: 0;
   }
 
   .map-layout {

@@ -142,7 +142,7 @@ function App() {
   }
 
   return (
-    <div className="App">
+    <div className="App bg-[#121626] min-h-screen w-full">
       <NavbarContainer
         currentPage={currentPage}
         onNavigate={handleNavigate}
@@ -151,7 +151,7 @@ function App() {
       />
 
       {/* Add padding-top to offset fixed navbar (approx 72px) except on map page where we want full screen */}
-      <div className={`app-content ${currentPage === 'map' ? '' : 'pt-[72px]'}`}>
+      <div className={`app-content w-full ${currentPage === 'map' ? '' : 'md:pt-[72px]'}`}>
         {currentPage === 'home' && (
           <div className="page home-page">
             <Home onNavigate={handleNavigate} currentUser={currentUser} />
