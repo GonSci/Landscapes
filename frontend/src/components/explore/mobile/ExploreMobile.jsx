@@ -154,10 +154,9 @@ const ExploreMobile = ({ onNavigate, onViewLiveFeed, userProfile, locations = []
               
               {/* Tightened Text Wrapper */}
               <div className="flex flex-col gap-1.5">
-                {/* Title & Hours Row */}
+                {/* Title Row */}
                 <div className="flex justify-between items-start gap-4">
                   <h2 className="text-xl font-bold text-white leading-tight">{selectedLocation.name}</h2>
-                  <p className="text-xs text-slate-400 font-medium shrink-0 mt-1">8:00 AM - 6:00 PM</p>
                 </div>
                 
                 <div className="flex flex-wrap gap-1.5 mb-1">

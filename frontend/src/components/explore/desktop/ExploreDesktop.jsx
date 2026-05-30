@@ -208,9 +208,6 @@ const ExploreDesktop = ({ onNavigate, onViewLiveFeed, userProfile, locations, is
                 </div>
 
                 <div className="flex flex-col gap-3 pt-6 border-t border-white/5">
-                  <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500">
-                    {location.bestTime}
-                  </div>
                   {!['Mt. Cloud Bookshop', 'Ili-Likha Arts & Village', 'Heritage Hill', 'Cafe by the Ruins', 'Baguio Orchidarium', 'Gypsy Baguio by Chef Waya'].includes(location.name) && (
                     <button
                       type="button"
