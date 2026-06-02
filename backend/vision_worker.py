@@ -13,12 +13,11 @@ Key improvements over the previous version
                            the *current* raw frame using the latest detection boxes.
    The viewer always sees fluid 30-FPS video.  Detection boxes update at GPU rate.
 
-2. BYTETRACK IN THE DISPLAY THREAD
-   ByteTrack's Kalman filter runs at 30 FPS inside every display_thread.
-   When new detections arrive from inference it does a full association update;
-   on all other frames it advances each track's predicted position without
-   detections (empty-array update).  This means privacy blur follows people
-   smoothly between inference frames — no frozen or jumping boxes.
+2. DIRECT DETECTION OVERLAY
+   The display_thread draws the latest SAHI detections directly onto the
+   current raw frame.  Boxes update at the GPU inference rate and persist
+   between updates — no tracking layer needed.  This keeps the architecture
+   simple and avoids ByteTrack's confirmation-delay issues.
 
 3. RYZEN 5 3600 CPU PARALLELISM
    The Ryzen 5 3600 has 6 cores / 12 threads.  CPU-bound work is distributed:
@@ -129,7 +128,7 @@ LAST_RAW_FRAME    = {}   # location_id -> latest BGR np.ndarray (unprocessed)
 LAST_DETECTIONS   = {}   # location_id -> list[dict]  raw pixel detections
 DETECTION_UPDATED = {}   # location_id -> bool  True when fresh inference just landed
 THREAD_FRAMES     = {}   # location_id -> JPEG bytes (written by display_thread)
-THREAD_COUNTS     = {}   # location_id -> int  smoothed count from ByteTrack
+THREAD_COUNTS     = {}   # location_id -> int  person count from SAHI
 THREAD_MAX_COUNTS = {}   # location_id -> int  peak count in current log window
 
 RAW_FRAME_LOCK  = threading.Lock()   # guards LAST_RAW_FRAME
@@ -496,32 +495,7 @@ def draw_cctv_overlay(frame: np.ndarray, people_count: int, fps: float) -> np.nd
     return frame
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  ByteTracker Factory
-# ══════════════════════════════════════════════════════════════════════════════
 
-def make_bytetracker():
-    """
-    Returns a BYTETracker configured for 30-FPS display-rate tracking.
-    track_buffer=60 → keeps a lost track alive for 2 s at 30 FPS,
-    covering people temporarily occluded by pillars / trees / umbrellas.
-
-    Thresholds are tuned to match the detection pipeline:
-      - Location conf thresholds range from 0.20 (Burnham Park) to 0.45 (Cathedral)
-      - track_high_thresh=0.25 → any detection above 0.25 is "high confidence" for tracking
-      - new_track_thresh=0.15  → detections above 0.15 can start new tracks
-        (must be below the lowest location threshold of 0.20)
-    """
-    from ultralytics.trackers.byte_tracker import BYTETracker
-    args = SimpleNamespace(
-        track_high_thresh=0.25,   # was 0.5 — too high for our conf range
-        track_low_thresh=0.05,    # was 0.1
-        new_track_thresh=0.15,    # was 0.6 — this was the main bug!
-        track_buffer=60,          # 2 s at 30 FPS
-        match_thresh=0.8,
-        fuse_score=True,
-    )
-    return BYTETracker(args)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -784,78 +758,28 @@ def inference_thread(app_context, location_id: int, video_name: str, location_na
 
 def display_thread(location_id: int):
     """
+    Renders annotated video at 30 FPS for MJPEG streaming.
+
     Responsibilities:
-      1. Run ByteTrack at 30 FPS to keep boxes smoothly following people.
-         • When DETECTION_UPDATED is True  → full update (new detections fed in).
-         • When DETECTION_UPDATED is False → predict-only (Kalman advances,
-           boxes coast to predicted positions without new measurement).
-      2. Apply CLAHE, privacy blur, annotation on the *current* raw frame
-         using the ByteTrack-smoothed boxes.
-      3. JPEG-encode and publish to THREAD_FRAMES.
-      4. Update THREAD_COUNTS with the tracked person count.
+      1. Read the latest raw frame from LAST_RAW_FRAME.
+      2. Read the latest SAHI detections from LAST_DETECTIONS.
+      3. Scale detection bboxes from inference size → source frame size.
+      4. Apply CLAHE, privacy blur, and annotation overlays.
+      5. JPEG-encode and publish to THREAD_FRAMES.
+      6. Update THREAD_COUNTS with the current person count.
 
-    CPU work (CLAHE, blur, encode) is submitted to the ThreadPoolExecutor so
-    it runs on a separate Ryzen core and does not block the 30-FPS sleep loop.
-    In practice the work fits within one frame budget (33 ms) comfortably.
+    Boxes update at the GPU inference rate (typically 5–24 FPS depending
+    on hardware) and persist between updates so the display always shows
+    the most recent detection state.
     """
-    tracker     = make_bytetracker()
-
     # ── FPS smoothing (EMA) ────────────────────────────────────────────────
     smoothed_fps = 0.0
     _FPS_ALPHA   = 0.1   # smoothing factor: lower = more stable
 
+    # Last known detections (scaled to source size), reused between inference
+    _cached_detections = []
+
     print(f"[VISION] Display thread started for location {location_id}")
-
-    # ── DetectionResults: numpy subclass that satisfies BYTETracker.update() ──
-    # BYTETracker internally accesses .conf, .xywh, .cls, .xyxy, [i] slicing,
-    # and np.concatenate.  This subclass satisfies all access patterns.
-    class DetectionResults(np.ndarray):
-        """(N,6) array: [x1, y1, x2, y2, confidence, class_id]."""
-        def __new__(cls, array):
-            return np.asarray(array, dtype=np.float32).view(cls)
-
-        @property
-        def conf(self):
-            return np.asarray(self[:, 4]) if len(self) else np.empty(0, dtype=np.float32)
-
-        @property
-        def cls(self):
-            return np.asarray(self[:, 5]) if len(self) else np.empty(0, dtype=np.float32)
-
-        @property
-        def xyxy(self):
-            return np.asarray(self[:, :4]) if len(self) else np.empty((0, 4), dtype=np.float32)
-
-        @property
-        def xywh(self):
-            if not len(self):
-                return np.empty((0, 4), dtype=np.float32)
-            xy = np.asarray(self[:, :4])
-            cx = (xy[:, 0] + xy[:, 2]) / 2.0
-            cy = (xy[:, 1] + xy[:, 3]) / 2.0
-            w  = xy[:, 2] - xy[:, 0]
-            h  = xy[:, 3] - xy[:, 1]
-            return np.stack([cx, cy, w, h], axis=1)
-
-        @property
-        def xywhr(self):
-            return self.xywh
-
-    def _make_tracker_input(detections, scale_x, scale_y):
-        """Convert SAHI pixel detections → DetectionResults (N,6)."""
-        if not detections:
-            return DetectionResults(np.empty((0, 6), dtype=np.float32))
-        rows = []
-        for d in detections:
-            x1, y1, x2, y2 = d['bbox']
-            rows.append([
-                x1 * scale_x, y1 * scale_y,
-                x2 * scale_x, y2 * scale_y,
-                d['confidence'], 0.0,
-            ])
-        return DetectionResults(np.array(rows, dtype=np.float32))
-
-    _last_smoothed = []   # reused on frames without new inference
 
     while True:
         loop_start = time.time()
@@ -868,92 +792,56 @@ def display_thread(location_id: int):
             time.sleep(1.0 / 30.0)
             continue
 
-        # Take a snapshot so inference_thread can overwrite LAST_RAW_FRAME
+        # Snapshot so inference_thread can overwrite LAST_RAW_FRAME
         # without affecting our rendering mid-frame.
         frame = raw.copy()
         h_src, w_src = frame.shape[:2]
 
         # ── 2. Read latest detections ─────────────────────────────────────────
         with DETECTION_LOCK:
-            raw_detections = list(LAST_DETECTIONS.get(location_id, []))
+            raw_detections = LAST_DETECTIONS.get(location_id, [])
             has_new        = DETECTION_UPDATED.get(location_id, False)
             if has_new:
                 DETECTION_UPDATED[location_id] = False
 
-        # ── 3. Scale detections from inference size → source frame size ───────
-        sx = w_src / INFERENCE_WIDTH
-        sy = h_src / INFERENCE_HEIGHT
+        # ── 3. Scale detections to source frame size when new ones arrive ─────
+        if has_new:
+            sx = w_src / INFERENCE_WIDTH
+            sy = h_src / INFERENCE_HEIGHT
+            scaled = []
+            for d in raw_detections:
+                x1, y1, x2, y2 = d['bbox']
+                x1, y1 = int(x1 * sx), int(y1 * sy)
+                x2, y2 = int(x2 * sx), int(y2 * sy)
+                x1, y1 = max(0, x1), max(0, y1)
+                x2, y2 = min(w_src, x2), min(h_src, y2)
+                if x2 > x1 and y2 > y1:
+                    scaled.append({
+                        'bbox':       [x1, y1, x2, y2],
+                        'confidence': d['confidence'],
+                    })
+            _cached_detections = scaled
 
-        # ── 4. ByteTrack update ───────────────────────────────────────────────
-        # IMPORTANT: Only call tracker.update() when new detections arrive.
-        # ByteTrack needs 2 consecutive frames with detections to promote a
-        # track from "unconfirmed" to "activated".  If we feed empty arrays
-        # at 30 FPS between inference results, unconfirmed tracks get evicted
-        # before a second detection can confirm them.
-        #
-        # Solution: feed detections TWICE on arrival (double-tap) so tracks
-        # are confirmed immediately, then skip tracker updates entirely on
-        # intermediate frames — just reuse the last smoothed detections.
-        if has_new and raw_detections:
-            try:
-                dets_input = _make_tracker_input(raw_detections, sx, sy)
-                # Double-tap: first update creates unconfirmed tracks,
-                # second update with same detections confirms them.
-                tracker.update(dets_input, frame)
-                tracked = tracker.update(dets_input, frame)
-            except Exception as e:
-                print(f"[VISION] ByteTrack error loc {location_id}: {e}")
-                tracked = np.empty((0, 8), dtype=np.float32)
+        count = len(_cached_detections)
 
-            # ── 5. Build smoothed detection list from tracker output ──────
-            # BYTETracker.update() returns:
-            #   (N,8)  when N >= 2 tracks  → ndim == 2
-            #   (8,)   when exactly 1 track → ndim == 1 → reshape to (1,8)
-            #   (0,)   when 0 tracks        → ndim == 1, size == 0
-            smoothed = []
-            if isinstance(tracked, np.ndarray) and tracked.size > 0:
-                if tracked.ndim == 1:
-                    tracked = tracked.reshape(1, -1)
-                if tracked.ndim == 2 and tracked.shape[1] >= 6:
-                    for row in tracked:
-                        x1, y1, x2, y2 = int(row[0]), int(row[1]), int(row[2]), int(row[3])
-                        track_id = int(row[4])
-                        score    = float(row[5])
-                        x1, y1 = max(0, x1), max(0, y1)
-                        x2, y2 = min(w_src, x2), min(h_src, y2)
-                        if x2 > x1 and y2 > y1:
-                            smoothed.append({
-                                'bbox':       [x1, y1, x2, y2],
-                                'confidence': score,
-                                'track_id':   track_id,
-                            })
-            # Cache for reuse on intermediate frames
-            _last_smoothed = smoothed
-        else:
-            # No new inference result — reuse last known detections.
-            # The boxes stay in place until the next inference updates them.
-            smoothed = _last_smoothed
-
-        count = len(smoothed)
-
-        # ── 6. Update counts ──────────────────────────────────────────────────
+        # ── 4. Update counts ──────────────────────────────────────────────────
         with STREAM_LOCK:
             THREAD_COUNTS[location_id] = count
             if count > THREAD_MAX_COUNTS.get(location_id, 0):
                 THREAD_MAX_COUNTS[location_id] = count
 
-        # ── 7. CPU rendering ──────────────────────────────────────────────────
+        # ── 5. CPU rendering ──────────────────────────────────────────────────
         try:
             display = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
-            if smoothed:
+            if _cached_detections:
                 if DETECTION_CONFIG['enable_blur']:
-                    display = apply_gaussian_blur(display, smoothed)
-                display = draw_detections_on_frame(display, smoothed)
+                    display = apply_gaussian_blur(display, _cached_detections)
+                display = draw_detections_on_frame(display, _cached_detections)
 
             # EMA-smoothed FPS, capped at 30 to match target framerate
             elapsed_render = time.time() - loop_start
             instant_fps    = 1.0 / max(elapsed_render, 1e-9)
-            instant_fps    = min(instant_fps, 30.0)  # cap at target FPS
+            instant_fps    = min(instant_fps, 30.0)
             smoothed_fps   = _FPS_ALPHA * instant_fps + (1 - _FPS_ALPHA) * smoothed_fps
 
             display = draw_cctv_overlay(display, count, smoothed_fps)
@@ -964,7 +852,7 @@ def display_thread(location_id: int):
         except Exception as e:
             print(f"[VISION] Render error loc {location_id}: {e}")
 
-        # ── 8. Sleep the remainder of the 30-FPS budget ───────────────────────
+        # ── 6. Sleep the remainder of the 30-FPS budget ───────────────────────
         elapsed   = time.time() - loop_start
         remainder = (1.0 / 30.0) - elapsed
         if remainder > 0:
