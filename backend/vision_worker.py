@@ -61,7 +61,7 @@ import time
 from datetime import datetime
 from dotenv import load_dotenv
 from types import SimpleNamespace
-import queue as _queue
+
 
 from extensions import db
 from models import Location, SurveillanceLog
@@ -107,11 +107,9 @@ LOCATION_HIGH_THRESHOLDS = {1: 15, 2: 38, 3: 14, 4: 15, 5: 66}
 
 YOLO_MODEL = None
 
-# ── GPU Inference Queue ────────────────────────────────────────────────────────
-# inference_threads → gpu_inference_worker via INFERENCE_INPUT_QUEUE
-# gpu_inference_worker → inference_threads via per-location INFERENCE_OUTPUT_QUEUES
-INFERENCE_INPUT_QUEUE   = _queue.Queue(maxsize=10)
-INFERENCE_OUTPUT_QUEUES = {}   # location_id -> Queue(maxsize=2)
+
+# ── GPU Inference: latest-frame slots ──────────────────────────────────────────
+# Defined near gpu_inference_worker: INFERENCE_LATEST_FRAME, INFERENCE_LATEST_LOCK
 
 # ── Device info (populated by detect_device at startup) ───────────────────────
 DEVICE_INFO = {
@@ -502,27 +500,58 @@ def draw_cctv_overlay(frame: np.ndarray, people_count: int, fps: float) -> np.nd
 #  GPU Inference Worker  (sole owner of YOLO_MODEL)
 # ══════════════════════════════════════════════════════════════════════════════
 
+# Per-location latest-frame slots for the GPU worker.
+# Each slot holds the NEWEST preprocessed frame (or None).
+# inference_thread overwrites this every time it has a new frame ready;
+# gpu_inference_worker reads & clears it.  This guarantees the GPU always
+# processes the most recent frame — no stale queue buildup.
+INFERENCE_LATEST_FRAME = {}   # location_id -> (frame_proc, is_active, conf_threshold) | None
+INFERENCE_LATEST_LOCK  = threading.Lock()
+
 def gpu_inference_worker():
     """
     Single thread that owns the GPU.
-    Reads (location_id, frame_proc, is_active, conf_threshold) from
-    INFERENCE_INPUT_QUEUE, runs SAHI, pushes raw results to the matching
-    per-location INFERENCE_OUTPUT_QUEUE.
+    Round-robins through all footage locations, picking the latest available
+    frame from each.  When a result is ready, it writes directly to
+    LAST_DETECTIONS + DETECTION_UPDATED so the display thread picks it up
+    on its next 30-FPS loop iteration.
     """
     global YOLO_MODEL
     print("[VISION] GPU inference worker started")
+
     while True:
-        try:
-            location_id, frame_proc, is_active, conf_threshold = INFERENCE_INPUT_QUEUE.get()
-            YOLO_MODEL.confidence_threshold = conf_threshold
-            results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO, is_active)
-            INFERENCE_OUTPUT_QUEUES[location_id].put(results)
-        except Exception as e:
-            print(f"[VISION] gpu_inference_worker error: {e}")
+        processed_any = False
+        for location_id in list(FOOTAGE_LOCATION_IDS):
+            # Grab the latest frame for this location (non-blocking)
+            with INFERENCE_LATEST_LOCK:
+                slot = INFERENCE_LATEST_FRAME.get(location_id)
+                if slot is not None:
+                    INFERENCE_LATEST_FRAME[location_id] = None
+                else:
+                    continue
+
+            frame_proc, is_active, conf_threshold = slot
+            processed_any = True
+
             try:
-                INFERENCE_OUTPUT_QUEUES[location_id].put(None)
-            except Exception:
-                pass
+                YOLO_MODEL.confidence_threshold = conf_threshold
+                results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO, is_active)
+
+                # Parse results
+                detections_pixel, _ = parse_sahi_results(
+                    results, INFERENCE_WIDTH, INFERENCE_HEIGHT,
+                )
+
+                # Publish detections directly (no per-location output queue needed)
+                with DETECTION_LOCK:
+                    LAST_DETECTIONS[location_id]   = detections_pixel
+                    DETECTION_UPDATED[location_id] = True
+            except Exception as e:
+                print(f"[VISION] gpu_inference_worker error loc {location_id}: {e}")
+
+        if not processed_any:
+            # No frames waiting — sleep briefly to avoid busy-spinning
+            time.sleep(0.005)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -631,11 +660,12 @@ def inference_thread(app_context, location_id: int, video_name: str, location_na
       1. Read frames from the video file at real-time wall-clock speed.
       2. Store each raw frame in LAST_RAW_FRAME for the display thread.
       3. Apply the motion gate — skip inference on static frames.
-      4. Resize to inference size, apply CLAHE, submit to GPU worker.
-      5. Parse results, store in LAST_DETECTIONS, signal DETECTION_UPDATED.
-      6. Handle DB logging (unchanged logic from original camera_thread).
+      4. Resize to inference size, apply CLAHE.
+      5. Write the preprocessed frame to INFERENCE_LATEST_FRAME (overwrite).
+         The gpu_inference_worker picks it up asynchronously.
+      6. Handle DB logging from detections published by the GPU worker.
 
-    Does NOT annotate, blur, or JPEG-encode — that belongs to display_thread.
+    Frame reading NEVER blocks on GPU inference — video stays smooth.
     """
     video_path = resolve_video_path(video_name)
     if not video_path:
@@ -654,24 +684,14 @@ def inference_thread(app_context, location_id: int, video_name: str, location_na
         THREAD_COUNTS[location_id]     = 0
         THREAD_MAX_COUNTS[location_id] = 0
 
-    playback_start    = time.time()
-    last_log_time     = time.time() - 61  # force a log on first detection
-    last_detections_pct = []
-    # Track the wall-clock time of the last frame we actually decoded so we
-    # can pace reads to real video FPS without fast-forwarding.
-    last_frame_time   = time.time()
-    frame_interval    = 1.0 / fps_video  # seconds between frames at native speed
-
-    # Peak count tracked entirely inside inference_thread so logging does not
-    # depend on display_thread writing THREAD_COUNTS first.
+    last_log_time        = time.time() - 61  # force a log on first detection
+    last_frame_time      = time.time()
+    frame_interval       = 1.0 / fps_video
     inference_peak_count = 0
 
     while True:
         try:
             # ── 1. Frame pacing — wait until next frame is due ────────────────
-            # Sleep until at least one frame interval has elapsed since the last
-            # decoded frame.  This prevents the inference loop from racing ahead
-            # of real time and making the video appear fast-forwarded.
             now_t = time.time()
             sleep_needed = frame_interval - (now_t - last_frame_time)
             if sleep_needed > 0:
@@ -680,9 +700,7 @@ def inference_thread(app_context, location_id: int, video_name: str, location_na
 
             ret, frame = cap.read()
             if not ret:
-                # End of video — loop back to start
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                playback_start  = time.time()
                 last_frame_time = time.time()
                 continue
 
@@ -694,8 +712,8 @@ def inference_thread(app_context, location_id: int, video_name: str, location_na
             with active_location_lock:
                 is_active = location_id in active_location_ids
 
-            # Background streams: throttle to one inference per 5 s.
-            # The frame is still stored above so display stays up-to-date.
+            # Background streams: only submit for inference every 5 s.
+            # The raw frame above is still stored so the display stays current.
             if not is_active:
                 time.sleep(5.0)
 
@@ -710,26 +728,18 @@ def inference_thread(app_context, location_id: int, video_name: str, location_na
             )
             frame_proc = apply_clahe(frame_resized) if DETECTION_CONFIG['enable_clahe'] else frame_resized
 
-            # ── 6. Submit to GPU worker and wait for result ───────────────────
+            # ── 6. Write to latest-frame slot (GPU worker picks this up) ──────
+            # This is a non-blocking overwrite — if the GPU hasn't consumed the
+            # previous frame yet, it gets replaced with this newer one.
             conf_threshold = LOCATION_CONF_THRESHOLDS.get(location_id, DETECTION_CONFIG['conf_threshold'])
-            INFERENCE_INPUT_QUEUE.put((location_id, frame_proc, is_active, conf_threshold))
-            results = INFERENCE_OUTPUT_QUEUES[location_id].get()
+            with INFERENCE_LATEST_LOCK:
+                INFERENCE_LATEST_FRAME[location_id] = (frame_proc, is_active, conf_threshold)
 
-            # ── 7. Parse detections ───────────────────────────────────────────
-            detections_pixel, detections_pct = parse_sahi_results(
-                results, INFERENCE_WIDTH, INFERENCE_HEIGHT,
-            )
-            last_detections_pct = detections_pct
-
-            # ── 8. Publish detections (display_thread consumes these) ─────────
+            # ── 7. DB logging (reads detections published by GPU worker) ──────
             with DETECTION_LOCK:
-                LAST_DETECTIONS[location_id]   = detections_pixel
-                DETECTION_UPDATED[location_id] = True
+                current_dets = LAST_DETECTIONS.get(location_id, [])
+            current_count = len(current_dets)
 
-            # ── 9. DB logging ─────────────────────────────────────────────────
-            # Use len(detections_pixel) directly — do NOT depend on
-            # THREAD_COUNTS which is written by display_thread and may lag.
-            current_count = len(detections_pixel)
             if current_count > inference_peak_count:
                 inference_peak_count = current_count
 
@@ -740,12 +750,12 @@ def inference_thread(app_context, location_id: int, video_name: str, location_na
 
             if time_since_last_log >= 60 or (is_high_density and time_since_last_log >= 10):
                 conf_avg = (
-                    sum(d['confidence'] for d in last_detections_pct) / len(last_detections_pct)
-                    if last_detections_pct else None
+                    sum(d['confidence'] for d in current_dets) / len(current_dets)
+                    if current_dets else None
                 )
                 if log_detection_to_database(app_context, location_id, inference_peak_count, conf_avg):
                     last_log_time        = now
-                    inference_peak_count = 0   # reset peak after logging
+                    inference_peak_count = 0
 
         except Exception as e:
             print(f"[VISION] Error in inference_thread for {location_name}: {e}")
@@ -1165,10 +1175,9 @@ if __name__ == '__main__':
             target=db_polling_thread, args=(app.app_context,), daemon=True,
         ).start()
 
-        # Create per-location output queues + initialise shared state
+        # Initialise per-location shared state.
         # Only for locations that actually have resolvable footage.
         for loc_id in FOOTAGE_LOCATION_IDS:
-            INFERENCE_OUTPUT_QUEUES[loc_id] = _queue.Queue(maxsize=2)
             LAST_DETECTIONS[loc_id]         = []
             DETECTION_UPDATED[loc_id]       = False
             LAST_RAW_FRAME[loc_id]          = None
