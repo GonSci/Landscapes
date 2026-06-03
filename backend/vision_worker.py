@@ -58,9 +58,14 @@ YOLO_MODEL = None
 # Replace YOLO_LOCK (which serialized 5 threads and starved 4 at a time) with a
 # dedicated worker thread that is the *sole owner of the GPU*.
 # Camera threads drop frames in → pick annotated results out.  No lock needed.
+#
+# Issue 3.1 Fix: split into two queues so the active stream always gets GPU
+# priority.  The worker drains INFERENCE_ACTIVE_QUEUE first; background frames
+# only run when the active queue is empty.
 import queue as _queue
-INFERENCE_INPUT_QUEUE  = _queue.Queue(maxsize=2)   # (location_id, frame_proc, is_active, conf_threshold) tuples
-INFERENCE_OUTPUT_QUEUES = {}                         # location_id -> Queue(maxsize=2)
+INFERENCE_ACTIVE_QUEUE     = _queue.Queue(maxsize=1)   # active stream gets its own dedicated slot
+INFERENCE_BACKGROUND_QUEUE = _queue.Queue(maxsize=5)   # room for all background streams to queue at once
+INFERENCE_OUTPUT_QUEUES    = {}                         # location_id -> Queue(maxsize=1)
 
 # Populated by detect_device() at startup — used throughout the module
 DEVICE_INFO = {
@@ -398,52 +403,28 @@ def run_sahi_inference(model, frame_proc: np.ndarray, device_info: dict, is_acti
     """
     Unified inference call that works for both TensorRT and PyTorch backends.
 
-    Two modes depending on whether the stream is currently being viewed:
+    Uses SAHI sliced prediction for ALL streams (active and background alike).
+    448×448 slices, 0.15 overlap → 6 tiles on 1024×576 footage.
+    Each tile upscales to 640×640 before inference, so a 20px person
+    appears ~45px to the model — solidly detectable.
 
-    ACTIVE stream (is_active=True):
-        448×448 slices, 0.15 overlap → 6 tiles on 1024×576 footage.
-        Each tile upscales to 640×640 before inference, so a 20px person
-        appears ~45px to the model — solidly detectable.  6 GPU calls/frame
-        targets 10–15 FPS on the GTX 1660 Super at FP16.
-
-        Why 448 not 384: 384×384 with 0.20 overlap gave 8 tiles → 5–9 FPS,
-        too slow.  448×448 with 0.15 overlap gives 6 tiles with only a minor
-        recall drop on boundary cases — the better FPS tradeoff.
-
-    BACKGROUND stream (is_active=False):
-        Single full-frame pass (no slicing) — 1 GPU call per frame.
-        Background streams only process 1 frame every 5 seconds for DB
-        logging; spending 6 GPU calls on each wastes time that the active
-        stream needs.  Full-frame recall is lower but counts for logging
-        at 0.2 FPS are good enough for the redirection algorithm.
+    Background streams only submit 1 frame every 5 seconds (per location),
+    so 6 GPU calls per background frame adds < 7% overhead.  Full-frame
+    inference (1 tile, no slicing) was previously used for background but
+    produced 0 detections because people are too small at native resolution.
     """
-    if is_active:
-        return get_sliced_prediction(
-            frame_proc,
-            model,
-            slice_height=448,
-            slice_width=448,
-            overlap_height_ratio=0.15,
-            overlap_width_ratio=0.15,
-            postprocess_match_metric="IOU",
-            postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
-            postprocess_class_agnostic=True,
-            verbose=False,
-        )
-    else:
-        # Single full-frame inference — 1 GPU call, fast, sufficient for logging
-        return get_sliced_prediction(
-            frame_proc,
-            model,
-            slice_height=frame_proc.shape[0],
-            slice_width=frame_proc.shape[1],
-            overlap_height_ratio=0.0,
-            overlap_width_ratio=0.0,
-            postprocess_match_metric="IOU",
-            postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
-            postprocess_class_agnostic=True,
-            verbose=False,
-        )
+    return get_sliced_prediction(
+        frame_proc,
+        model,
+        slice_height=448,
+        slice_width=448,
+        overlap_height_ratio=0.15,
+        overlap_width_ratio=0.15,
+        postprocess_match_metric="IOU",
+        postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
+        postprocess_class_agnostic=True,
+        verbose=False,
+    )
 
 
 # ── Path Helpers ───────────────────────────────────────────────────────────────
@@ -552,23 +533,60 @@ def gpu_inference_worker():
     """
     Single thread that owns the GPU exclusively.
 
-    Reads (location_id, frame_proc) tuples from INFERENCE_INPUT_QUEUE, runs
-    SAHI inference, and puts the raw SAHI result into the matching per-location
-    output queue.  Because only this thread ever touches YOLO_MODEL there is no
-    lock anywhere — contention is eliminated by design.
-
-    Background streams (0.2 FPS) submit frames infrequently, so the worker is
-    idle most of the time and the active stream gets the GPU almost exclusively.
+    Issue 3.1 Fix: drains INFERENCE_ACTIVE_QUEUE first so the stream the user
+    is watching always gets GPU priority.  After each active frame, also
+    processes ONE background frame if available — this prevents starvation
+    because the active queue is nearly always non-empty (camera thread fills
+    it at 30 FPS).  Because only this thread ever touches YOLO_MODEL there
+    is no lock anywhere — contention is eliminated by design.
     """
     global YOLO_MODEL
-    print("[VISION] GPU inference worker started")
+    print("[VISION] GPU inference worker started (priority queue mode)")
     while True:
         try:
-            location_id, frame_proc, is_active, conf_threshold = INFERENCE_INPUT_QUEUE.get()
+            item = None
+
+            # Priority 1: always check the active stream queue first
+            try:
+                item = INFERENCE_ACTIVE_QUEUE.get_nowait()
+            except _queue.Empty:
+                pass
+
+            # Priority 2: if no active frame waiting, check background
+            if item is None:
+                try:
+                    item = INFERENCE_BACKGROUND_QUEUE.get_nowait()
+                except _queue.Empty:
+                    pass
+
+            # Nothing in either queue — block briefly on active to avoid busy-spin
+            if item is None:
+                try:
+                    item = INFERENCE_ACTIVE_QUEUE.get(timeout=0.05)
+                except _queue.Empty:
+                    continue
+
+            location_id, frame_proc, is_active, conf_threshold = item
             # Apply the per-location threshold (safe -- only this thread touches YOLO_MODEL)
             YOLO_MODEL.confidence_threshold = conf_threshold
             results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO, is_active)
             INFERENCE_OUTPUT_QUEUES[location_id].put(results)
+
+            # ── Anti-starvation: process ONE background frame after each active ──
+            # The active queue is almost always non-empty (filled at 30 FPS), so
+            # the "Priority 2" check above rarely fires.  This ensures background
+            # frames get processed promptly.  Background inference runs once every
+            # ~5s per location, so this adds < 7% GPU overhead.
+            if is_active:
+                try:
+                    bg_item = INFERENCE_BACKGROUND_QUEUE.get_nowait()
+                    bg_loc, bg_frame, bg_active, bg_conf = bg_item
+                    YOLO_MODEL.confidence_threshold = bg_conf
+                    bg_results = run_sahi_inference(YOLO_MODEL, bg_frame, DEVICE_INFO, bg_active)
+                    INFERENCE_OUTPUT_QUEUES[bg_loc].put(bg_results)
+                except _queue.Empty:
+                    pass
+
         except Exception as e:
             print(f"[VISION] gpu_inference_worker error: {e}")
             # Put a sentinel so camera_thread doesn't block forever
@@ -584,9 +602,10 @@ def run_yolo_pipeline(frame, location_id, tracker, last_tracked_objects, is_acti
     frame_proc = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
     conf_threshold = LOCATION_CONF_THRESHOLDS.get(location_id, DETECTION_CONFIG['conf_threshold'])
     
-    # 1. Attempt to send frame to GPU
+    # 1. Attempt to send frame to GPU (routed by priority)
+    target_queue = INFERENCE_ACTIVE_QUEUE if is_active else INFERENCE_BACKGROUND_QUEUE
     try:
-        INFERENCE_INPUT_QUEUE.put_nowait((location_id, frame_proc, is_active, conf_threshold))
+        target_queue.put_nowait((location_id, frame_proc, is_active, conf_threshold))
     except _queue.Full:
         pass
 
@@ -663,7 +682,8 @@ def run_yolo_pipeline(frame, location_id, tracker, last_tracked_objects, is_acti
         output_frame = draw_detections_on_frame(output_frame, detections_pixel)
 
     # Return current_tracked_objects so the camera thread can hold onto them
-    return output_frame, detections_pct, detections_pixel, current_tracked_objects
+    # 5th return: whether we got fresh GPU results (vs stale reuse)
+    return output_frame, detections_pct, detections_pixel, current_tracked_objects, (new_results is not None)
 
 # ── Database Logging ───────────────────────────────────────────────────────────
 def log_detection_to_database(app_context, location_id, people_count, confidence_avg):
@@ -720,10 +740,12 @@ def camera_thread(app_context, location_id, video_name, location_name):
     tracker = sv.ByteTrack(track_activation_threshold=0.35, lost_track_buffer=5, frame_rate=30)
     last_tracked_objects = []
     track_ages = {}
+    last_confirmed_detections = []   # persist confirmed boxes between GPU results
     
     # NEW: Variables to stabilize FPS reporting and control background processing
     display_fps = 30.0 
     last_pipeline_run = 0.0
+    was_active = None  # track active/inactive transitions for terminal logging
 
     while True:
         try:
@@ -732,6 +754,14 @@ def camera_thread(app_context, location_id, video_name, location_name):
             # Determine priority
             with active_location_lock:
                 is_active = (location_id == active_location_id)
+
+            # ── Log active/inactive transitions ──
+            if was_active is not None and was_active != is_active:
+                if is_active:
+                    print(f"[VISION] [{location_name}] Now ACTIVE (user is viewing)")
+                else:
+                    print(f"[VISION] [{location_name}] Now INACTIVE (background mode)")
+            was_active = is_active
                 
             # THE FIX: Always target 30 FPS to drain the OpenCV buffer continuously
             target_fps = 30.0 
@@ -757,6 +787,7 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 tracker = sv.ByteTrack(track_activation_threshold=0.35, lost_track_buffer=5, frame_rate=30)
                 last_tracked_objects = []
                 track_ages = {}
+                last_confirmed_detections = []
                 continue
 
             # THE FIX: Decide whether to run the heavy AI math.
@@ -769,34 +800,44 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 current_count = THREAD_COUNTS.get(location_id, 0)
 
             if should_process_ai:
-                # 3. PIPELINE CALL: (Removed 'fps' from the return unpacking)
-                pipe_frame, detections_pct, detections_pixel, last_tracked_objects = run_yolo_pipeline(
+                # 3. PIPELINE CALL
+                pipe_frame, detections_pct, detections_pixel, last_tracked_objects, got_fresh = run_yolo_pipeline(
                     frame, location_id, tracker, last_tracked_objects, is_active=is_active, annotate=False
                 )
 
                 # --- 4. TEMPORAL FILTERING LOGIC ---
-                confirmed_detections = []
-                current_ids = set()
-                
-                for det in detections_pixel:
-                    tid = det['id']
-                    current_ids.add(tid)
+                # ONLY run when we got fresh GPU results.  Between GPU results the
+                # pipeline returns stale last_tracked_objects — incrementing ages on
+                # those would cause boxes to briefly disappear every time ByteTrack
+                # reassigns IDs on a fresh result.
+                if got_fresh:
+                    confirmed_detections = []
+                    current_ids = set()
                     
-                    if is_active:
-                        track_ages[tid] = track_ages.get(tid, 0) + 1
-                        if track_ages[tid] >= 3:
+                    for det in detections_pixel:
+                        tid = det['id']
+                        current_ids.add(tid)
+                        
+                        if is_active:
+                            track_ages[tid] = track_ages.get(tid, 0) + 1
+                            if track_ages[tid] >= 3:
+                                confirmed_detections.append(det)
+                        else:
+                            # Background streams only run every 5s, so ByteTrack resets.
+                            # Accept detections immediately without temporal filtering.
                             confirmed_detections.append(det)
-                    else:
-                        # Background streams only run every 5s, so ByteTrack resets.
-                        # Accept detections immediately without temporal filtering.
-                        confirmed_detections.append(det)
 
-                if is_active:
-                    track_ages = {tid: age for tid, age in track_ages.items() if tid in current_ids}
+                    if is_active:
+                        track_ages = {tid: age for tid, age in track_ages.items() if tid in current_ids}
+                    else:
+                        track_ages = {}
+                    
+                    current_count = len(confirmed_detections)
+                    last_confirmed_detections = confirmed_detections
                 else:
-                    track_ages = {}
-                
-                current_count = len(confirmed_detections)
+                    # No fresh GPU data — keep showing the last confirmed set
+                    confirmed_detections = last_confirmed_detections
+                    current_count = len(confirmed_detections)
 
                 # Only apply blurs and overlays to the frames that actually ran AI
                 output_frame = pipe_frame
@@ -1000,7 +1041,7 @@ if __name__ == '__main__':
         # Issue 2 Fix: create per-location output queues, then start the single GPU worker
         for loc in locations:
             if loc.video_filename:
-                INFERENCE_OUTPUT_QUEUES[loc.id] = _queue.Queue(maxsize=2)
+                INFERENCE_OUTPUT_QUEUES[loc.id] = _queue.Queue(maxsize=1)
         threading.Thread(target=gpu_inference_worker, daemon=True).start()
 
         # Start Camera Threads
