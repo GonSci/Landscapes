@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useState } from 'react';
 import * as d3 from 'd3';
-import useResizeObserver from '../../hooks/useResizeObserver';
+import useResizeObserver from '../../../hooks/useResizeObserver';
 
 /**
  * DonutChart — D3-powered crowd distribution donut chart.
@@ -14,7 +14,7 @@ import useResizeObserver from '../../hooks/useResizeObserver';
  *   data: Array<{ name: string, percentage: number, color: string }>
  *   busiestLocation: { name: string, percentage: number } | null
  */
-const DonutChart = ({ data = [], busiestLocation = null }) => {
+const DonutChartDesktop = ({ data = [], busiestLocation = null }) => {
   const wrapperRef = useRef(null);
   const { width } = useResizeObserver(wrapperRef);
 
@@ -206,4 +206,4 @@ const DonutChart = ({ data = [], busiestLocation = null }) => {
   );
 };
 
-export default DonutChart;
+export default DonutChartDesktop;

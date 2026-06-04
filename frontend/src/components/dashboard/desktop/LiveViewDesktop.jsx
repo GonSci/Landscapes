@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MapPin, ChevronDown, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import BarChart from './BarChart';
-import DonutChart from './DonutChart';
+import { BarChart, DonutChart } from '../Dashboard';
 
 const API_URL = `${import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`}/api`;
 const VISION_URL = import.meta.env.VITE_VISION_BASE_URL || `http://${window.location.hostname}:5002`;
 
-const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection }) => {
+const LiveViewDesktop = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection }) => {
   const [detectedCount, setDetectedCount] = useState(0);
   const [videoInitialized, setVideoInitialized] = useState(false);
   const [videoError, setVideoError] = useState(null);
@@ -893,5 +892,5 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
   );
 };
 
-export default LiveView;
+export default LiveViewDesktop;
 

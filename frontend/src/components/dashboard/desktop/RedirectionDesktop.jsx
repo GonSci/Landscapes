@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import baguioData from '../../data/baguio_locations.json';
-import redirectionFallback from '../../data/redirection_fallback_locations.json';
-import { useLiveLocations } from '../../hooks/useLiveLocations';
+import baguioData from '../../../data/baguio_locations.json';
+import redirectionFallback from '../../../data/redirection_fallback_locations.json';
+import { useLiveLocations } from '../../../hooks/useLiveLocations';
 
-const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
+const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => {
   const [baguioLocations, setBaguioLocations] = useState([]);
   const [hoveredLocation, setHoveredLocation] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
@@ -1047,7 +1047,7 @@ const Redirection = React.forwardRef(({ redirectionLocationId }, ref) => {
 
 Redirection.displayName = 'Redirection';
 
-export default Redirection;
+export default RedirectionDesktop;
 
 const styles = `
   .location-popup .leaflet-popup-content-wrapper {
