@@ -570,6 +570,14 @@ def gpu_inference_worker():
             # Apply the per-location threshold (safe -- only this thread touches YOLO_MODEL)
             YOLO_MODEL.confidence_threshold = conf_threshold
             results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO, is_active)
+            # Non-blocking put: drain stale result first so we never block.
+            # On fast backends (TensorRT ~30ms/frame) the old blocking .put()
+            # would deadlock when a background output queue was full (the bg
+            # camera thread only reads every 5 seconds).
+            try:
+                INFERENCE_OUTPUT_QUEUES[location_id].get_nowait()  # discard stale
+            except _queue.Empty:
+                pass
             INFERENCE_OUTPUT_QUEUES[location_id].put(results)
 
             # ── Anti-starvation: process ONE background frame after each active ──
@@ -583,6 +591,11 @@ def gpu_inference_worker():
                     bg_loc, bg_frame, bg_active, bg_conf = bg_item
                     YOLO_MODEL.confidence_threshold = bg_conf
                     bg_results = run_sahi_inference(YOLO_MODEL, bg_frame, DEVICE_INFO, bg_active)
+                    # Same non-blocking pattern for background output
+                    try:
+                        INFERENCE_OUTPUT_QUEUES[bg_loc].get_nowait()  # discard stale
+                    except _queue.Empty:
+                        pass
                     INFERENCE_OUTPUT_QUEUES[bg_loc].put(bg_results)
                 except _queue.Empty:
                     pass
@@ -591,7 +604,7 @@ def gpu_inference_worker():
             print(f"[VISION] gpu_inference_worker error: {e}")
             # Put a sentinel so camera_thread doesn't block forever
             try:
-                INFERENCE_OUTPUT_QUEUES[location_id].put(None)
+                INFERENCE_OUTPUT_QUEUES[location_id].put_nowait(None)
             except Exception:
                 pass
 
@@ -736,8 +749,25 @@ def camera_thread(app_context, location_id, video_name, location_name):
     playback_start_time = time.time()
     last_log_time = time.time() - 61
 
-    # 1. INITIALIZE HERE: Tighter tracker parameters and track_ages dictionary
-    tracker = sv.ByteTrack(track_activation_threshold=0.35, lost_track_buffer=5, frame_rate=30)
+    # Step 2: Dual trackers tuned to actual inference rates.
+    # Active tracker: expects ~10-15 inference results/sec from the GPU.
+    #   lost_track_buffer=15 tolerates ~1 second of occlusion at 15 FPS.
+    #   track_activation_threshold=0.25 aligns with Burnham Park's conf=0.20
+    #   so distant people can create new tracks instead of being silently dropped.
+    tracker_active = sv.ByteTrack(
+        track_activation_threshold=0.25,
+        lost_track_buffer=15,
+        frame_rate=15
+    )
+    # Background tracker: expects 1 frame every 5 seconds (0.2 FPS).
+    #   frame_rate=1 tells ByteTrack that 1 "frame" ≈ 5 real seconds,
+    #   so lost_track_buffer=2 means a person must be missing for ~10 seconds
+    #   before the track is dropped.
+    tracker_background = sv.ByteTrack(
+        track_activation_threshold=0.25,
+        lost_track_buffer=2,
+        frame_rate=1
+    )
     last_tracked_objects = []
     track_ages = {}
     last_confirmed_detections = []   # persist confirmed boxes between GPU results
@@ -784,7 +814,12 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 playback_start_time = time.time()
                 last_log_time = time.time() - 61
 
-                tracker = sv.ByteTrack(track_activation_threshold=0.35, lost_track_buffer=5, frame_rate=30)
+                tracker_active = sv.ByteTrack(
+                    track_activation_threshold=0.25, lost_track_buffer=15, frame_rate=15
+                )
+                tracker_background = sv.ByteTrack(
+                    track_activation_threshold=0.25, lost_track_buffer=2, frame_rate=1
+                )
                 last_tracked_objects = []
                 track_ages = {}
                 last_confirmed_detections = []
@@ -800,7 +835,8 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 current_count = THREAD_COUNTS.get(location_id, 0)
 
             if should_process_ai:
-                # 3. PIPELINE CALL
+                # 3. PIPELINE CALL — use the tracker tuned for this stream's rate
+                tracker = tracker_active if is_active else tracker_background
                 pipe_frame, detections_pct, detections_pixel, last_tracked_objects, got_fresh = run_yolo_pipeline(
                     frame, location_id, tracker, last_tracked_objects, is_active=is_active, annotate=False
                 )
