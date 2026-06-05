@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 from sahi import AutoDetectionModel
-from sahi.predict import get_sliced_prediction
+from sahi.predict import get_sliced_prediction, get_prediction
 from sahi.models.base import DetectionModel
 import threading
 import time
@@ -30,26 +30,67 @@ load_dotenv()
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 DETECTION_CONFIG = {
-    'conf_threshold': 0.35,  # global fallback only - per-location values below override this
     'iou_threshold': 0.45,
     'use_gpu': True,
-    'enable_clahe': True,
     'enable_blur': True,
+    # Detection quality filters (Step 3 — Issues 2.1 + 2.3)
+    'min_bbox_area': 400,         # Minimum area in pixels² (e.g., 20×20) — reject SAHI tile noise
+    'min_person_ratio': 0.3,      # height/width — reject very wide shapes (vehicles, benches)
+    'max_person_ratio': 6.0,      # height/width — reject very thin vertical lines (poles, columns)
 }
 
-# Issue 6 Fix: per-location confidence thresholds.
-# Each location gets a value tuned to its scene type and characteristics:
-#   Baguio Night Market (1)        -- low light, dense crowds, high occlusion -> 0.25
-#   Wright Park (2)                -- outdoor, scattered visitors, trees, variable lighting -> 0.28
-#   The Mansion (3)       -- bottleneck, good lighting, gate/pillar noise -> 0.35
-#   Baguio Cathedral (4)           -- high false positive risk from arched columns -> 0.45
-#   Melvin Jones Burnham Park (5)  -- flat open field, very distant tiny figures -> 0.20
-LOCATION_CONF_THRESHOLDS = {
-    1: 0.25,  # Baguio Night Market
-    2: 0.40,  # Wright Park
-    3: 0.35,  # The Mansion
-    4: 0.45,  # Baguio Cathedral
-    5: 0.20,  # Melvin Jones Burnham Park
+# Per-location pipeline configuration derived from ablation study.
+# Each location gets a fully independent pipeline strategy:
+#   conf       — YOLO confidence threshold
+#   slice_size — SAHI tile dimensions (only used when use_sahi=True)
+#   use_clahe  — whether to apply CLAHE contrast enhancement before inference
+#   use_sahi   — whether to use SAHI sliced prediction or direct YOLOv8
+#   overlap    — SAHI tile overlap ratio (only used when use_sahi=True)
+LOCATION_PIPELINE_CONFIG = {
+    1: {  # Baguio Night Market — Baseline YOLOv8 Only
+        'conf': 0.25,
+        'slice_size': 256,      # unused (use_sahi=False), kept for reference
+        'use_clahe': False,     # dark scene, CLAHE amplifies noise
+        'use_sahi': False,      # ablation showed direct YOLO is better here
+        'overlap': 0.15,
+    },
+    2: {  # Wright Park — Full Enhancement
+        'conf': 0.40,
+        'slice_size': 512,
+        'use_clahe': True,
+        'use_sahi': True,
+        'overlap': 0.15,
+    },
+    3: {  # The Mansion — Full Enhancement
+        'conf': 0.35,
+        'slice_size': 384,
+        'use_clahe': True,
+        'use_sahi': True,
+        'overlap': 0.15,
+    },
+    4: {  # Baguio Cathedral — Full Enhancement
+        'conf': 0.45,
+        'slice_size': 384,
+        'use_clahe': True,
+        'use_sahi': True,
+        'overlap': 0.15,
+    },
+    5: {  # Melvin Jones Burnham Park — SAHI Only (avoid overexposure)
+        'conf': 0.20,
+        'slice_size': 512,
+        'use_clahe': False,     # outdoor daylight, CLAHE causes overexposure
+        'use_sahi': True,
+        'overlap': 0.15,
+    },
+}
+
+# Fallback for locations not in the table (e.g., newly added ones)
+DEFAULT_PIPELINE_CONFIG = {
+    'conf': 0.35,
+    'slice_size': 448,
+    'use_clahe': True,
+    'use_sahi': True,
+    'overlap': 0.15,
 }
 
 YOLO_MODEL = None
@@ -354,7 +395,7 @@ def load_model(device_info: dict):
     """
     Load the appropriate model based on detected device.
     """
-    conf  = DETECTION_CONFIG['conf_threshold']
+    conf  = DEFAULT_PIPELINE_CONFIG['conf']
     device = device_info['device']
     backend_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -398,33 +439,42 @@ def load_model(device_info: dict):
             device=sahi_device,
         )
 
-# ── SAHI Inference Dispatcher ──────────────────────────────────────────────────
-def run_sahi_inference(model, frame_proc: np.ndarray, device_info: dict, is_active: bool = True):
+# ── Inference Dispatcher ───────────────────────────────────────────────────────
+def run_inference(model, frame_proc: np.ndarray, device_info: dict, loc_config: dict):
     """
-    Unified inference call that works for both TensorRT and PyTorch backends.
+    Location-aware inference dispatcher.
 
-    Uses SAHI sliced prediction for ALL streams (active and background alike).
-    448×448 slices, 0.15 overlap → 6 tiles on 1024×576 footage.
-    Each tile upscales to 640×640 before inference, so a 20px person
-    appears ~45px to the model — solidly detectable.
+    Routes each frame through the correct pipeline based on the location's
+    ablation-study config:
 
-    Background streams only submit 1 frame every 5 seconds (per location),
-    so 6 GPU calls per background frame adds < 7% overhead.  Full-frame
-    inference (1 tile, no slicing) was previously used for background but
-    produced 0 detections because people are too small at native resolution.
+    - use_sahi=True:  SAHI sliced prediction at the location's slice_size
+    - use_sahi=False: Direct YOLOv8 full-frame prediction (no slicing)
+
+    This replaces the old run_sahi_inference() which used a hardcoded 448×448
+    slice size for all locations.
     """
-    return get_sliced_prediction(
-        frame_proc,
-        model,
-        slice_height=448,
-        slice_width=448,
-        overlap_height_ratio=0.15,
-        overlap_width_ratio=0.15,
-        postprocess_match_metric="IOU",
-        postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
-        postprocess_class_agnostic=True,
-        verbose=False,
-    )
+    if loc_config['use_sahi']:
+        # SAHI sliced prediction with per-location tile size
+        return get_sliced_prediction(
+            frame_proc,
+            model,
+            slice_height=loc_config['slice_size'],
+            slice_width=loc_config['slice_size'],
+            overlap_height_ratio=loc_config['overlap'],
+            overlap_width_ratio=loc_config['overlap'],
+            postprocess_match_metric="IOU",
+            postprocess_match_threshold=DETECTION_CONFIG['iou_threshold'],
+            postprocess_class_agnostic=True,
+            verbose=False,
+        )
+    else:
+        # Direct YOLOv8 — single full-frame pass, no slicing
+        # Used for Night Market where ablation showed SAHI hurts more than helps
+        return get_prediction(
+            frame_proc,
+            model,
+            verbose=False,
+        )
 
 
 # ── Path Helpers ───────────────────────────────────────────────────────────────
@@ -566,10 +616,10 @@ def gpu_inference_worker():
                 except _queue.Empty:
                     continue
 
-            location_id, frame_proc, is_active, conf_threshold = item
+            location_id, frame_proc, is_active, conf_threshold, loc_config = item
             # Apply the per-location threshold (safe -- only this thread touches YOLO_MODEL)
             YOLO_MODEL.confidence_threshold = conf_threshold
-            results = run_sahi_inference(YOLO_MODEL, frame_proc, DEVICE_INFO, is_active)
+            results = run_inference(YOLO_MODEL, frame_proc, DEVICE_INFO, loc_config)
             # Non-blocking put: drain stale result first so we never block.
             # On fast backends (TensorRT ~30ms/frame) the old blocking .put()
             # would deadlock when a background output queue was full (the bg
@@ -588,9 +638,9 @@ def gpu_inference_worker():
             if is_active:
                 try:
                     bg_item = INFERENCE_BACKGROUND_QUEUE.get_nowait()
-                    bg_loc, bg_frame, bg_active, bg_conf = bg_item
+                    bg_loc, bg_frame, bg_active, bg_conf, bg_cfg = bg_item
                     YOLO_MODEL.confidence_threshold = bg_conf
-                    bg_results = run_sahi_inference(YOLO_MODEL, bg_frame, DEVICE_INFO, bg_active)
+                    bg_results = run_inference(YOLO_MODEL, bg_frame, DEVICE_INFO, bg_cfg)
                     # Same non-blocking pattern for background output
                     try:
                         INFERENCE_OUTPUT_QUEUES[bg_loc].get_nowait()  # discard stale
@@ -612,13 +662,20 @@ def gpu_inference_worker():
 # ── YOLO Pipeline ──────────────────────────────────────────────────────────────
 def run_yolo_pipeline(frame, location_id, tracker, last_tracked_objects, is_active=True, annotate=True):
     start_time = time.time()
-    frame_proc = apply_clahe(frame) if DETECTION_CONFIG['enable_clahe'] else frame.copy()
-    conf_threshold = LOCATION_CONF_THRESHOLDS.get(location_id, DETECTION_CONFIG['conf_threshold'])
+    loc_config = LOCATION_PIPELINE_CONFIG.get(location_id, DEFAULT_PIPELINE_CONFIG)
+    
+    # Apply CLAHE only if this location's ablation config says so
+    if loc_config['use_clahe']:
+        frame_proc = apply_clahe(frame)
+    else:
+        frame_proc = frame.copy()
+    
+    conf_threshold = loc_config['conf']
     
     # 1. Attempt to send frame to GPU (routed by priority)
     target_queue = INFERENCE_ACTIVE_QUEUE if is_active else INFERENCE_BACKGROUND_QUEUE
     try:
-        target_queue.put_nowait((location_id, frame_proc, is_active, conf_threshold))
+        target_queue.put_nowait((location_id, frame_proc, is_active, conf_threshold, loc_config))
     except _queue.Full:
         pass
 
@@ -644,9 +701,21 @@ def run_yolo_pipeline(frame, location_id, tracker, last_tracked_objects, is_acti
             conf = obj.score.value
             
             bw, bh = x2 - x1, y2 - y1
+
+            # Existing: reject oversized detections
             if bw > (w * 0.6) or bh > (h * 0.6): continue
             if x1 <= 2 and y1 <= 2 and x2 >= (w - 2) and y2 >= (h - 2): continue
-                
+
+            # Step 3: Minimum area filter — reject tiny noise from SAHI tile upscaling
+            if bw * bh < DETECTION_CONFIG['min_bbox_area']: continue
+
+            # Step 3: Aspect ratio filter — reject architectural false positives
+            # A standing/walking person's height:width ratio is roughly 1.5:1 to 5:1
+            if bh > 0:
+                hw_ratio = bh / bw  # height / width
+                if hw_ratio < DETECTION_CONFIG['min_person_ratio']: continue  # too wide (benches, cars)
+                if hw_ratio > DETECTION_CONFIG['max_person_ratio']: continue  # too thin (poles, columns)
+
             xyxy.append([x1, y1, x2, y2])
             confidences.append(conf)
             
@@ -978,7 +1047,6 @@ def live_count():
 @app.route('/yolo/config', methods=['POST'])
 def update_yolo_config():
     data = request.json
-    if 'enable_clahe' in data: DETECTION_CONFIG['enable_clahe'] = data['enable_clahe']
     if 'enable_blur' in data: DETECTION_CONFIG['enable_blur'] = data['enable_blur']
     return jsonify({'status': 'success', 'config': DETECTION_CONFIG})
 

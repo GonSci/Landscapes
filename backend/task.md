@@ -1,0 +1,21 @@
+# Task Tracker — Vision Worker High-Severity Fixes
+
+- `[x]` **Step 1:** Priority Inference Queue (Issue 3.1 🔴)
+  - `[x]` Replace single `INFERENCE_INPUT_QUEUE` with `INFERENCE_ACTIVE_QUEUE` + `INFERENCE_BACKGROUND_QUEUE`
+  - `[x]` Rewrite `gpu_inference_worker()` to drain active queue first
+  - `[x]` Update `run_yolo_pipeline()` to route frames to correct queue
+  - `[x]` Update output queue `maxsize` at startup
+- `[x]` **Step 2:** Fix ByteTrack Frame Rate (Issue 1.1 🔴)
+- `[x]` **Step 3:** Add Detection Filtering (Issues 2.1 + 2.3 🟡)
+  - `[x]` Add `min_bbox_area`, `min_person_ratio`, `max_person_ratio` to `DETECTION_CONFIG`
+  - `[x]` Add area filter in `run_yolo_pipeline()` to reject tiny SAHI noise
+  - `[x]` Add height/width ratio filter to reject columns, poles, benches, vehicles
+- `[ ]` **Step 4:** Fix Background Temporal Filtering (Issue 2.4 🟡)
+- `[ ]` **Step 5:** Eliminate Wasted CLAHE & JPEG (Issues 3.3 + 3.4 🟡)
+- `[ ]` **Step 6:** Eliminate Unconditional `frame.copy()` (Issue 3.2 🟡)
+- `[ ]` **Step 7:** Multi-User Active Location Support (Architectural Enhancement)
+- `[ ]` **Step 8:** Bounding Box Interpolation When GPU Is Busy (Issue 1.3 🟡)
+- `[ ]` **Step 9:** Reset Tracker State on Location Switch (Issue 1.4 🟢 Low-Med)
+- `[ ]` **Step 10:** Adaptive / Per-Location CLAHE (Issue 2.2 🟡)
+- `[ ]` **Step 11:** Zone/ROI Masking Per Location (Issue 2.5 🟢 Low)
+- `[ ]` **Step 12:** Hot-Loop Cleanup (Issue 3.5 ⚪ Negligible)

@@ -45,3 +45,6 @@ build/
 # Media
 wright.mp4
 backend/coreml.py
+backend/implementation_plan.md
+.gitignore
+.gitignore
