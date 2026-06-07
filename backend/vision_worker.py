@@ -938,16 +938,56 @@ def camera_thread(app_context, location_id, video_name, location_name):
             # Step 6: Eliminate unconditional frame.copy().
             # Before: output_frame = frame.copy() ran EVERY iteration (30 FPS × 5 threads
             # = ~255 MB/sec of wasted memcpy).  Now:
-            #   - Background + no AI → skip rendering entirely (early continue)
-            #   - Active + no AI → copy frame for CCTV overlay only
+            #   - Background + no AI → skip rendering entirely
+            #   - Active + no AI → render CCTV overlay on raw frame for smooth video
             #   - AI ran → use pipe_frame directly (pipeline already has its own frame)
 
-            if not should_process_ai:
+            if not should_process_ai and not is_active:
                 # Background idle tick — nothing to render or encode.
-                # Step 5's should_encode gate would skip JPEG anyway, and there's
-                # no new data for the CCTV overlay.  Skip everything.
                 pass  # fall through to sleep/FPS logic below
+            elif not should_process_ai and is_active:
+                # Active stream but GPU hasn't produced new results this tick.
+                # Still need to encode a fresh frame so the MJPEG stream isn't frozen.
+                # Use the raw camera frame with just the CCTV overlay — no AI processing.
+                output_frame = frame.copy()
+                output_frame = draw_cctv_overlay(output_frame, current_count, display_fps)
+
+                # Apply last known detections for blur/boxes continuity
+                if last_confirmed_detections:
+                    # Step 8: Interpolate bounding boxes for smooth tracking
+                    render_dets = last_confirmed_detections
+                    if last_gpu_result_time > 0:
+                        dt = min(time.time() - last_gpu_result_time, 0.5)
+                        if dt > 0.01:
+                            h_frame, w_frame = frame.shape[:2]
+                            interpolated = []
+                            for det in render_dets:
+                                tid = det['id']
+                                if tid in track_velocities:
+                                    vel = track_velocities[tid]
+                                    bx1 = max(0, det['bbox'][0] + int(vel[0] * dt))
+                                    by1 = max(0, det['bbox'][1] + int(vel[1] * dt))
+                                    bx2 = min(w_frame, det['bbox'][2] + int(vel[2] * dt))
+                                    by2 = min(h_frame, det['bbox'][3] + int(vel[3] * dt))
+                                    if bx2 > bx1 and by2 > by1:
+                                        interpolated.append({**det, 'bbox': [bx1, by1, bx2, by2]})
+                                    else:
+                                        interpolated.append(det)
+                                else:
+                                    interpolated.append(det)
+                            render_dets = interpolated
+
+                    if DETECTION_CONFIG['enable_blur'] and render_dets:
+                        output_frame = apply_gaussian_blur(output_frame, render_dets)
+                    if render_dets:
+                        output_frame = draw_detections_on_frame(output_frame, render_dets)
+
+                ret, buffer = cv2.imencode('.jpg', output_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                if ret:
+                    with STREAM_LOCK:
+                        THREAD_FRAMES[location_id] = buffer.tobytes()
             else:
+                # should_process_ai is True — run the full AI pipeline
                 # Step 5: CLAHE moved here from inside run_yolo_pipeline().
                 # Previously CLAHE ran at 30 FPS per thread (150 calls/sec total),
                 # but only ~10-15 active frames/sec actually reach the GPU.
@@ -1055,7 +1095,7 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 # --- CCTV overlay + JPEG encode (only when we have something to render) ---
                 output_frame = draw_cctv_overlay(output_frame, current_count, display_fps)
 
-                # Step 5: background streams only encode when AI ran
+                # Encode: active always, background only when AI ran
                 should_encode = is_active or should_process_ai
                 if should_encode:
                     ret, buffer = cv2.imencode('.jpg', output_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
@@ -1261,6 +1301,17 @@ if __name__ == '__main__':
         
         # Start DB Polling Thread
         threading.Thread(target=db_polling_thread, args=(app.app_context,), daemon=True).start()
+
+        # Step 7: Seed active_locations from DB so streams are active immediately
+        # at boot (no frozen video while waiting for the first frontend heartbeat).
+        now = time.time()
+        for loc in locations:
+            if loc.is_active:
+                active_locations[loc.id] = now
+        if not active_locations and locations:
+            # Fallback: if no location is marked active in DB, default to the first one
+            active_locations[locations[0].id] = now
+        print(f"[VISION] Seeded active locations: {list(active_locations.keys())}")
         
         # Issue 2 Fix: create per-location output queues, then start the single GPU worker
         for loc in locations:

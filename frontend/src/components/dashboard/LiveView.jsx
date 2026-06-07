@@ -37,6 +37,7 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
   const [activeLocationName, setActiveLocationName] = useState('NORTH-WING');
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  const heartbeatRef = useRef(null);
 
   const levelChangeTimerRef = useRef(null);
   
@@ -107,8 +108,39 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
     fetchLocations();
   }, []);
 
+  // Step 7: Heartbeat — keep this location marked as active while user is viewing
+  useEffect(() => {
+    if (!activeLocationId) return;
+
+    const sendHeartbeat = () => {
+      fetch(`${VISION_URL}/set-active-location`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location_id: activeLocationId })
+      }).catch(() => {});
+    };
+
+    // Send immediately on location change
+    sendHeartbeat();
+    // Then every 10 seconds
+    heartbeatRef.current = setInterval(sendHeartbeat, 10000);
+
+    return () => {
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    };
+  }, [activeLocationId]);
+
   const handleLocationChange = async (location) => {
     if (location.id === activeLocationId) return;
+
+    // Step 7: Deactivate the old location immediately
+    if (activeLocationId) {
+      fetch(`${VISION_URL}/deactivate-location`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location_id: activeLocationId })
+      }).catch(() => {});
+    }
 
     // Stop current detection
     stopContinuousDetection();
@@ -253,7 +285,8 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
     
     const liveCountInterval = setInterval(async () => {
       try {
-        const response = await fetch(`${VISION_URL}/live-count`);
+        // Step 7: Pass location_id so each viewer gets their own count
+        const response = await fetch(`${VISION_URL}/live-count?location_id=${activeLocationId}`);
         if (response.ok) {
           const data = await response.json();
           const newCount = data.count || 0;
@@ -311,7 +344,8 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
     console.log('Continuous detection started via MJPEG stream');
     
     // Just point the image source to the MJPEG stream!
-    setAnnotatedFrame(`${VISION_URL}/video_feed`);
+    // Step 7: Point to location-specific MJPEG stream
+    setAnnotatedFrame(`${VISION_URL}/video_feed?location_id=${activeLocationId}`);
   };
 
   const stopContinuousDetection = () => {
@@ -320,10 +354,19 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
     console.log('Continuous detection stopped');
   };
 
-  // CLEANUP: Prevent massive memory leaks when component unmounts
+  // CLEANUP: Deactivate location and stop detection when component unmounts
   useEffect(() => {
     return () => {
       stopContinuousDetection();
+      // Step 7: Tell backend we're no longer viewing this location
+      if (activeLocationId) {
+        fetch(`${VISION_URL}/deactivate-location`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ location_id: activeLocationId })
+        }).catch(() => {});
+      }
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
   }, []);
 
