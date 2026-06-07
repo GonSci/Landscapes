@@ -133,14 +133,10 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
   const handleLocationChange = async (location) => {
     if (location.id === activeLocationId) return;
 
-    // Step 7: Deactivate the old location immediately
-    if (activeLocationId) {
-      fetch(`${VISION_URL}/deactivate-location`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ location_id: activeLocationId })
-      }).catch(() => {});
-    }
+    // Step 7: Don't explicitly deactivate the old location — another tab may
+    // still be viewing it.  The heartbeat useEffect cleanup (line 128-130)
+    // stops the interval, and the server auto-expires it after 30s with no
+    // heartbeat.  This is the only multi-user-safe approach.
 
     // Stop current detection
     stopContinuousDetection();
@@ -354,18 +350,13 @@ const LiveView = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection
     console.log('Continuous detection stopped');
   };
 
-  // CLEANUP: Deactivate location and stop detection when component unmounts
+  // CLEANUP: Stop detection and heartbeat when component unmounts.
+  // Don't call /deactivate-location — another tab may still be viewing
+  // this location.  The heartbeat simply stops, and the server auto-expires
+  // the entry after 30s (ACTIVE_LOCATION_TIMEOUT).
   useEffect(() => {
     return () => {
       stopContinuousDetection();
-      // Step 7: Tell backend we're no longer viewing this location
-      if (activeLocationId) {
-        fetch(`${VISION_URL}/deactivate-location`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ location_id: activeLocationId })
-        }).catch(() => {});
-      }
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     };
   }, []);

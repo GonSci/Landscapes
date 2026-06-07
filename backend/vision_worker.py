@@ -136,7 +136,8 @@ last_log_time_lock = threading.Lock()
 # after ACTIVE_LOCATION_TIMEOUT seconds without a heartbeat.
 active_locations = {}              # location_id → last_heartbeat_time (float)
 active_locations_lock = threading.Lock()
-ACTIVE_LOCATION_TIMEOUT = 30       # seconds — expire if no heartbeat in 30s
+ACTIVE_LOCATION_TIMEOUT = 15       # seconds — expire if no heartbeat in 15s
+                                   # (heartbeats sent every 10s → 1.5× margin)
 
 
 def detect_device():
@@ -1231,6 +1232,21 @@ def set_active_location():
 
         if not was_present:
             print(f"[VISION] Heartbeat: location {new_id} now ACTIVE (total active: {len(active_locations)})")
+
+    # Sync expired entries to DB so db_polling_thread doesn't resurrect them
+    if expired:
+        try:
+            for lid in expired:
+                loc = Location.query.get(lid)
+                if loc and loc.is_active:
+                    loc.is_active = False
+            db.session.commit()
+            print(f"[VISION] Expired locations {expired} — marked inactive in DB")
+        except Exception:
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
 
     return jsonify({'status': 'ok', 'active_locations': list(active_locations.keys())})
 
