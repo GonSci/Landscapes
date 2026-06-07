@@ -55,28 +55,21 @@ const BarChartDesktop = ({ data = [] }) => {
     return { xScale, yScale, ticks, chartWidth, chartHeight, labelStep };
   }, [data, width]);
 
-  // ── Empty state ──────────────────────────────────────────────────────────────
-  if (isEmpty) {
-    return (
-      <div ref={wrapperRef} className="w-full flex flex-col items-center justify-center gap-2 min-h-[128px]">
-        <div className="w-1.5 h-1.5 rounded-full bg-slate-800 animate-pulse" />
-        <span className="text-[8px] font-black uppercase tracking-widest text-slate-600">Syncing Trends...</span>
-      </div>
-    );
-  }
-
-  // ── Loading state: width not yet measured by ResizeObserver ─────────────────
-  if (!width || !xScale) {
-    return <div ref={wrapperRef} className="w-full min-h-[128px]" />;
-  }
-
-  const svgHeight = chartHeight + MARGIN.top + MARGIN.bottom;
+  // ── Render wrapper (persists ref so ResizeObserver isn't lost) ───────────────
+  const svgHeight = chartHeight ? chartHeight + MARGIN.top + MARGIN.bottom : 128;
 
   return (
     <div ref={wrapperRef} className="w-full select-none">
-
-      {/* ── SVG Chart ── */}
-      <svg
+      {isEmpty ? (
+        <div className="w-full flex flex-col items-center justify-center gap-2 min-h-[128px]">
+          <div className="w-1.5 h-1.5 rounded-full bg-slate-800 animate-pulse" />
+          <span className="text-[8px] font-black uppercase tracking-widest text-slate-600">Syncing Trends...</span>
+        </div>
+      ) : !width || !xScale ? (
+        <div className="w-full min-h-[128px]" />
+      ) : (
+        /* ── SVG Chart ── */
+        <svg
         width={width}
         height={svgHeight}
         role="img"
@@ -185,6 +178,7 @@ const BarChartDesktop = ({ data = [] }) => {
 
         </g>
       </svg>
+      )}
     </div>
   );
 };

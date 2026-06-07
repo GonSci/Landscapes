@@ -79,34 +79,28 @@ const DonutChartDesktop = ({ data = [], busiestLocation = null }) => {
     setHoveredIndex(null);
   };
 
-  // ── Empty state ──────────────────────────────────────────────────────────────
-  if (isEmpty) {
-    return (
-      <div ref={wrapperRef} className="w-full flex flex-col items-center gap-4 py-12">
-        <div className="p-4 bg-white/5 rounded-full border border-white/10">
-          <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-        </div>
-        <p className="text-[10px] font-black uppercase tracking-[3px] text-slate-600">No data for selected period</p>
-      </div>
-    );
-  }
-
-  // ── Loading state: width not yet measured ────────────────────────────────────
-  if (!width || !slices) {
-    return <div ref={wrapperRef} className="w-full min-h-[240px]" />;
-  }
-
-  const svgSize = Math.min(width, 240);
+  // ── Render wrapper (persists ref so ResizeObserver isn't lost) ───────────────
+  const svgSize = width ? Math.min(width, 240) : 240;
 
   return (
     // Outer wrapper is `position: relative` so tooltip is positioned within it.
     <div ref={wrapperRef} className="w-full flex flex-col items-center gap-8">
-
-      {/* ── Donut SVG ── */}
-      <div className="relative" style={{ width: svgSize, height: svgSize }}>
+      {isEmpty ? (
+        <div className="w-full flex flex-col items-center gap-4 py-12">
+          <div className="p-4 bg-white/5 rounded-full border border-white/10">
+            <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[3px] text-slate-600">No data for selected period</p>
+        </div>
+      ) : !width || !slices ? (
+        <div className="w-full min-h-[240px]" />
+      ) : (
+        <>
+          {/* ── Donut SVG ── */}
+          <div className="relative" style={{ width: svgSize, height: svgSize }}>
 
         {/* ── Floating Tooltip ── */}
         {tooltip.visible && (
@@ -201,6 +195,8 @@ const DonutChartDesktop = ({ data = [], busiestLocation = null }) => {
             {busiestLocation.name} has the highest crowd rate at {busiestLocation.percentage}%
           </p>
         </div>
+      )}
+        </>
       )}
     </div>
   );
