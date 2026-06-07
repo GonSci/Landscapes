@@ -13,15 +13,50 @@ import {
   GitBranch, 
   Zap, 
   ChevronDown,
-  Activity
+  Activity,
+  X
 } from 'lucide-react';
 
 const RedirectionMobile = ({ onTabChange }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [travelTime, setTravelTime] = useState(15);
-  const [priority, setPriority] = useState(50);
+  const [snapState, setSnapState] = useState('minimized');
+  const [maxTravelTime, setMaxTravelTime] = useState(15);
+  const [travelMode, setTravelMode] = useState('walking');
+  const [priorityWeight, setPriorityWeight] = useState(0.5);
   const [groupSize, setGroupSize] = useState(1);
+  const [environment, setEnvironment] = useState('any');
+  const [paidAttractions, setPaidAttractions] = useState(false);
+  const [placeCategory, setPlaceCategory] = useState('any');
+  const [isPlaceCategoryOpen, setIsPlaceCategoryOpen] = useState(false);
+  const [isTravelModeOpen, setIsTravelModeOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  
+  const [viewMode, setViewMode] = useState('preferences');
+  const [topsisResults, setTopsisResults] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const contentRef = React.useRef(null);
+  const variants = {
+    minimized: { height: '175px' }, 
+    full: { height: '85vh' }
+  };
+
+  const handleDragEnd = (event, info) => {
+    const threshold = 30; // pixels to trigger state change
+    if (info.offset.y < -threshold) {
+      if (snapState === 'minimized') setSnapState('full');
+    } else if (info.offset.y > threshold) {
+      if (snapState === 'full') setSnapState('minimized');
+    }
+  };
+
+  React.useEffect(() => {
+    if (snapState === 'minimized' && contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [snapState]);
   
   const mapRef = React.useRef(null);
   const markerRefs = React.useRef({});
@@ -30,6 +65,91 @@ const RedirectionMobile = ({ onTabChange }) => {
   const mapLocations = (liveLocations && liveLocations.length > 0)
     ? liveLocations
     : redirectionFallback.locations;
+
+  const handleGetRecommendations = async () => {
+    if (selectedLocationId === null) return;
+    
+    const selectedLocation = mapLocations.find(loc => loc.id === selectedLocationId);
+    if (!selectedLocation) return;
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        start_location_id: selectedLocationId,
+        start_coords: [selectedLocation.lat, selectedLocation.lng],
+        max_travel_time: maxTravelTime,
+        travel_mode: travelMode,
+        group_size: groupSize,
+        environment: environment,
+        place_category: placeCategory,
+        paid_attractions: paidAttractions,
+        priority_weight: priorityWeight,
+      };
+
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`;
+      const response = await fetch(`${API_BASE_URL}/api/redirection`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error(`Failed to get recommendations: ${response.status} ${response.statusText}`);
+
+      const data = await response.json();
+      setTopsisResults(data.top_3_results || []);
+      setViewMode('results');
+
+      if (contentRef.current) {
+        contentRef.current.scrollTop = 0;
+      }
+
+      if (snapState === 'minimized') {
+        setSnapState('full');
+      }
+
+      if (data.top_3_results && data.top_3_results.length > 0 && mapRef.current) {
+        const topLocId = data.top_3_results[0].location_id;
+        const topLoc = mapLocations.find(loc => loc.id === topLocId);
+        if (topLoc) {
+          mapRef.current.flyTo([topLoc.lat, topLoc.lng], 16, { animate: true, duration: 0.5 });
+          mapRef.current.once('moveend', () => {
+            if (markerRefs.current[topLoc.id]) markerRefs.current[topLoc.id].openPopup();
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditPreferences = () => {
+    setViewMode('preferences');
+    setTopsisResults(null);
+    if (mapRef.current && mapLocations && mapLocations.length > 0) {
+      try {
+        const bounds = L.latLngBounds(mapLocations.map(loc => [loc.lat, loc.lng]));
+        mapRef.current.fitBounds(bounds, { padding: [30, 30] });
+      } catch (e) {
+        console.error('Error fitting bounds:', e);
+      }
+    }
+  };
+
+  React.useEffect(() => {
+    if (mapRef.current && mapLocations && mapLocations.length > 0) {
+      setTimeout(() => {
+        try {
+          const bounds = L.latLngBounds(mapLocations.map(loc => [loc.lat, loc.lng]));
+          mapRef.current.fitBounds(bounds, { padding: [40, 40] });
+        } catch (e) {
+          console.error('Error fitting bounds:', e);
+        }
+      }, 300);
+    }
+  }, [mapLocations.length]);
 
   const getCrowdStatus = (locationName, peopleCount) => {
     const count = peopleCount || 0;
@@ -100,8 +220,9 @@ const RedirectionMobile = ({ onTabChange }) => {
 
   const handleMarkerClick = (location) => {
     setSelectedLocationId(location.id);
+    setSearchQuery(location.name);
     if (mapRef.current) {
-      mapRef.current.setView([location.lat, location.lng], 17);
+      mapRef.current.panTo([location.lat, location.lng]);
     }
   };
 
@@ -115,7 +236,6 @@ const RedirectionMobile = ({ onTabChange }) => {
 
   return (
     <div className="fixed inset-0 bg-[#0d111c] overflow-hidden flex flex-col font-sans overscroll-none touch-none">
-      {/* Interactive Map */}
       <div className="absolute inset-0 z-0 touch-auto">
         <MapContainer
           ref={mapRef}
@@ -129,7 +249,6 @@ const RedirectionMobile = ({ onTabChange }) => {
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-          <ZoomControl position="topright" />
           {mapLocations.map((location) => {
             const statusObj = getCrowdStatus(location.name, location.detectedPeople);
             let pillClass = "";
@@ -170,9 +289,7 @@ const RedirectionMobile = ({ onTabChange }) => {
         </MapContainer>
       </div>
 
-      {/* Top Navigation Layer (z-20) */}
       <div className="relative z-20 pt-[76px] pb-2 pointer-events-none">
-        {/* Persistent Header Segmented Toggle Placeholder */}
         <div className="mx-4 bg-[#1a1e2d]/90 backdrop-blur-md rounded-full p-1 border border-white/10 flex shadow-lg pointer-events-auto">
           <button 
             onClick={() => onTabChange && onTabChange('live')}
@@ -190,180 +307,541 @@ const RedirectionMobile = ({ onTabChange }) => {
           </button>
         </div>
 
-        {/* Floating Search Bar */}
-        <div className="bg-[#1a1e2d]/90 backdrop-blur-md text-slate-300 rounded-2xl px-4 py-3.5 flex items-center gap-3 shadow-xl m-4 border border-white/10 pointer-events-auto">
-          <Search size={18} className="text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Tap to set starting point" 
-            className="bg-transparent border-none outline-none text-sm w-full placeholder-slate-400 text-white"
-          />
-          <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
-            <MapPin size={16} className="text-slate-300" />
+        <div className="relative m-4 pointer-events-auto">
+          <div className="bg-[#1a1e2d]/90 backdrop-blur-md text-slate-300 rounded-2xl px-4 py-3.5 flex items-center gap-3 shadow-xl border border-white/10">
+            <Search size={18} className="text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Tap to set starting point" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchOpen(true)}
+              className="bg-transparent border-none outline-none text-sm w-full placeholder-slate-400 text-white"
+            />
+            {searchQuery ? (
+              <button 
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedLocationId(null);
+                  setIsSearchOpen(false);
+                }} 
+                className="w-8 h-8 shrink-0 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+              >
+                <X size={16} className="text-slate-300" />
+              </button>
+            ) : (
+              <div className="w-8 h-8 shrink-0 rounded-full bg-white/5 flex items-center justify-center">
+                <MapPin size={16} className="text-slate-300" />
+              </div>
+            )}
           </div>
+
+          <AnimatePresence>
+            {isSearchOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsSearchOpen(false)}></div>
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute top-full left-0 right-0 mt-2 bg-[#1a1e2d]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 max-h-60 overflow-y-auto"
+                >
+                  {mapLocations
+                    .filter(loc => loc.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map((location) => (
+                      <button
+                        key={location.id}
+                        onClick={() => {
+                          setSelectedLocationId(location.id);
+                          setSearchQuery(location.name);
+                          setIsSearchOpen(false);
+                          
+                          setTimeout(() => {
+                            try {
+                              const map = mapRef.current;
+                              const marker = markerRefs.current && markerRefs.current[location.id];
+                              
+                              if (map && marker) {
+                                map.flyTo([location.lat, location.lng], map.getZoom(), { animate: true, duration: 0.5 });
+                                map.once('moveend', () => {
+                                  marker.openPopup();
+                                });
+                              }
+                            } catch (error) {
+                              console.error("Map interaction error:", error);
+                            }
+                          }, 50);
+                        }}
+                        className="w-full px-4 py-3 text-left border-b border-white/5 hover:bg-white/5 transition-colors flex items-center gap-3"
+                      >
+                        <MapPin size={16} className="text-indigo-400 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-white truncate">{location.name}</p>
+                          <p className="text-[10px] text-slate-400 capitalize truncate">{location.type}</p>
+                        </div>
+                      </button>
+                  ))}
+                  {mapLocations.filter(loc => loc.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                    <div className="p-4 text-center text-slate-400 text-sm">
+                      No locations found
+                    </div>
+                  )}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      {/* Expandable Bottom Sheet (z-30) */}
-      <motion.div 
-        className="bg-[#1a1e2d] rounded-t-3xl border-t border-white/5 w-full absolute bottom-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-30 touch-auto pointer-events-auto"
-        animate={{ height: isExpanded ? '85vh' : 'auto' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+      <div 
+        className={`absolute bottom-[190px] right-4 z-10 flex flex-col bg-[#1a1e2d]/90 rounded-xl border border-white/10 shadow-xl overflow-hidden backdrop-blur-md transition-opacity duration-300 ${
+          snapState === 'minimized' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
       >
-        {/* Drag Handle & Header (always visible) */}
-        <div 
-          className="px-6 pt-3 pb-4 cursor-pointer"
-          onClick={() => setIsExpanded(!isExpanded)}
+        <button 
+          onClick={() => mapRef.current?.zoomIn()}
+          className="p-3 hover:bg-white/5 transition-colors border-b border-white/10"
         >
-          <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mb-4"></div>
-          
-          <div className="flex items-center gap-3 mb-1">
-            <GitBranch size={20} className="text-indigo-400" />
-            <h2 className="text-xl font-semibold text-white">Smart Redirection</h2>
-          </div>
-          
-          <p className="text-sm text-slate-400">
-            {isExpanded ? 'Adjust your constraints' : 'Swipe up to adjust your constraints and preferences.'}
-          </p>
+          <Plus size={20} className="text-white" />
+        </button>
+        <button 
+          onClick={() => mapRef.current?.zoomOut()}
+          className="p-3 hover:bg-white/5 transition-colors"
+        >
+          <Minus size={20} className="text-white" />
+        </button>
+      </div>
+
+      <motion.div 
+        className="absolute bottom-0 left-0 right-0 z-[1500] flex flex-col bg-[#121626] rounded-t-[24px] shadow-[0_-10px_40px_rgba(0,0,0,0.8)] border-t border-white/10 touch-auto pointer-events-auto"
+        initial="minimized"
+        animate={snapState}
+        variants={variants}
+        transition={{ type: "spring", bounce: 0.15, duration: 0.5 }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.05}
+        onDragEnd={handleDragEnd}
+        dragDirectionLock
+      >
+        <div className="w-full flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
+          <div className="w-14 h-1.5 bg-white/30 rounded-full" />
         </div>
 
-        {/* Expanded Content */}
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="flex flex-col gap-6 p-6 overflow-y-auto"
-              style={{ maxHeight: 'calc(85vh - 100px)' }}
-            >
-              {/* MAX TRAVEL TIME */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Max Travel Time</label>
-                  <span className="text-sm text-white">{travelTime} min</span>
-                </div>
-                <div className="relative w-full h-2 bg-slate-800 rounded-full">
-                  <div 
-                    className="absolute h-full bg-purple-500 rounded-full"
-                    style={{ width: `${(travelTime / 60) * 100}%` }}
-                  ></div>
-                  <input 
-                    type="range" 
-                    min="5" 
-                    max="60" 
-                    step="5"
-                    value={travelTime}
-                    onChange={(e) => setTravelTime(parseInt(e.target.value))}
-                    className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                  />
-                  <div 
-                    className="absolute top-1/2 -mt-2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none"
-                    style={{ left: `calc(${(travelTime / 60) * 100}% - 8px)` }}
-                  ></div>
-                </div>
-              </div>
+        <div 
+          ref={contentRef}
+          className={`flex-1 overflow-x-hidden px-6 pb-2 hide-scrollbar ${snapState === 'minimized' ? 'overflow-hidden' : 'overflow-y-auto mb-[80px]'}`}
+        >
+          <div className="mb-4" onClick={() => setSnapState(snapState === 'minimized' ? 'full' : 'minimized')}>
+            <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+              <GitBranch size={20} className="text-indigo-400" />
+              Smart Redirection
+            </h2>
+            <p className="text-sm text-slate-400">
+              {snapState === 'minimized' ? 'Swipe up to adjust your constraints.' : 'Adjust your constraints'}
+            </p>
+          </div>
 
-              {/* PLACE CATEGORY */}
-              <div className="space-y-3">
-                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Place Category</label>
-                <div className="relative">
-                  <select className="w-full bg-[#222738] border border-white/5 rounded-xl px-4 py-3 text-white appearance-none outline-none focus:ring-1 focus:ring-indigo-500/50">
-                    <option>Any Category</option>
-                    <option>Nature & Parks</option>
-                    <option>Historical Sites</option>
-                    <option>Food & Dining</option>
-                    <option>Shopping</option>
-                  </select>
-                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <motion.div 
+            className="flex flex-col flex-1 relative"
+            animate={{ 
+              opacity: snapState === 'minimized' ? 0 : 1, 
+              pointerEvents: snapState === 'minimized' ? 'none' : 'auto' 
+            }}
+            transition={{ duration: 0.2 }}
+          >
+            {viewMode === 'preferences' ? (
+              <>
+                <div className="space-y-1.5 mb-5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">Max Travel Time</label>
+                    <span className="text-sm font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{maxTravelTime} min</span>
+                  </div>
+                  <div className="relative pt-2 pb-1 group">
+                    <input 
+                      type="range" 
+                      min="5" 
+                      max="60" 
+                      step="5"
+                      value={maxTravelTime}
+                      onChange={(e) => setMaxTravelTime(Number(e.target.value))}
+                      onPointerDownCapture={(e) => { e.stopPropagation(); e.nativeEvent.stopPropagation(); }}
+                      onTouchStartCapture={(e) => { e.stopPropagation(); e.nativeEvent.stopPropagation(); }}
+                      className="w-full h-2 bg-slate-700/50 rounded-lg appearance-none cursor-pointer focus:outline-none relative z-10 touch-none"
+                      style={{
+                        background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${((maxTravelTime - 5) / 55) * 100}%, rgba(51, 65, 85, 0.5) ${((maxTravelTime - 5) / 55) * 100}%, rgba(51, 65, 85, 0.5) 100%)`
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* ROUTING PRIORITY */}
-              <div className="space-y-3">
-                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Routing Priority</label>
-                <div className="text-center text-sm text-white mb-2">
-                  {priority}% Speed | {100 - priority}% Comfort
+                <div className="space-y-1.5 mb-5">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Place Category</label>
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsPlaceCategoryOpen(!isPlaceCategoryOpen)}
+                      className="w-full px-4 py-3 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-medium focus:outline-none transition-all duration-300 flex items-center justify-between"
+                    >
+                      <span className="capitalize">
+                        {placeCategory === 'shopping' ? 'Shopping & Retail' : placeCategory === 'nature' ? 'Nature & Outdoors' : placeCategory === 'dining' ? 'Dining & Food' : placeCategory === 'culture' ? 'Museums & Arts' : 'Any Category'}
+                      </span>
+                      <ChevronDown size={16} className={`text-slate-400 transition-transform duration-300 ${isPlaceCategoryOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    <AnimatePresence>
+                      {isPlaceCategoryOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[90]"
+                        >
+                          {[
+                            { value: 'any', label: 'Any Category' },
+                            { value: 'shopping', label: 'Shopping & Retail' },
+                            { value: 'nature', label: 'Nature & Outdoors' },
+                            { value: 'dining', label: 'Dining & Food' },
+                            { value: 'culture', label: 'Museums & Arts' }
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => {
+                                setPlaceCategory(option.value);
+                                setIsPlaceCategoryOpen(false);
+                              }}
+                              className={`w-full px-4 py-3 text-sm font-medium text-left transition-all duration-200 flex items-center gap-3 ${
+                                placeCategory === option.value
+                                  ? 'bg-indigo-500/20 text-indigo-100 border-l-2 border-indigo-400'
+                                  : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
-                <div className="relative w-full h-2 bg-slate-800 rounded-full mb-6">
-                  <div 
-                    className="absolute h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
-                    style={{ width: `${priority}%` }}
-                  ></div>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    value={priority}
-                    onChange={(e) => setPriority(parseInt(e.target.value))}
-                    className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                  />
-                  <div 
-                    className="absolute top-1/2 -mt-2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none"
-                    style={{ left: `calc(${priority}% - 8px)` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-[10px] text-slate-400 mt-2">
-                  <div className="w-1/3 text-left leading-tight">Fastest Arrival<br/>Shortest distance</div>
-                  <div className="w-1/3 text-center leading-tight">Balanced</div>
-                  <div className="w-1/3 text-right leading-tight">Max Comfort<br/>Lowest crowd density</div>
-                </div>
-              </div>
 
-              {/* GROUP SIZE */}
-              <div className="space-y-3">
-                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Group Size</label>
-                <div className="flex items-center justify-between bg-[#222738] rounded-xl p-2 border border-white/5">
+                <div className="space-y-1.5 mb-5">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Travel Mode</label>
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsTravelModeOpen(!isTravelModeOpen)}
+                      className="w-full px-4 py-3 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 text-sm text-white font-medium focus:outline-none transition-all duration-300 flex items-center justify-between"
+                    >
+                      <span className="capitalize">
+                        {travelMode === 'walking' ? 'Walking' : travelMode === 'commuting' ? 'Public Transport' : 'Driving'}
+                      </span>
+                      <ChevronDown size={16} className={`text-slate-400 transition-transform duration-300 ${isTravelModeOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    <AnimatePresence>
+                      {isTravelModeOpen && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 right-0 mt-2 bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[90]"
+                        >
+                          {['Walking', 'Public Transport', 'Driving'].map((option) => {
+                            const val = option.toLowerCase().replace(' ', '_');
+                            const mappedVal = option === 'Public Transport' ? 'commuting' : val;
+                            return (
+                              <button
+                                key={option}
+                                onClick={() => {
+                                  setTravelMode(mappedVal);
+                                  setIsTravelModeOpen(false);
+                                }}
+                                className={`w-full px-4 py-3 text-sm font-medium text-left transition-all duration-200 flex items-center gap-3 ${
+                                  travelMode === mappedVal
+                                    ? 'bg-indigo-500/20 text-indigo-100 border-l-2 border-indigo-400'
+                                    : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent'
+                                }`}
+                              >
+                                {option}
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 mb-5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400">Routing Priority</label>
+                    <span className="text-xs font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tabular-nums">
+                      {Math.round(priorityWeight * 100)}% Speed
+                      <span className="text-slate-500 font-semibold"> | </span>
+                      {Math.round((1 - priorityWeight) * 100)}% Comfort
+                    </span>
+                  </div>
+                  <div className="relative group pt-2 pb-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={Math.round(priorityWeight * 100)}
+                      onChange={(e) => setPriorityWeight(Number(e.target.value) / 100)}
+                      onPointerDownCapture={(e) => { e.stopPropagation(); e.nativeEvent.stopPropagation(); }}
+                      onTouchStartCapture={(e) => { e.stopPropagation(); e.nativeEvent.stopPropagation(); }}
+                      className="w-full h-2 rounded-lg appearance-none cursor-pointer transition-all duration-300 touch-none"
+                      style={{
+                        background: `linear-gradient(to right, rgb(79, 70, 229) 0%, rgb(79, 70, 229) ${priorityWeight * 100}%, rgb(55, 65, 81) ${priorityWeight * 100}%, rgb(55, 65, 81) 100%)`
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-start mt-1 px-0.5">
+                    <div className="text-left transition-opacity duration-200" style={{ opacity: 0.3 + priorityWeight * 0.7 }}>
+                      <p className="text-[10px] font-semibold text-slate-400">Fastest</p>
+                    </div>
+                    <div className="text-center" style={{ opacity: 1 - Math.abs(priorityWeight - 0.5) * 1.8 }}>
+                      <p className="text-[10px] font-semibold text-slate-500">Balanced</p>
+                    </div>
+                    <div className="text-right transition-opacity duration-200" style={{ opacity: 0.3 + (1 - priorityWeight) * 0.7 }}>
+                      <p className="text-[10px] font-semibold text-slate-400">Comfort</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 mb-5">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Group Size</label>
+                  <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/10 rounded-xl">
+                    <button 
+                      onClick={() => setGroupSize(Math.max(1, groupSize - 1))}
+                      className="w-12 h-10 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-300 active:bg-white/20"
+                    >
+                      <Minus size={18} />
+                    </button>
+                    <span className="text-lg font-medium text-white">{groupSize} {groupSize === 1 ? 'Person' : 'People'}</span>
+                    <button 
+                      onClick={() => setGroupSize(Math.min(50, groupSize + 1))}
+                      className="w-12 h-10 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-300 active:bg-white/20"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-white/10 my-4"></div>
+
+                <div className="space-y-2 mb-5">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Environment</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['indoors', 'outdoors', 'any'].map((env) => (
+                      <label key={env} className={`flex items-center justify-center px-2 py-3 rounded-xl cursor-pointer transition-all duration-300 font-medium text-[10px] uppercase tracking-wide ${environment === env ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/50' : 'bg-slate-700/30 border border-white/10 text-slate-300'}`}>
+                        <input 
+                          type="radio" 
+                          name="environment"
+                          value={env}
+                          checked={environment === env}
+                          onChange={(e) => setEnvironment(e.target.value)}
+                          className="hidden"
+                        />
+                        <span>{env}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-5">
+                  <label className={`flex items-center justify-between px-4 py-4 rounded-xl cursor-pointer transition-all duration-300 ${paidAttractions ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/50' : 'bg-slate-700/30 border border-white/10'}`}>
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-300">Include Paid Attractions</span>
+                    <div className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${paidAttractions ? 'bg-indigo-500' : 'bg-slate-600'}`}>
+                      <input 
+                        type="checkbox" 
+                        checked={paidAttractions}
+                        onChange={(e) => setPaidAttractions(e.target.checked)}
+                        className="absolute opacity-0 w-full h-full cursor-pointer"
+                      />
+                      <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 shadow-md ${paidAttractions ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="sticky bottom-0 z-20 pt-4 pb-2 mt-0 bg-gradient-to-t from-[#121626] via-[#121626] via-90% to-transparent">
                   <button 
-                    onClick={() => setGroupSize(Math.max(1, groupSize - 1))}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/5 text-slate-300"
+                    onClick={handleGetRecommendations}
+                    disabled={!selectedLocationId || isLoading}
+                    className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-[0_0_40px_rgba(18,22,38,1)] ${
+                      !selectedLocationId || isLoading
+                        ? 'bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed opacity-95 text-[11px]'
+                        : 'bg-indigo-600 border border-indigo-500 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/30'
+                    }`}
                   >
-                    <Minus size={18} />
-                  </button>
-                  <span className="text-lg font-medium text-white">{groupSize}</span>
-                  <button 
-                    onClick={() => setGroupSize(Math.min(20, groupSize + 1))}
-                    className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/5 text-slate-300"
-                  >
-                    <Plus size={18} />
+                    <Zap size={18} className={!selectedLocationId ? 'fill-slate-600 text-slate-500' : 'fill-white'} />
+                    {isLoading ? 'LOADING...' : !selectedLocationId ? 'TAP A LOCATION ON THE MAP TO START' : 'GET RECOMMENDATIONS'}
                   </button>
                 </div>
-              </div>
+              </>
+            ) : (
+              <div className="flex flex-col gap-4 h-full">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-lg font-black text-white tracking-tight">
+                    {topsisResults && topsisResults.length === 1 ? "Exact Match Found" : "Top Recommendations"}
+                  </h4>
+                  <button
+                    onClick={handleEditPreferences}
+                    className="px-3 py-1.5 text-xs font-black uppercase tracking-widest bg-slate-700/50 border border-white/20 hover:border-indigo-500/50 text-slate-300 hover:text-indigo-200 rounded-lg transition-all duration-300"
+                  >
+                    Edit
+                  </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto space-y-3 pb-4 pt-2 -mt-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {topsisResults && topsisResults.length > 0 ? (
+                    <>
+                      {topsisResults.map((result, index) => {
+                      const location = mapLocations.find(loc => loc.id === result.location_id);
+                      const isTopResult = index === 0;
+                      return (
+                        <div
+                          key={result.location_id}
+                          onClick={() => {
+                            if (mapRef.current && location) {
+                              mapRef.current.flyTo([location.lat, location.lng], 16, { animate: true });
+                              mapRef.current.once('moveend', () => {
+                                if (markerRefs.current[location.id]) {
+                                  markerRefs.current[location.id].openPopup();
+                                }
+                              });
+                            }
+                          }}
+                          className={`p-3 rounded-2xl border transition-all duration-300 flex flex-col gap-2 cursor-pointer transform hover:-translate-y-1 hover:shadow-xl hover:z-10 ${
+                            isTopResult
+                              ? 'bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border-amber-500/50 shadow-lg shadow-amber-500/20 relative overflow-hidden hover:border-amber-400'
+                              : 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-white/10 hover:border-indigo-500/50 hover:bg-slate-700/80 relative'
+                          }`}
+                        >
+                          {isTopResult && (
+                            <div className="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[8px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                              #1 Best Match
+                            </div>
+                          )}
+                          
+                          <div className="pr-20">
+                            <h5 className={`text-sm font-black ${isTopResult ? 'text-amber-100' : 'text-white'} mb-0.5`}>
+                              #{index + 1} {location?.name || result?.name || 'Location'}
+                            </h5>
+                            <p className="text-[10px] text-slate-400 mb-0">{location?.type || result?.type || 'Unknown'}</p>
+                          </div>
 
-              {/* ENVIRONMENT */}
-              <div className="space-y-3 mb-24">
-                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Environment</label>
-                <div className="relative">
-                  <select className="w-full bg-[#222738] border border-white/5 rounded-xl px-4 py-3 text-white appearance-none outline-none focus:ring-1 focus:ring-indigo-500/50">
-                    <option>Any Environment</option>
-                    <option>Indoor (AC)</option>
-                    <option>Outdoor</option>
-                    <option>Covered/Shaded</option>
-                  </select>
-                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          {result.reason_text && (
+                            <div className="flex items-start gap-1.5 mb-1 mt-1.5">
+                              <svg 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                strokeWidth="2.5" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                className={`w-3.5 h-3.5 mt-[1px] shrink-0 ${isTopResult ? 'text-amber-400/90' : 'text-slate-400'}`}
+                              >
+                                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                                <path d="M5 3v4"/>
+                                <path d="M7 5H3"/>
+                              </svg>
+                              <p className="text-[10px] text-slate-400 italic leading-snug mb-0">
+                                {result.reason_text}
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-2 text-[10px]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-500">Score</span>
+                              <span className="font-black text-indigo-300">{result.topsis_score?.toFixed(2) || 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-500">Distance</span>
+                              <span className="font-black text-slate-200">{result.distance?.toFixed(1) || location?.distance} km</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-500">People</span>
+                              <span className="font-black text-slate-200">{location?.detectedPeople || 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-500">Level</span>
+                              <span className={`font-black uppercase text-[9px] ${
+                                (location?.crowdLevel?.toLowerCase() === 'low' || location?.crowdLevel?.toLowerCase() === 'sparse') ? 'text-emerald-400' :
+                                location?.crowdLevel?.toLowerCase() === 'moderate' ? 'text-amber-400' :
+                                'text-red-400'
+                              }`}>
+                                {location?.crowdLevel || 'Unknown'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-1 pt-3 border-t border-white/5 flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const lat = result.latitude || location?.lat;
+                                const lng = result.longitude || location?.lng;
+                                if (lat && lng) {
+                                  window.open(`https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#33ccff]/10 hover:bg-[#33ccff]/20 border border-[#33ccff]/30 text-[#33ccff] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 hover:-translate-y-0.5"
+                            >
+                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.556 16.59l-5.11-2.95a.89.89 0 0 1-.446-.77V7.11c0-.49.398-.888.89-.888s.89.398.89.889v5.24l4.57 2.64a.89.89 0 0 1 .326 1.218.89.89 0 0 1-1.22.38z"/>
+                              </svg>
+                              Waze
+                            </button>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const lat = result.latitude || location?.lat;
+                                const lng = result.longitude || location?.lng;
+                                if (lat && lng) {
+                                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`, '_blank', 'noopener,noreferrer');
+                                }
+                              }}
+                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#4285F4]/10 hover:bg-[#4285F4]/20 border border-[#4285F4]/30 text-[#4285F4] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 hover:-translate-y-0.5"
+                            >
+                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.383 0 0 5.383 0 12s5.383 12 12 12 12-5.383 12-12S18.617 0 12 0zm-.375 16.634l-5.698-3.29c-.392-.226-.392-.782 0-1.008l5.698-3.29c.392-.226.98.058.98.504v6.58c0 .446-.588.73-.98.504zm6.09-3.518l-5.698 3.29c-.392.226-.98-.058-.98-.504v-6.58c0-.446.588-.73.98-.504l5.698 3.29c.392.226.392.782 0 1.008z"/>
+                              </svg>
+                              Maps
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {topsisResults.length === 1 && (
+                      <button
+                        onClick={handleEditPreferences}
+                        className="w-full mt-2 px-4 py-3 bg-slate-800/80 border border-slate-700/80 hover:border-indigo-500/50 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all duration-300 text-center"
+                      >
+                        Adjust preferences to see more alternatives
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center px-4 py-8">
+                    <h5 className="text-lg font-black text-white mb-2">No Matches Found</h5>
+                    <p className="text-xs text-slate-400 mb-6 max-w-[200px] mx-auto leading-relaxed">
+                      Your current preferences might be too strict for the current crowd conditions.
+                    </p>
+                    <button
+                      onClick={handleEditPreferences}
+                      className="px-6 py-3 bg-slate-800/80 border border-slate-700/80 hover:border-indigo-500/50 hover:bg-slate-700 text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-all duration-300"
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                )}
                 </div>
               </div>
-
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Fixed Action Button */}
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#1a1e2d] via-[#1a1e2d] to-transparent pt-12 pointer-events-none"
-            >
-              <button className="w-full bg-indigo-600/20 border border-indigo-500/50 text-indigo-300 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-600/30 transition-colors pointer-events-auto">
-                <Zap size={18} className="fill-indigo-400" />
-                GET RECOMMENDATIONS
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </motion.div>
+        </div>
       </motion.div>
     </div>
   );

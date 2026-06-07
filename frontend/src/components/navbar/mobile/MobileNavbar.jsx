@@ -12,7 +12,7 @@ const MobileNavbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
   return (
     <>
       {/* Top Header */}
-      <nav className={`fixed top-0 left-0 w-full z-[1000] py-4 transition-all duration-300 ${currentPage === 'map' ? 'bg-transparent border-transparent shadow-none' : 'border-b border-white/5 bg-[#0a0f1e]/90 backdrop-blur-2xl shadow-2xl'}`}>
+      <nav className={`fixed top-0 left-0 w-full z-[1000] py-4 transition-all duration-300 ${(currentPage === 'map' || currentPage === 'dashboard') ? 'bg-transparent border-transparent shadow-none' : 'border-b border-white/5 bg-[#0a0f1e]/90 backdrop-blur-2xl shadow-2xl'}`}>
         <div className="mx-5 flex items-center justify-between">
           <div
             className="cursor-pointer flex items-center"
