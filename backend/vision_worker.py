@@ -788,10 +788,32 @@ def live_count():
     with STREAM_LOCK: count = THREAD_COUNTS.get(loc_id, 0)
     return jsonify({'count': count, 'location_id': loc_id})
 
-@app.route('/yolo/config', methods=['POST'])
+@app.route('/yolo/config', methods=['GET', 'POST'])
 def update_yolo_config():
+    if request.method == 'GET':
+        loc_id = request.args.get('location_id', type=int)
+        if loc_id is None:
+            with active_locations_lock: 
+                loc_id = next(iter(active_locations), 1) if active_locations else 1
+        loc_config = LOCATION_PIPELINE_CONFIG.get(loc_id, DEFAULT_PIPELINE_CONFIG)
+        return jsonify({
+            'enable_clahe': loc_config.get('use_clahe', False),
+            'enable_blur': DETECTION_CONFIG.get('enable_blur', True)
+        })
+
     data = request.json
-    if 'enable_blur' in data: DETECTION_CONFIG['enable_blur'] = data['enable_blur']
+    if 'enable_blur' in data: 
+        DETECTION_CONFIG['enable_blur'] = data['enable_blur']
+    if 'enable_clahe' in data:
+        loc_id = data.get('location_id')
+        if loc_id is None:
+            with active_locations_lock:
+                loc_id = next(iter(active_locations), 1) if active_locations else 1
+        if loc_id in LOCATION_PIPELINE_CONFIG:
+            LOCATION_PIPELINE_CONFIG[loc_id]['use_clahe'] = data['enable_clahe']
+        else:
+            DEFAULT_PIPELINE_CONFIG['use_clahe'] = data['enable_clahe']
+
     return jsonify({'status': 'success', 'config': DETECTION_CONFIG})
 
 @app.route('/device-info', methods=['GET'])

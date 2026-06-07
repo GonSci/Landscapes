@@ -73,12 +73,25 @@ const LiveViewMobile = ({ onTabChange, targetLocationId, clearTargetLocation }) 
       await fetch(`${VISION_URL}/yolo/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enable_clahe: clahe, enable_blur: blur })
+        body: JSON.stringify({ enable_clahe: clahe, enable_blur: blur, location_id: activeLocationId })
       });
     } catch (e) {
       console.error('Failed to update config:', e);
     }
   };
+
+  // Fetch config for active location
+  useEffect(() => {
+    if (activeLocationId) {
+      fetch(`${VISION_URL}/yolo/config?location_id=${activeLocationId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.enable_clahe !== undefined) setClaheEnabled(data.enable_clahe);
+          if (data.enable_blur !== undefined) setBlurEnabled(data.enable_blur);
+        })
+        .catch(err => console.error("Error fetching location config:", err));
+    }
+  }, [activeLocationId]);
 
   useEffect(() => {
     const fetchLocations = async () => {
