@@ -596,18 +596,19 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 if last_confirmed_detections:
                     render_dets = last_confirmed_detections
                     if last_gpu_result_time > 0:
-                        dt = min(time.time() - last_gpu_result_time, 0.5)
+                        dt = min(time.time() - last_gpu_result_time, 0.2)
                         if dt > 0.01:
                             h_frame, w_frame = frame.shape[:2]
                             interpolated = []
                             for det in render_dets:
                                 tid = det['id']
                                 if tid in track_velocities:
-                                    vel = track_velocities[tid]
-                                    bx1 = max(0, det['bbox'][0] + int(vel[0] * dt))
-                                    by1 = max(0, det['bbox'][1] + int(vel[1] * dt))
-                                    bx2 = min(w_frame, det['bbox'][2] + int(vel[2] * dt))
-                                    by2 = min(h_frame, det['bbox'][3] + int(vel[3] * dt))
+                                    vx, vy = track_velocities[tid]
+                                    dx, dy = int(vx * dt), int(vy * dt)
+                                    bx1 = max(0, det['bbox'][0] + dx)
+                                    by1 = max(0, det['bbox'][1] + dy)
+                                    bx2 = min(w_frame, det['bbox'][2] + dx)
+                                    by2 = min(h_frame, det['bbox'][3] + dy)
                                     if bx2 > bx1 and by2 > by1:
                                         interpolated.append({**det, 'bbox': [bx1, by1, bx2, by2]})
                                     else:
@@ -646,6 +647,11 @@ def camera_thread(app_context, location_id, video_name, location_name):
                         if track_ages[tid] >= min_age: confirmed_detections.append(det)
 
                     track_ages = {tid: age for tid, age in track_ages.items() if tid in current_ids}
+
+                    # Step 8 fix: Center-point velocity instead of per-corner.
+                    # Per-corner velocity caused boxes to stretch because x1 and x2
+                    # could drift at different rates.  Center-point velocity translates
+                    # the box rigidly — width and height are always preserved.
                     now_gpu = time.time()
                     if last_gpu_result_time > 0:
                         dt_gpu = now_gpu - last_gpu_result_time
@@ -653,14 +659,23 @@ def camera_thread(app_context, location_id, video_name, location_name):
                             for det in confirmed_detections:
                                 tid = det['id']
                                 bbox = det['bbox']
+                                cx = (bbox[0] + bbox[2]) / 2.0
+                                cy = (bbox[1] + bbox[3]) / 2.0
                                 if tid in prev_gpu_positions:
-                                    prev = prev_gpu_positions[tid]
+                                    pcx, pcy = prev_gpu_positions[tid]
                                     track_velocities[tid] = (
-                                        (bbox[0] - prev[0]) / dt_gpu, (bbox[1] - prev[1]) / dt_gpu,
-                                        (bbox[2] - prev[2]) / dt_gpu, (bbox[3] - prev[3]) / dt_gpu,
+                                        (cx - pcx) / dt_gpu,
+                                        (cy - pcy) / dt_gpu,
                                     )
 
-                    prev_gpu_positions = {det['id']: det['bbox'] for det in confirmed_detections}
+                    # Store center points for next velocity computation
+                    prev_gpu_positions = {}
+                    for det in confirmed_detections:
+                        bbox = det['bbox']
+                        prev_gpu_positions[det['id']] = (
+                            (bbox[0] + bbox[2]) / 2.0,
+                            (bbox[1] + bbox[3]) / 2.0,
+                        )
                     track_velocities = {tid: v for tid, v in track_velocities.items() if tid in current_ids}
                     last_gpu_result_time = now_gpu
                     current_count = len(confirmed_detections)
@@ -668,18 +683,19 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 else:
                     confirmed_detections = last_confirmed_detections
                     if is_active and confirmed_detections and last_gpu_result_time > 0:
-                        dt = min(time.time() - last_gpu_result_time, 0.5)  
+                        dt = min(time.time() - last_gpu_result_time, 0.2)  # cap 200ms
                         if dt > 0.01:  
                             h_frame, w_frame = frame.shape[:2]
                             interpolated = []
                             for det in confirmed_detections:
                                 tid = det['id']
                                 if tid in track_velocities:
-                                    vel = track_velocities[tid]
-                                    bx1 = max(0, det['bbox'][0] + int(vel[0] * dt))
-                                    by1 = max(0, det['bbox'][1] + int(vel[1] * dt))
-                                    bx2 = min(w_frame, det['bbox'][2] + int(vel[2] * dt))
-                                    by2 = min(h_frame, det['bbox'][3] + int(vel[3] * dt))
+                                    vx, vy = track_velocities[tid]
+                                    dx, dy = int(vx * dt), int(vy * dt)
+                                    bx1 = max(0, det['bbox'][0] + dx)
+                                    by1 = max(0, det['bbox'][1] + dy)
+                                    bx2 = min(w_frame, det['bbox'][2] + dx)
+                                    by2 = min(h_frame, det['bbox'][3] + dy)
                                     if bx2 > bx1 and by2 > by1:
                                         interpolated.append({**det, 'bbox': [bx1, by1, bx2, by2]})
                                     else:
@@ -697,6 +713,7 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 
                 last_pipeline_run = now
                 output_frame = draw_cctv_overlay(output_frame, current_count, display_fps)
+
 
                 should_encode = is_active or should_process_ai
                 if should_encode:

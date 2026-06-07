@@ -297,9 +297,9 @@ const LiveViewDesktop = ({ targetLocationId, clearTargetLocation, onSwitchToRedi
         console.error("Error fetching live count", e);
       }
     }, 1000);
-    
-    const historicalLogsInterval = setInterval(async () => {
-      // Only poll if the selected peak date is today
+
+    // Fetch peak analysis data immediately, then poll every 15s
+    const fetchHourly = async () => {
       const today = new Date().toISOString().split('T')[0];
       if (peakDate !== today) return;
 
@@ -316,13 +316,16 @@ const LiveViewDesktop = ({ targetLocationId, clearTargetLocation, onSwitchToRedi
       } catch (e) {
         console.error("Error fetching historical logs", e);
       }
-    }, 60000); // refresh hourly data every minute
+    };
+
+    fetchHourly(); // immediate fetch on start/dependency change
+    const historicalLogsInterval = setInterval(fetchHourly, 15000); // then every 15s
     
     return () => {
       clearInterval(liveCountInterval);
       clearInterval(historicalLogsInterval);
     };
-  }, [continuousDetection]);
+  }, [continuousDetection, activeLocationId, peakHours, peakDate]);
 
   // Helper: compute median of an array
   const median = (arr) => {
