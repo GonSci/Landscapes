@@ -761,7 +761,10 @@ def get_distribution():
         if start_date:
             query = query.filter(SurveillanceLog.timestamp >= datetime.fromisoformat(start_date))
         if end_date:
-            query = query.filter(SurveillanceLog.timestamp <= datetime.fromisoformat(end_date))
+            dt_end = datetime.fromisoformat(end_date)
+            if dt_end.hour == 0 and dt_end.minute == 0 and dt_end.second == 0:
+                dt_end = dt_end.replace(hour=23, minute=59, second=59, microsecond=999999)
+            query = query.filter(SurveillanceLog.timestamp <= dt_end)
 
         results = query.group_by(Location.id, Location.name, Location.fov_area_m2).all()
 
