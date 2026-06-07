@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import * as d3 from 'd3';
-import useResizeObserver from '../../hooks/useResizeObserver';
+import useResizeObserver from '../../../hooks/useResizeObserver';
 
 /**
  * BarChart — D3-powered Peak Analysis bar chart.
@@ -19,7 +19,7 @@ import useResizeObserver from '../../hooks/useResizeObserver';
  */
 const MARGIN = { top: 28, right: 8, bottom: 28, left: 32 };
 
-const BarChart = ({ data = [] }) => {
+const BarChartDesktop = ({ data = [] }) => {
   const wrapperRef = useRef(null);
   const { width } = useResizeObserver(wrapperRef);
 
@@ -189,4 +189,4 @@ const BarChart = ({ data = [] }) => {
   );
 };
 
-export default BarChart;
+export default BarChartDesktop;
