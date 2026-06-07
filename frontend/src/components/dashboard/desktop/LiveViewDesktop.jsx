@@ -6,6 +6,12 @@ import { BarChart, DonutChart } from '../Dashboard';
 const API_URL = `${import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`}/api`;
 const VISION_URL = import.meta.env.VITE_VISION_BASE_URL || `http://${window.location.hostname}:5002`;
 
+const getLocalDateString = (d = new Date()) => {
+  const local = new Date(d);
+  local.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return local.toISOString().split('T')[0];
+};
+
 const LiveViewDesktop = ({ targetLocationId, clearTargetLocation, onSwitchToRedirection }) => {
   const [detectedCount, setDetectedCount] = useState(0);
   const [videoInitialized, setVideoInitialized] = useState(false);
@@ -25,12 +31,12 @@ const LiveViewDesktop = ({ targetLocationId, clearTargetLocation, onSwitchToRedi
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
+    return getLocalDateString(d);
   });
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(getLocalDateString());
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [peakHours, setPeakHours] = useState(12);
-  const [peakDate, setPeakDate] = useState(new Date().toISOString().split('T')[0]);
+  const [peakDate, setPeakDate] = useState(getLocalDateString());
   const [locations, setLocations] = useState([]);
   const [activeLocationId, setActiveLocationId] = useState(null);
   const [activeLocationName, setActiveLocationName] = useState('NORTH-WING');
@@ -300,7 +306,7 @@ const LiveViewDesktop = ({ targetLocationId, clearTargetLocation, onSwitchToRedi
 
     // Fetch peak analysis data immediately, then poll every 15s
     const fetchHourly = async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       if (peakDate !== today) return;
 
       try {
