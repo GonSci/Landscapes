@@ -61,11 +61,11 @@ DETECTION_CONFIG = {
 }
 
 LOCATION_PIPELINE_CONFIG = {
-    1: {'conf': 0.25, 'slice_size': 256, 'use_clahe': False, 'use_sahi': False, 'overlap': 0.15},
-    2: {'conf': 0.40, 'slice_size': 512, 'use_clahe': True,  'use_sahi': True,  'overlap': 0.15},
-    3: {'conf': 0.35, 'slice_size': 384, 'use_clahe': True,  'use_sahi': True,  'overlap': 0.15},
-    4: {'conf': 0.45, 'slice_size': 384, 'use_clahe': True,  'use_sahi': True,  'overlap': 0.15},
-    5: {'conf': 0.20, 'slice_size': 512, 'use_clahe': False, 'use_sahi': True,  'overlap': 0.15},
+    1: {'conf': 0.25, 'slice_size': 256, 'use_clahe': False, 'use_sahi': False, 'overlap': 0.15}, # NO SAHI
+    2: {'conf': 0.40, 'slice_size': 512, 'use_clahe': True,  'use_sahi': True,  'overlap': 0.15}, # 512 SAHI
+    3: {'conf': 0.35, 'slice_size': 384, 'use_clahe': True,  'use_sahi': True,  'overlap': 0.15}, # 384 SAHI
+    4: {'conf': 0.45, 'slice_size': 384, 'use_clahe': True,  'use_sahi': True,  'overlap': 0.15}, # 384 SAHI
+    5: {'conf': 0.20, 'slice_size': 512, 'use_clahe': False, 'use_sahi': True,  'overlap': 0.15}, # 512 SAHI
 }
 
 DEFAULT_PIPELINE_CONFIG = {
