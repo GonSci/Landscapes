@@ -1240,6 +1240,7 @@ def deactivate_location():
     """
     Step 7: Explicitly deactivate a location when the user navigates away.
     This is faster than waiting for the 30s heartbeat timeout.
+    Also updates the DB so db_polling_thread doesn't re-add it.
     """
     data = request.get_json(silent=True) or {}
     loc_id = data.get('location_id')
@@ -1251,6 +1252,19 @@ def deactivate_location():
         if loc_id in active_locations:
             del active_locations[loc_id]
             print(f"[VISION] Location {loc_id} explicitly deactivated (remaining active: {len(active_locations)})")
+
+    # Also mark inactive in DB so db_polling_thread won't resurrect it
+    try:
+        loc = Location.query.get(loc_id)
+        if loc and loc.is_active:
+            loc.is_active = False
+            db.session.commit()
+    except Exception as e:
+        print(f"[VISION] Warning: failed to deactivate location {loc_id} in DB: {e}")
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
 
     return jsonify({'status': 'ok', 'active_locations': list(active_locations.keys())})
 
