@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
+import LiveViewMobile from './LiveViewMobile';
+import RedirectionMobile from './RedirectionMobile';
 
-const DashboardMobile = (props) => {
+const DashboardMobile = ({ targetLocationId, clearTargetLocation }) => {
+  const [activeTab, setActiveTab] = useState('live');
+
   return (
-    <div className="p-4 text-center">
-      <h2>Mobile View: Dashboard</h2>
-      <p>This is the mobile layout for Dashboard.</p>
-    </div>
+    <>
+      {activeTab === 'live' ? (
+        <LiveViewMobile 
+          onTabChange={setActiveTab} 
+          targetLocationId={targetLocationId} 
+          clearTargetLocation={clearTargetLocation}
+        />
+      ) : (
+        <RedirectionMobile 
+          onTabChange={setActiveTab} 
+        />
+      )}
+    </>
   );
 };
 
