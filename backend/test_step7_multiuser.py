@@ -24,7 +24,7 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.dirname(__file__))
 
 # Prevent the heavy model from loading at import time
-import vision_worker as vw
+import backend.backup_vision_worker as vw
 
 class TestMultiUserActiveLocations(unittest.TestCase):
     """Tests for /set-active-location and /deactivate-location endpoints."""
