@@ -1045,7 +1045,7 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
   );
 });
 
-Redirection.displayName = 'Redirection';
+RedirectionDesktop.displayName = 'RedirectionDesktop';
 
 export default RedirectionDesktop;
 
