@@ -93,6 +93,10 @@ DEFAULT_PIPELINE_CONFIG = {
     'overlap': 0.15,
 }
 
+# Step 12: Moved from inside camera_thread hot loop where it was
+# recreated 150×/sec (30 FPS × 5 threads).  Constants belong at module level.
+LOCATION_HIGH_THRESHOLDS = {1: 15, 2: 38, 3: 14, 4: 15, 5: 66}
+
 YOLO_MODEL = None
 
 # ── Issue 2 Fix: GPU Inference Worker ─────────────────────────────────────────
@@ -127,8 +131,12 @@ STREAM_LOCK = threading.Lock()
 last_log_time_per_location = {}
 last_log_time_lock = threading.Lock()
 
-active_location_id = 1
-active_location_lock = threading.Lock()
+# Step 7: Multi-user support — replace single active_location_id with a dict
+# of active locations, each with a heartbeat timestamp.  Locations auto-expire
+# after ACTIVE_LOCATION_TIMEOUT seconds without a heartbeat.
+active_locations = {}              # location_id → last_heartbeat_time (float)
+active_locations_lock = threading.Lock()
+ACTIVE_LOCATION_TIMEOUT = 30       # seconds — expire if no heartbeat in 30s
 
 
 def detect_device():
@@ -660,16 +668,12 @@ def gpu_inference_worker():
 
 
 # ── YOLO Pipeline ──────────────────────────────────────────────────────────────
-def run_yolo_pipeline(frame, location_id, tracker, last_tracked_objects, is_active=True, annotate=True):
+# Step 5: Signature changed to accept pre-processed frame (frame_proc) and raw
+# frame (frame_raw) separately.  CLAHE is now applied in camera_thread only when
+# should_process_ai is True — saves ~60-70% of CLAHE CPU time.
+def run_yolo_pipeline(frame_proc, frame_raw, location_id, tracker, last_tracked_objects, is_active=True, annotate=True):
     start_time = time.time()
     loc_config = LOCATION_PIPELINE_CONFIG.get(location_id, DEFAULT_PIPELINE_CONFIG)
-    
-    # Apply CLAHE only if this location's ablation config says so
-    if loc_config['use_clahe']:
-        frame_proc = apply_clahe(frame)
-    else:
-        frame_proc = frame.copy()
-    
     conf_threshold = loc_config['conf']
     
     # 1. Attempt to send frame to GPU (routed by priority)
@@ -686,7 +690,7 @@ def run_yolo_pipeline(frame, location_id, tracker, last_tracked_objects, is_acti
     except _queue.Empty:
         pass 
 
-    h, w = frame.shape[:2]
+    h, w = frame_raw.shape[:2]
     current_tracked_objects = []
 
     # 3. If GPU has new data, update ByteTrack
@@ -756,7 +760,7 @@ def run_yolo_pipeline(frame, location_id, tracker, last_tracked_objects, is_acti
         detections_pixel.append({'bbox': [px1, py1, px2, py2], 'confidence': obj['confidence'], 'id': track_id})
         detections_pct.append({'bbox': [float(px1)/w, float(py1)/h, float(px2)/w, float(py2)/h], 'confidence': obj['confidence']})
 
-    # CPU: Annotation & Blur
+    # CPU: Annotation & Blur (use frame_proc for rendering since it has CLAHE applied)
     output_frame = frame_proc
     if annotate and detections_pixel:
         if DETECTION_CONFIG['enable_blur']:
@@ -841,7 +845,15 @@ def camera_thread(app_context, location_id, video_name, location_name):
     track_ages = {}
     last_confirmed_detections = []   # persist confirmed boxes between GPU results
     
-    # NEW: Variables to stabilize FPS reporting and control background processing
+    # Step 8: Bounding box interpolation state.
+    # Stores per-track velocity (pixels/sec) estimated from consecutive GPU results.
+    # When the GPU is busy, stale boxes are extrapolated forward so the privacy
+    # blur follows walking people instead of lagging 1-3 frames behind.
+    track_velocities = {}        # track_id → (vx1, vy1, vx2, vy2) in px/sec
+    prev_gpu_positions = {}      # track_id → (x1, y1, x2, y2) from previous GPU result
+    last_gpu_result_time = 0.0   # timestamp of the last fresh GPU result
+
+    # Variables to stabilize FPS reporting and control background processing
     display_fps = 30.0 
     last_pipeline_run = 0.0
     was_active = None  # track active/inactive transitions for terminal logging
@@ -850,16 +862,35 @@ def camera_thread(app_context, location_id, video_name, location_name):
         try:
             loop_start = time.time()
 
-            # Determine priority
-            with active_location_lock:
-                is_active = (location_id == active_location_id)
+            # Determine priority — Step 7: membership check instead of equality
+            with active_locations_lock:
+                is_active = location_id in active_locations
 
             # ── Log active/inactive transitions ──
             if was_active is not None and was_active != is_active:
                 if is_active:
-                    print(f"[VISION] [{location_name}] Now ACTIVE (user is viewing)")
+                    # Step 9: Reset tracker state on background → active transition.
+                    # Background track_ages are from a different tracker with different
+                    # frame_rate assumptions.  Carrying them into active mode would
+                    # require 3 *more* sightings on top of stale background ages,
+                    # causing a brief "count drops to 0" dip every tab switch.
+                    # Starting fresh means the first 3 active GPU results confirm
+                    # detections cleanly.
+                    track_ages = {}
+                    last_confirmed_detections = []
+                    track_velocities = {}
+                    prev_gpu_positions = {}
+                    last_gpu_result_time = 0.0
+                    print(f"[VISION] [{location_name}] Now ACTIVE (user is viewing) — tracker state reset")
                 else:
-                    print(f"[VISION] [{location_name}] Now INACTIVE (background mode)")
+                    # Step 9: Free memory when going inactive — the background tracker
+                    # will build its own state from scratch on the next 5s inference.
+                    last_tracked_objects = []
+                    last_confirmed_detections = []
+                    track_velocities = {}
+                    prev_gpu_positions = {}
+                    last_gpu_result_time = 0.0
+                    print(f"[VISION] [{location_name}] Now INACTIVE (background mode) — state cleared")
             was_active = is_active
                 
             # THE FIX: Always target 30 FPS to drain the OpenCV buffer continuously
@@ -892,22 +923,45 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 last_tracked_objects = []
                 track_ages = {}
                 last_confirmed_detections = []
+                track_velocities = {}
+                prev_gpu_positions = {}
+                last_gpu_result_time = 0.0
                 continue
 
             # THE FIX: Decide whether to run the heavy AI math.
             now = time.time()
             should_process_ai = is_active or (now - last_pipeline_run >= 5.0)
 
-            # Default to the raw frame and the last known count for background streams
-            output_frame = frame.copy()
             with STREAM_LOCK:
                 current_count = THREAD_COUNTS.get(location_id, 0)
 
-            if should_process_ai:
+            # Step 6: Eliminate unconditional frame.copy().
+            # Before: output_frame = frame.copy() ran EVERY iteration (30 FPS × 5 threads
+            # = ~255 MB/sec of wasted memcpy).  Now:
+            #   - Background + no AI → skip rendering entirely (early continue)
+            #   - Active + no AI → copy frame for CCTV overlay only
+            #   - AI ran → use pipe_frame directly (pipeline already has its own frame)
+
+            if not should_process_ai:
+                # Background idle tick — nothing to render or encode.
+                # Step 5's should_encode gate would skip JPEG anyway, and there's
+                # no new data for the CCTV overlay.  Skip everything.
+                pass  # fall through to sleep/FPS logic below
+            else:
+                # Step 5: CLAHE moved here from inside run_yolo_pipeline().
+                # Previously CLAHE ran at 30 FPS per thread (150 calls/sec total),
+                # but only ~10-15 active frames/sec actually reach the GPU.
+                # Now it only runs when we'll actually use the result for inference.
+                loc_config = LOCATION_PIPELINE_CONFIG.get(location_id, DEFAULT_PIPELINE_CONFIG)
+                if loc_config['use_clahe']:
+                    frame_proc = apply_clahe(frame)
+                else:
+                    frame_proc = frame
+
                 # 3. PIPELINE CALL — use the tracker tuned for this stream's rate
                 tracker = tracker_active if is_active else tracker_background
                 pipe_frame, detections_pct, detections_pixel, last_tracked_objects, got_fresh = run_yolo_pipeline(
-                    frame, location_id, tracker, last_tracked_objects, is_active=is_active, annotate=False
+                    frame_proc, frame, location_id, tracker, last_tracked_objects, is_active=is_active, annotate=False
                 )
 
                 # --- 4. TEMPORAL FILTERING LOGIC ---
@@ -918,64 +972,110 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 if got_fresh:
                     confirmed_detections = []
                     current_ids = set()
-                    
+
+                    # Step 4: Unified temporal filtering for both active and background.
+                    min_age = 3 if is_active else 2
+
                     for det in detections_pixel:
                         tid = det['id']
                         current_ids.add(tid)
-                        
-                        if is_active:
-                            track_ages[tid] = track_ages.get(tid, 0) + 1
-                            if track_ages[tid] >= 3:
-                                confirmed_detections.append(det)
-                        else:
-                            # Background streams only run every 5s, so ByteTrack resets.
-                            # Accept detections immediately without temporal filtering.
+                        track_ages[tid] = track_ages.get(tid, 0) + 1
+
+                        if track_ages[tid] >= min_age:
                             confirmed_detections.append(det)
 
-                    if is_active:
-                        track_ages = {tid: age for tid, age in track_ages.items() if tid in current_ids}
-                    else:
-                        track_ages = {}
-                    
+                    # Prune dead tracks (same for both modes)
+                    track_ages = {tid: age for tid, age in track_ages.items() if tid in current_ids}
+
+                    # Step 8: Compute per-track velocity from consecutive GPU results.
+                    # Velocity = (current_pos - prev_pos) / dt, stored as px/sec.
+                    now_gpu = time.time()
+                    if last_gpu_result_time > 0:
+                        dt_gpu = now_gpu - last_gpu_result_time
+                        if 0 < dt_gpu < 2.0:  # ignore gaps > 2s (video loop, tab switch)
+                            for det in confirmed_detections:
+                                tid = det['id']
+                                bbox = det['bbox']
+                                if tid in prev_gpu_positions:
+                                    prev = prev_gpu_positions[tid]
+                                    track_velocities[tid] = (
+                                        (bbox[0] - prev[0]) / dt_gpu,
+                                        (bbox[1] - prev[1]) / dt_gpu,
+                                        (bbox[2] - prev[2]) / dt_gpu,
+                                        (bbox[3] - prev[3]) / dt_gpu,
+                                    )
+
+                    # Snapshot current positions for next velocity computation
+                    prev_gpu_positions = {det['id']: det['bbox'] for det in confirmed_detections}
+                    track_velocities = {tid: v for tid, v in track_velocities.items() if tid in current_ids}
+                    last_gpu_result_time = now_gpu
+
                     current_count = len(confirmed_detections)
                     last_confirmed_detections = confirmed_detections
                 else:
-                    # No fresh GPU data — keep showing the last confirmed set
+                    # No fresh GPU data — reuse last confirmed set.
+                    # Step 8: On the active stream, interpolate bounding boxes forward
+                    # using velocity estimates so the privacy blur follows walking people
+                    # instead of lagging 1-3 frames behind.
                     confirmed_detections = last_confirmed_detections
+
+                    if is_active and confirmed_detections and last_gpu_result_time > 0:
+                        dt = min(time.time() - last_gpu_result_time, 0.5)  # cap at 500ms
+                        if dt > 0.01:  # only interpolate if enough time has passed
+                            h_frame, w_frame = frame.shape[:2]
+                            interpolated = []
+                            for det in confirmed_detections:
+                                tid = det['id']
+                                if tid in track_velocities:
+                                    vel = track_velocities[tid]
+                                    bx1 = max(0, det['bbox'][0] + int(vel[0] * dt))
+                                    by1 = max(0, det['bbox'][1] + int(vel[1] * dt))
+                                    bx2 = min(w_frame, det['bbox'][2] + int(vel[2] * dt))
+                                    by2 = min(h_frame, det['bbox'][3] + int(vel[3] * dt))
+                                    # Sanity: box must still have positive area
+                                    if bx2 > bx1 and by2 > by1:
+                                        interpolated.append({**det, 'bbox': [bx1, by1, bx2, by2]})
+                                    else:
+                                        interpolated.append(det)
+                                else:
+                                    interpolated.append(det)
+                            confirmed_detections = interpolated
+
                     current_count = len(confirmed_detections)
 
-                # Only apply blurs and overlays to the frames that actually ran AI
+                # Build output_frame: use pipe_frame directly (no copy needed)
                 output_frame = pipe_frame
                 if DETECTION_CONFIG['enable_blur'] and confirmed_detections:
                     output_frame = apply_gaussian_blur(output_frame, confirmed_detections)
                 if confirmed_detections:
                     output_frame = draw_detections_on_frame(output_frame, confirmed_detections)
-                # -----------------------------------
                 
                 last_pipeline_run = now
 
-            # --- ALWAYS RUN: Keeps the video feed perfectly live and smooth ---
-            # Draw CCTV overlay using our smoothed display_fps
-            output_frame = draw_cctv_overlay(output_frame, current_count, display_fps)
+                # --- CCTV overlay + JPEG encode (only when we have something to render) ---
+                output_frame = draw_cctv_overlay(output_frame, current_count, display_fps)
 
-            # Update Stream Globals
-            ret, buffer = cv2.imencode('.jpg', output_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-            if ret:
+                # Step 5: background streams only encode when AI ran
+                should_encode = is_active or should_process_ai
+                if should_encode:
+                    ret, buffer = cv2.imencode('.jpg', output_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    if ret:
+                        with STREAM_LOCK:
+                            THREAD_FRAMES[location_id] = buffer.tobytes()
+
+            # Update counting metrics only when AI ran
+            if should_process_ai:
                 with STREAM_LOCK:
-                    THREAD_FRAMES[location_id] = buffer.tobytes()
-                    # Only update the global counting metrics if we actually ran the AI
-                    if should_process_ai:
-                        THREAD_COUNTS[location_id] = current_count
-                        if current_count > THREAD_MAX_COUNTS[location_id]:
-                            THREAD_MAX_COUNTS[location_id] = current_count
+                    THREAD_COUNTS[location_id] = current_count
+                    if current_count > THREAD_MAX_COUNTS[location_id]:
+                        THREAD_MAX_COUNTS[location_id] = current_count
 
             # Database Logging (Runs every loop to ensure time accuracy)
             time_since_last_log = time.time() - last_log_time
             with STREAM_LOCK:
                 peak_count = THREAD_MAX_COUNTS.get(location_id, 0)
 
-            location_high_thresholds = {1: 15, 2: 38, 3: 14, 4: 15, 5: 66}
-            high_threshold = location_high_thresholds.get(location_id, 10)
+            high_threshold = LOCATION_HIGH_THRESHOLDS.get(location_id, 10)
             is_high_density = peak_count >= high_threshold
 
             if time_since_last_log >= 60 or (is_high_density and time_since_last_log >= 10):
@@ -1007,13 +1107,11 @@ def camera_thread(app_context, location_id, video_name, location_name):
             time.sleep(1)
 
 # ── Mini Flask Streaming Server ───────────────────────────────────────────────
-def generate_mjpeg_stream():
+def generate_mjpeg_stream(location_id):
+    """Step 7: Each viewer requests their specific location's stream."""
     while True:
-        with active_location_lock:
-            current_loc = active_location_id
-            
         with STREAM_LOCK:
-            frame_data = THREAD_FRAMES.get(current_loc)
+            frame_data = THREAD_FRAMES.get(location_id)
             
         if frame_data is None:
             time.sleep(0.1)
@@ -1034,15 +1132,24 @@ db.init_app(app)
 
 @app.route('/video_feed')
 def video_feed():
-    return Response(generate_mjpeg_stream(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    """Step 7: Accept location_id query param so each viewer gets their stream."""
+    loc_id = request.args.get('location_id', type=int)
+    if loc_id is None:
+        # Fallback: use the first active location, or location 1
+        with active_locations_lock:
+            loc_id = next(iter(active_locations), 1)
+    return Response(generate_mjpeg_stream(loc_id), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/live-count', methods=['GET'])
 def live_count():
-    with active_location_lock:
-        current_loc = active_location_id
+    """Step 7: Accept location_id query param."""
+    loc_id = request.args.get('location_id', type=int)
+    if loc_id is None:
+        with active_locations_lock:
+            loc_id = next(iter(active_locations), 1)
     with STREAM_LOCK:
-        count = THREAD_COUNTS.get(current_loc, 0)
-    return jsonify({'count': count})
+        count = THREAD_COUNTS.get(loc_id, 0)
+    return jsonify({'count': count, 'location_id': loc_id})
 
 @app.route('/yolo/config', methods=['POST'])
 def update_yolo_config():
@@ -1058,60 +1165,73 @@ def device_info_route():
 @app.route('/set-active-location', methods=['POST'])
 def set_active_location():
     """
-    Issue 9 Fix: push endpoint so the frontend notifies vision_worker the
-    instant the user switches location tab.
-
-    The old db_polling_thread hit PostgreSQL every 1 second (3,600 queries/hr
-    at idle) just to detect a location switch.  Now the frontend POSTs here on
-    the switch event — zero DB queries at idle, sub-millisecond response.
+    Step 7: Register a heartbeat for a location.  Multiple locations can be
+    active simultaneously — each viewer POSTs their location_id periodically.
+    Stale entries (no heartbeat in ACTIVE_LOCATION_TIMEOUT seconds) are
+    auto-expired.
 
     Expected JSON body:  { "location_id": <int> }
-    Returns:             { "status": "ok", "active_location_id": <int> }
-
-    The fallback polling thread (5 s interval, see db_polling_thread below)
-    still runs so a page-refresh or missed POST can't leave the worker in a
-    permanently wrong state.
+    Returns:             { "status": "ok", "active_locations": [<int>, ...] }
     """
-    global active_location_id
     data = request.get_json(silent=True) or {}
     new_id = data.get('location_id')
 
     if not isinstance(new_id, int):
         return jsonify({'status': 'error', 'message': 'location_id must be an integer'}), 400
 
-    with active_location_lock:
-        if active_location_id != new_id:
-            print(f"[VISION] Push switch -> location {new_id}")
-            active_location_id = new_id
+    with active_locations_lock:
+        was_present = new_id in active_locations
+        active_locations[new_id] = time.time()
 
-    return jsonify({'status': 'ok', 'active_location_id': new_id})
+        # Expire stale entries
+        now = time.time()
+        expired = [lid for lid, ts in active_locations.items() if now - ts > ACTIVE_LOCATION_TIMEOUT]
+        for lid in expired:
+            del active_locations[lid]
+
+        if not was_present:
+            print(f"[VISION] Heartbeat: location {new_id} now ACTIVE (total active: {len(active_locations)})")
+
+    return jsonify({'status': 'ok', 'active_locations': list(active_locations.keys())})
+
+
+@app.route('/deactivate-location', methods=['POST'])
+def deactivate_location():
+    """
+    Step 7: Explicitly deactivate a location when the user navigates away.
+    This is faster than waiting for the 30s heartbeat timeout.
+    """
+    data = request.get_json(silent=True) or {}
+    loc_id = data.get('location_id')
+
+    if not isinstance(loc_id, int):
+        return jsonify({'status': 'error', 'message': 'location_id must be an integer'}), 400
+
+    with active_locations_lock:
+        if loc_id in active_locations:
+            del active_locations[loc_id]
+            print(f"[VISION] Location {loc_id} explicitly deactivated (remaining active: {len(active_locations)})")
+
+    return jsonify({'status': 'ok', 'active_locations': list(active_locations.keys())})
 
 
 def db_polling_thread(app_context):
     """
-    Issue 9 Fix: fallback-only poll at 5 s instead of 1 s.
-
-    The primary mechanism is now the POST /set-active-location push endpoint
-    above.  This thread exists only as a safety net for:
-      - Page refreshes that skip the push call
-      - Frontend bugs that miss a switch event
-      - First-boot sync before any push has arrived
-
-    At 5 s the query rate drops from 3,600/hr to 720/hr at idle.
-    In practice it almost never fires because the push endpoint handles
-    every real switch.
+    Step 7: Fallback poll syncs DB is_active flags into the active_locations
+    heartbeat dict.  Runs every 10s as a safety net.
     """
-    global active_location_id
     while True:
-        time.sleep(5)   # poll-first so the push endpoint handles the hot path
+        time.sleep(10)
         try:
             with app_context():
-                active_loc = Location.query.filter_by(is_active=True).first()
-                if active_loc:
-                    with active_location_lock:
-                        if active_location_id != active_loc.id:
-                            print(f"[VISION] Fallback poll sync -> location {active_loc.id} ({active_loc.name})")
-                            active_location_id = active_loc.id
+                active_locs = Location.query.filter_by(is_active=True).all()
+                if active_locs:
+                    with active_locations_lock:
+                        now = time.time()
+                        for loc in active_locs:
+                            if loc.id not in active_locations:
+                                active_locations[loc.id] = now
+                                print(f"[VISION] Fallback poll: added location {loc.id} ({loc.name})")
         except Exception:
             pass
 

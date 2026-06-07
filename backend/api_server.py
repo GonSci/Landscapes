@@ -262,7 +262,8 @@ def login():
 # ── Vision Integration Endpoints ──────────────────────────────────────────────
 @app.route('/api/yolo/initialize', methods=['POST'])
 def initialize_yolo():
-    """Update active location in DB so vision worker can switch its video stream."""
+    """Update active location in DB so vision worker can switch its video stream.
+    Step 7: No longer deactivates all other locations — multiple can be active."""
     try:
         data = request.json
         video_filename = data.get('video')
@@ -273,16 +274,13 @@ def initialize_yolo():
         if not location:
             return jsonify({'error': 'Location not found for this video'}), 404
             
-        # Set all locations to inactive
-        Location.query.update({Location.is_active: False})
-        
-        # Set selected location to active
+        # Step 7: Just mark this location as active (don't deactivate others)
         location.is_active = True
         db.session.commit()
         
         return jsonify({
             'status': 'success',
-            'message': f'Active location switched to {location.name}',
+            'message': f'Active location: {location.name}',
             'location_id': location.id
         })
     except Exception as e:
