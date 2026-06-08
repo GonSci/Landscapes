@@ -21,8 +21,9 @@ const getLocalDateString = (d = new Date()) => {
   return local.toISOString().split('T')[0];
 };
 
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`}/api`;
-const VISION_URL = import.meta.env.VITE_VISION_BASE_URL || `http://${window.location.hostname}:5002`;
+// Clean, strict production-ready URLs
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/api`;
+const VISION_URL = import.meta.env.VITE_VISION_BASE_URL;
 
 const LiveViewMobile = ({ onTabChange, targetLocationId, clearTargetLocation }) => {
   const [currentTime, setCurrentTime] = useState(new Date());

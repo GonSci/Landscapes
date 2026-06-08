@@ -3,8 +3,9 @@ import { MapPin, ChevronDown, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, DonutChart } from '../Dashboard';
 
-const API_URL = `${import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`}/api`;
-const VISION_URL = import.meta.env.VITE_VISION_BASE_URL || `http://${window.location.hostname}:5002`;
+// Clean, strict production-ready URLs
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/api`;
+const VISION_URL = import.meta.env.VITE_VISION_BASE_URL;
 
 const getLocalDateString = (d = new Date()) => {
   const local = new Date(d);
