@@ -766,6 +766,14 @@ def generate_mjpeg_stream(location_id):
 
 app = Flask(__name__)
 CORS(app)
+
+@app.after_request
+def brute_force_cors(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
+
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     'DATABASE_URL',
     'postgresql://landscapes_user:landscapes_pass123@localhost:5432/landscapes'
