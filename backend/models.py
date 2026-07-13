@@ -36,6 +36,17 @@ class Location(db.Model):
     logs = db.relationship('SurveillanceLog', backref='location', lazy=True)
 
     def to_dict(self):
+        import os
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        video_exists = False
+        if self.video_filename:
+            candidates = [
+                os.path.join(project_root, '..', 'frontend', 'public', 'assets', self.video_filename),
+                os.path.join(project_root, '..', 'public', 'assets', self.video_filename),
+                os.path.join(project_root, self.video_filename),
+            ]
+            video_exists = any(os.path.exists(c) for c in candidates)
+
         return {
             'id': self.id, 
             'name': self.name, 
@@ -43,6 +54,7 @@ class Location(db.Model):
             'latitude': self.latitude, 
             'longitude': self.longitude,
             'video_filename': self.video_filename, 
+            'has_video': video_exists,
             'is_active': self.is_active,
             'description': self.description,
             'type': self.type,

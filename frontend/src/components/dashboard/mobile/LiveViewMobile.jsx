@@ -99,15 +99,7 @@ const LiveViewMobile = ({ onTabChange, targetLocationId, clearTargetLocation }) 
         const response = await fetch(`${API_URL}/locations`);
         if (response.ok) {
           const data = await response.json();
-          const noCameraList = [
-            'Mt. Cloud Bookshop', 
-            'Ili-Likha Arts & Village', 
-            'Heritage Hill', 
-            'Cafe by the Ruins', 
-            'Baguio Orchidarium', 
-            'Gypsy Baguio by Chef Waya'
-          ];
-          const locationsWithCameras = data.filter(loc => !noCameraList.includes(loc.name));
+          const locationsWithCameras = data.filter(loc => loc.has_video);
           setLocations(locationsWithCameras);
           
           const targetLoc = targetLocationId ? locationsWithCameras.find(l => l.id === targetLocationId) : null;
