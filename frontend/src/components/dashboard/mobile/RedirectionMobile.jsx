@@ -88,14 +88,14 @@ const RedirectionMobile = ({ onTabChange }) => {
     : redirectionFallback.locations;
 
   const handleGetRecommendations = async () => {
-    if (selectedLocationId === null) return;
+    if (!selectedLocationId) return;
     
     const selectedLocation = mapLocations.find(loc => loc.id === selectedLocationId);
     if (!selectedLocation) return;
 
     setIsLoading(true);
     try {
-      // Use the user's real GPS coordinates if available, otherwise fall back to the selected marker's coordinates
+      // Use the user's real GPS coordinates if available, otherwise fall back to the intended destination's coordinates
       const startCoords = userLocation
         ? [userLocation.lat, userLocation.lng]
         : [selectedLocation.lat, selectedLocation.lng];
@@ -244,6 +244,21 @@ const RedirectionMobile = ({ onTabChange }) => {
     });
   };
 
+  const createUserLocationIcon = () => {
+    return L.divIcon({
+      className: 'user-location-marker',
+      html: `
+        <div class="relative flex items-center justify-center w-12 h-12">
+          <div class="absolute w-full h-full bg-blue-500/40 rounded-full animate-ping shadow-[0_0_20px_rgba(59,130,246,0.6)]"></div>
+          <div class="absolute w-5 h-5 bg-blue-500 rounded-full border-[3px] border-white shadow-[0_0_15px_rgba(0,0,0,0.5)]"></div>
+        </div>
+      `,
+      iconSize: [48, 48],
+      iconAnchor: [24, 24],
+      popupAnchor: [0, -24],
+    });
+  };
+
   const handleMarkerClick = (location) => {
     setSelectedLocationId(location.id);
     setSearchQuery(location.name);
@@ -312,6 +327,42 @@ const RedirectionMobile = ({ onTabChange }) => {
               </Marker>
             );
           })}
+
+          {userLocation && (
+            <Marker 
+              position={[userLocation.lat, userLocation.lng]}
+              icon={createUserLocationIcon()}
+              zIndexOffset={1000}
+            >
+              <Popup className="location-popup" closeButton={false}>
+                <div className="bg-gradient-to-br from-[#1e1b4b]/95 to-[#0f172a]/95 backdrop-blur-xl rounded-2xl border border-indigo-400/40 p-0 text-center min-w-[180px] shadow-[0_0_30px_rgba(99,102,241,0.25),0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
+                  {/* Header band */}
+                  <div className="bg-gradient-to-r from-indigo-600/40 to-blue-600/40 px-3 py-2 flex items-center gap-2 border-b border-indigo-400/20">
+                    <div className="relative flex items-center justify-center">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
+                      <div className="absolute w-2.5 h-2.5 rounded-full bg-blue-400 animate-ping opacity-60"></div>
+                    </div>
+                    <span className="font-black text-[10px] uppercase tracking-[0.15em] text-white">You Are Here</span>
+                  </div>
+                  {/* Body */}
+                  <div className="px-3 py-2.5 flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2 bg-white/5 rounded-lg px-2.5 py-1.5 border border-white/5">
+                      <svg className="w-3 h-3 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-[9px] font-mono text-slate-300 tracking-wide">
+                        {userLocation.lat.toFixed(6)}°N, {userLocation.lng.toFixed(6)}°E
+                      </span>
+                    </div>
+                    <p className="text-[9px] text-indigo-300/60 leading-relaxed m-0">
+                      Distances are measured from this point
+                    </p>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          )}
         </MapContainer>
       </div>
 
@@ -338,7 +389,7 @@ const RedirectionMobile = ({ onTabChange }) => {
             <Search size={18} className="text-slate-400" />
             <input 
               type="text" 
-              placeholder="Tap to set starting point" 
+              placeholder="Where do you want to go?" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchOpen(true)}
@@ -478,6 +529,17 @@ const RedirectionMobile = ({ onTabChange }) => {
           >
             {viewMode === 'preferences' ? (
               <>
+                <div className="mb-5 bg-indigo-500/30 border border-indigo-400/60 rounded-xl p-3 flex items-start gap-3 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                  <div className="mt-0.5 shrink-0">
+                    <svg className="w-5 h-5 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-xs text-indigo-200/80 leading-relaxed font-medium m-0">
+                    Distances and times are automatically measured from your <span className="text-indigo-300 font-bold">{userLocation ? 'Current Location' : 'Intended Destination'}</span>.
+                  </p>
+                </div>
+
                 <div className="space-y-1.5 mb-5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-black uppercase tracking-widest text-slate-400">Max Travel Time</label>
@@ -633,24 +695,7 @@ const RedirectionMobile = ({ onTabChange }) => {
                   </div>
                 </div>
 
-                <div className="space-y-1.5 mb-5">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Group Size</label>
-                  <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/10 rounded-xl">
-                    <button 
-                      onClick={() => setGroupSize(Math.max(1, groupSize - 1))}
-                      className="w-12 h-10 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-300 active:bg-white/20"
-                    >
-                      <Minus size={18} />
-                    </button>
-                    <span className="text-lg font-medium text-white">{groupSize} {groupSize === 1 ? 'Person' : 'People'}</span>
-                    <button 
-                      onClick={() => setGroupSize(Math.min(50, groupSize + 1))}
-                      className="w-12 h-10 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-300 active:bg-white/20"
-                    >
-                      <Plus size={18} />
-                    </button>
-                  </div>
-                </div>
+
 
                 <div className="border-t border-white/10 my-4"></div>
 
@@ -699,7 +744,7 @@ const RedirectionMobile = ({ onTabChange }) => {
                     }`}
                   >
                     <Zap size={18} className={!selectedLocationId ? 'fill-slate-600 text-slate-500' : 'fill-white'} />
-                    {isLoading ? 'LOADING...' : !selectedLocationId ? 'TAP A LOCATION ON THE MAP TO START' : 'GET RECOMMENDATIONS'}
+                    {isLoading ? 'LOADING...' : !selectedLocationId ? 'SELECT YOUR INTENDED DESTINATION' : 'GET RECOMMENDATIONS'}
                   </button>
                 </div>
               </>

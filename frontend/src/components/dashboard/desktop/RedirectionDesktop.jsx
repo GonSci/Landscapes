@@ -263,10 +263,25 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
     });
   };
 
+  const createUserLocationIcon = () => {
+    return L.divIcon({
+      className: 'user-location-marker',
+      html: `
+        <div class="relative flex items-center justify-center w-12 h-12">
+          <div class="absolute w-full h-full bg-blue-500/40 rounded-full animate-ping shadow-[0_0_20px_rgba(59,130,246,0.6)]"></div>
+          <div class="absolute w-5 h-5 bg-blue-500 rounded-full border-[3px] border-white shadow-[0_0_15px_rgba(0,0,0,0.5)]"></div>
+        </div>
+      `,
+      iconSize: [48, 48],
+      iconAnchor: [24, 24],
+      popupAnchor: [0, -24],
+    });
+  };
+
   // Handle Get Recommendations - Call TOPSIS API
   const handleGetRecommendations = async () => {
     console.log('Get Recommendations clicked');
-    if (selectedLocationId === null) {
+    if (!selectedLocationId) {
       console.log('No location selected');
       return;
     }
@@ -277,7 +292,7 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
       return;
     }
 
-    // Use the user's real GPS coordinates if available, otherwise fall back to the selected marker's coordinates
+    // Use the user's real GPS coordinates if available, otherwise fall back to the intended destination's coordinates
     const startCoords = userLocation
       ? [userLocation.lat, userLocation.lng]
       : [selectedLocation.lat, selectedLocation.lng];
@@ -539,6 +554,42 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
                   });
                 })()
               }
+
+              {userLocation && (
+                <Marker 
+                  position={[userLocation.lat, userLocation.lng]}
+                  icon={createUserLocationIcon()}
+                  zIndexOffset={1000}
+                >
+                  <Popup className="location-popup" closeButton={false}>
+                    <div className="bg-gradient-to-br from-[#1e1b4b]/95 to-[#0f172a]/95 backdrop-blur-xl rounded-2xl border border-indigo-400/40 p-0 text-center min-w-[200px] shadow-[0_0_30px_rgba(99,102,241,0.25),0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
+                      {/* Header band */}
+                      <div className="bg-gradient-to-r from-indigo-600/40 to-blue-600/40 px-4 py-2.5 flex items-center gap-2.5 border-b border-indigo-400/20">
+                        <div className="relative flex items-center justify-center">
+                          <div className="w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>
+                          <div className="absolute w-3 h-3 rounded-full bg-blue-400 animate-ping opacity-60"></div>
+                        </div>
+                        <span className="font-black text-xs uppercase tracking-[0.15em] text-white">You Are Here</span>
+                      </div>
+                      {/* Body */}
+                      <div className="px-4 py-3 flex flex-col gap-2">
+                        <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 border border-white/5">
+                          <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span className="text-[10px] font-mono text-slate-300 tracking-wide">
+                            {userLocation.lat.toFixed(6)}°N, {userLocation.lng.toFixed(6)}°E
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-indigo-300/60 leading-relaxed m-0">
+                          Distances are measured from this point
+                        </p>
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
             </MapContainer>
             </div>
           </div>
@@ -552,6 +603,17 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
                 /* PREFERENCES VIEW */
                 <div className="flex flex-col h-full">
                   <h4 className="text-lg font-black text-white mb-4 tracking-tight shrink-0">Your Preferences</h4>
+                  
+                  <div className="mb-4 bg-indigo-500/30 border border-indigo-400/60 rounded-xl p-3 flex items-start gap-3 shrink-0 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                    <div className="mt-0.5">
+                      <svg className="w-5 h-5 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-xs text-indigo-200/80 leading-relaxed font-medium m-0">
+                      Distances and times are automatically measured from your <span className="text-indigo-300 font-bold">{userLocation ? 'Current Location' : 'Intended Destination'}</span>.
+                    </p>
+                  </div>
               
                   <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2 -mr-2 pb-2 custom-scrollbar">
               {/* SECTION: Trip Basics */}
@@ -720,39 +782,7 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
                   </div>
                 </div>
 
-                {/* Group Size */}
-                <div className="space-y-1.5 mb-3">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Group Size</label>
-                  <div className="relative group">
-                    <input 
-                      type="number" 
-                      min="1" 
-                      max="50"
-                      value={groupSize}
-                      onChange={(e) => setGroupSize(Math.max(1, Math.min(50, Number(e.target.value))))}
-                      placeholder={groupSize === 1 ? 'Person' : 'People'}
-                      className="group-size-input w-full px-4 pr-16 py-2.5 rounded-xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-white/20 hover:border-indigo-500/50 text-sm text-white font-black focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all duration-300 backdrop-blur-sm shadow-lg hover:shadow-indigo-500/20 hover:shadow-lg text-center"
-                    />
-                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 pointer-events-auto z-50">
-                      <button
-                        onClick={() => setGroupSize(Math.min(50, groupSize + 1))}
-                        className="group/btn flex items-center justify-center w-6 h-4.5 rounded-t-md bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-indigo-500/40 hover:to-purple-500/40 border border-white/20 hover:border-indigo-500/50 transition-all duration-200 cursor-pointer shadow-sm active:from-indigo-500/60 active:to-purple-500/60"
-                      >
-                        <svg className="w-3 h-3 text-slate-300 group-hover/btn:text-indigo-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => setGroupSize(Math.max(1, groupSize - 1))}
-                        className="group/btn flex items-center justify-center w-6 h-4.5 rounded-b-md bg-gradient-to-br from-slate-700/50 to-slate-800/50 hover:from-indigo-500/40 hover:to-purple-500/40 border border-white/20 hover:border-indigo-500/50 transition-all duration-200 cursor-pointer shadow-sm active:from-indigo-500/60 active:to-purple-500/60"
-                      >
-                        <svg className="w-3 h-3 text-slate-300 group-hover/btn:text-indigo-200 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+
               </div>
 
               <div className="border-t border-white/10 my-2.5"></div>
@@ -823,10 +853,10 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
 
               </div>
 
-              {/* Starting Location Dropdown */}
+              {/* Intended Destination Dropdown */}
               <div className="mt-4 pt-4 border-t border-white/10 shrink-0 relative group">
                   <div className="mb-2.5 px-1">
-                    <p className="text-xs text-slate-400 font-medium mb-2">Starting Location:</p>
+                    <p className="text-xs text-slate-400 font-medium mb-2">Intended Destination:</p>
                     <div className="relative" ref={locationDropdownRef}>
                       <button
                         onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
@@ -834,8 +864,8 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
                       >
                         <span className="truncate">
                           {selectedLocationId !== null 
-                            ? mapLocations.find(loc => loc.id === selectedLocationId)?.name || 'Select Location'
-                            : 'Select Location'}
+                            ? mapLocations.find(loc => loc.id === selectedLocationId)?.name || 'Select Destination'
+                            : 'Select Destination'}
                         </span>
                         <svg 
                           className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isLocationDropdownOpen ? 'rotate-180' : ''}`} 
@@ -894,7 +924,7 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
                 {selectedLocationId === null && (
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 bg-slate-900/95 border border-indigo-500/50 rounded-lg shadow-2xl text-xs font-medium text-indigo-200 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
                     <div className="flex items-center gap-2">
-                      <span>Click your location on the map to start</span>
+                      <span>Select your intended destination on the map</span>
                     </div>
                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900/95 border-r border-b border-indigo-500/50 rotate-45"></div>
                   </div>

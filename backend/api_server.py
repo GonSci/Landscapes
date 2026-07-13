@@ -373,13 +373,13 @@ def get_topsis_recommendations():
         if not all_locations:
             return jsonify({'error': 'No locations available in database'}), 400
         
-        # Verify start location exists
+        # Verify the intended destination exists
         start_location = Location.query.get(start_location_id)
         if not start_location:
-            return jsonify({'error': f'Start location {start_location_id} not found'}), 400
+            return jsonify({'error': f'Intended destination {start_location_id} not found'}), 400
         
         start_lat, start_lon = start_coords
-        print(f"[API] Starting from {start_location.name} at [{start_lat}, {start_lon}]")
+        print(f"[API] Intended destination: {start_location.name} | Distance origin: [{start_lat}, {start_lon}]")
         
         # Build decision matrix
         locations_with_metrics = []
@@ -412,8 +412,6 @@ def get_topsis_recommendations():
         print(f"[API] Neutral density for camera-less locations: {NEUTRAL_DENSITY_PM2} p/m² (fixed — Jacob's Moderate midpoint)")
 
         for loc in all_locations:
-            if loc.id == start_location_id:
-                continue  # Skip the starting location
 
             # Calculate distance
             distance = haversine_distance(start_lat, start_lon, loc.latitude, loc.longitude)
