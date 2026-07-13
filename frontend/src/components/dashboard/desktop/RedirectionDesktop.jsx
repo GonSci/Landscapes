@@ -23,6 +23,7 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
   const [viewMode, setViewMode] = useState('preferences');
   const [topsisResults, setTopsisResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState(null); // { lat, lng } from GPS
 
   const markerRefs = useRef({});
   const mapRef = useRef(null);
@@ -30,6 +31,26 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
   const placeCategoryRef = useRef(null);
   const locationDropdownRef = useRef(null);
 
+
+  // Request user geolocation on mount
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log(`[Redirection] User location acquired: [${latitude}, ${longitude}]`);
+          setUserLocation({ lat: latitude, lng: longitude });
+        },
+        (error) => {
+          console.warn('[Redirection] Geolocation denied or unavailable:', error.message);
+          setUserLocation(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    } else {
+      console.warn('[Redirection] Geolocation API not supported by this browser');
+    }
+  }, []);
 
   // Handle clicking outside the location dropdown
   useEffect(() => {
@@ -256,9 +277,15 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
       return;
     }
 
+    // Use the user's real GPS coordinates if available, otherwise fall back to the selected marker's coordinates
+    const startCoords = userLocation
+      ? [userLocation.lat, userLocation.lng]
+      : [selectedLocation.lat, selectedLocation.lng];
+
     console.log('Calling TOPSIS API with payload:', {
       start_location_id: selectedLocationId,
-      start_coords: [selectedLocation.lat, selectedLocation.lng],
+      start_coords: startCoords,
+      using_gps: !!userLocation,
       max_travel_time: maxTravelTime,
       place_category: placeCategory,
     });
@@ -267,7 +294,7 @@ const RedirectionDesktop = React.forwardRef(({ redirectionLocationId }, ref) => 
     try {
       const payload = {
         start_location_id: selectedLocationId,
-        start_coords: [selectedLocation.lat, selectedLocation.lng],
+        start_coords: startCoords,
         max_travel_time: maxTravelTime,
         travel_mode: travelMode,
         group_size: groupSize,

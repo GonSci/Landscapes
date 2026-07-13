@@ -29,7 +29,9 @@ from flask_cors import CORS
 load_dotenv()
 
 # ── Distributed Worker Config ──────────────────────────────────────────────────
-# CHANGE THIS TO YOUR MACBOOK'S IP ADDRESS
+# Set to 1 to offload background streams to Mac worker, 0 to process everything locally
+MAC_WORKER_ENABLED = 0
+# CHANGE THIS TO YOUR MACBOOK'S IP ADDRESS (only used when MAC_WORKER_ENABLED = 1)
 MAC_WORKER_URL = "http://192.168.1.20:5005/predict_background"
 
 # Mock class to rebuild JSON data from Mac back into Python objects
@@ -330,7 +332,8 @@ def draw_cctv_overlay(frame, people_count, fps):
     fps_text = f"FPS: {fps:.1f}"
     fps_size = cv2.getTextSize(fps_text, font, 0.6, 2)[0]
     cv2.putText(frame, fps_text, (w - fps_size[0] - 10, 30), font, 0.6, (0, 255, 255), 2)
-    backend_text = f"Backend: {DEVICE_INFO['backend'].upper()} (Distributed)"
+    mode_label = "Distributed" if MAC_WORKER_ENABLED else "Local"
+    backend_text = f"Backend: {DEVICE_INFO['backend'].upper()} ({mode_label})"
     cv2.putText(frame, backend_text, (10, 30), font, 0.5, (200, 200, 200), 1)
     date_size = cv2.getTextSize(timestamp, font, 0.6, 2)[0]
     cv2.putText(frame, timestamp, (w - date_size[0] - 10, h - 10), font, 0.6, (255, 255, 255), 2)
@@ -339,7 +342,8 @@ def draw_cctv_overlay(frame, people_count, fps):
 # ── Distributed Inference Worker ───────────────────────────────────────────────
 def gpu_inference_worker():
     global YOLO_MODEL
-    print("[VISION] GPU inference worker started (Distributed Master Mode)")
+    mode_label = "Distributed Master" if MAC_WORKER_ENABLED else "Local-Only"
+    print(f"[VISION] GPU inference worker started ({mode_label} Mode)")
     while True:
         try:
             # --- PRIORITY 1: PC TENSORRT (ACTIVE ONLY) ---
@@ -356,35 +360,45 @@ def gpu_inference_worker():
             except _queue.Empty:
                 pass 
 
-            # --- PRIORITY 2: MAC COREML OFFLOAD (BACKGROUND ONLY) ---
+            # --- PRIORITY 2: BACKGROUND STREAMS ---
             try:
                 bg_item = INFERENCE_BACKGROUND_QUEUE.get_nowait()
                 bg_loc, bg_frame, bg_active, bg_conf, bg_cfg = bg_item
                 
-                ret, buffer = cv2.imencode('.jpg', bg_frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                if ret:
-                    try:
-                        response = requests.post(
-                            MAC_WORKER_URL,
-                            files={'frame': ('frame.jpg', buffer.tobytes(), 'image/jpeg')},
-                            data={
-                                'conf': bg_conf,
-                                'use_sahi': str(bg_cfg['use_sahi']),
-                                'slice_size': bg_cfg['slice_size'],
-                                'overlap': bg_cfg['overlap']
-                            },
-                            timeout=2.0 
-                        )
-                        
-                        if response.status_code == 200:
-                            preds_data = response.json().get('predictions', [])
-                            bg_results = MockSAHIResult(preds_data)
+                if MAC_WORKER_ENABLED:
+                    # Offload to Mac worker over LAN
+                    ret, buffer = cv2.imencode('.jpg', bg_frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                    if ret:
+                        try:
+                            response = requests.post(
+                                MAC_WORKER_URL,
+                                files={'frame': ('frame.jpg', buffer.tobytes(), 'image/jpeg')},
+                                data={
+                                    'conf': bg_conf,
+                                    'use_sahi': str(bg_cfg['use_sahi']),
+                                    'slice_size': bg_cfg['slice_size'],
+                                    'overlap': bg_cfg['overlap']
+                                },
+                                timeout=2.0 
+                            )
                             
-                            try: INFERENCE_OUTPUT_QUEUES[bg_loc].get_nowait()
-                            except _queue.Empty: pass
-                            INFERENCE_OUTPUT_QUEUES[bg_loc].put(bg_results)
-                    except requests.exceptions.RequestException as e:
-                        print(f"[VISION] Mac Worker unreachable or timeout: {e}")
+                            if response.status_code == 200:
+                                preds_data = response.json().get('predictions', [])
+                                bg_results = MockSAHIResult(preds_data)
+                                
+                                try: INFERENCE_OUTPUT_QUEUES[bg_loc].get_nowait()
+                                except _queue.Empty: pass
+                                INFERENCE_OUTPUT_QUEUES[bg_loc].put(bg_results)
+                        except requests.exceptions.RequestException as e:
+                            print(f"[VISION] Mac Worker unreachable or timeout: {e}")
+                else:
+                    # Process background locally on the same GPU/model
+                    YOLO_MODEL.confidence_threshold = bg_conf
+                    bg_results = run_inference(YOLO_MODEL, bg_frame, DEVICE_INFO, bg_cfg)
+                    
+                    try: INFERENCE_OUTPUT_QUEUES[bg_loc].get_nowait()
+                    except _queue.Empty: pass
+                    INFERENCE_OUTPUT_QUEUES[bg_loc].put(bg_results)
             except _queue.Empty:
                 pass
 
