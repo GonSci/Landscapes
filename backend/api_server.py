@@ -259,6 +259,18 @@ def login():
         return jsonify({'error': str(e)}), 500
 
 
+# ── Admin Helper ──────────────────────────────────────────────────────────────
+def require_admin():
+    """Check if the request is from an admin user via X-User-Email header."""
+    user_email = request.headers.get('X-User-Email')
+    if not user_email:
+        return None, (jsonify({'error': 'Authentication required'}), 401)
+    user = User.query.filter_by(email=user_email).first()
+    if not user or not user.is_admin:
+        return None, (jsonify({'error': 'Admin access required'}), 403)
+    return user, None
+
+
 # ── Vision Integration Endpoints ──────────────────────────────────────────────
 @app.route('/api/yolo/initialize', methods=['POST'])
 def initialize_yolo():
@@ -297,6 +309,100 @@ def get_locations():
         locations = Location.query.all()
         return jsonify([loc.to_dict() for loc in locations])
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/locations', methods=['POST'])
+def create_location():
+    """Create a new location (admin only)."""
+    admin, err = require_admin()
+    if err:
+        return err
+    try:
+        data = request.get_json()
+        required = ['name', 'district', 'latitude', 'longitude', 'video_filename']
+        for field in required:
+            if field not in data or data[field] is None:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        new_loc = Location(
+            name=data['name'],
+            district=data['district'],
+            latitude=float(data['latitude']),
+            longitude=float(data['longitude']),
+            video_filename=data['video_filename'],
+            description=data.get('description', ''),
+            is_active=data.get('is_active', False),
+            type=data.get('type', ''),
+            fov_area_m2=float(data['fov_area_m2']) if data.get('fov_area_m2') else None,
+            environment=data.get('environment', ''),
+        )
+        db.session.add(new_loc)
+        db.session.commit()
+        return jsonify({'message': 'Location created', 'location': new_loc.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/locations/<int:location_id>', methods=['PUT'])
+def update_location(location_id):
+    """Update an existing location (admin only)."""
+    admin, err = require_admin()
+    if err:
+        return err
+    try:
+        loc = Location.query.get(location_id)
+        if not loc:
+            return jsonify({'error': 'Location not found'}), 404
+
+        data = request.get_json()
+        if 'name' in data:
+            loc.name = data['name']
+        if 'district' in data:
+            loc.district = data['district']
+        if 'latitude' in data:
+            loc.latitude = float(data['latitude'])
+        if 'longitude' in data:
+            loc.longitude = float(data['longitude'])
+        if 'video_filename' in data:
+            loc.video_filename = data['video_filename']
+        if 'description' in data:
+            loc.description = data['description']
+        if 'is_active' in data:
+            loc.is_active = data['is_active']
+        if 'type' in data:
+            loc.type = data['type']
+        if 'fov_area_m2' in data:
+            loc.fov_area_m2 = float(data['fov_area_m2']) if data['fov_area_m2'] else None
+        if 'environment' in data:
+            loc.environment = data['environment']
+
+        db.session.commit()
+        return jsonify({'message': 'Location updated', 'location': loc.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/locations/<int:location_id>', methods=['DELETE'])
+def delete_location(location_id):
+    """Delete a location (admin only)."""
+    admin, err = require_admin()
+    if err:
+        return err
+    try:
+        loc = Location.query.get(location_id)
+        if not loc:
+            return jsonify({'error': 'Location not found'}), 404
+
+        # Also delete associated surveillance logs
+        SurveillanceLog.query.filter_by(location_id=location_id).delete()
+        db.session.delete(loc)
+        db.session.commit()
+        return jsonify({'message': f'Location "{loc.name}" deleted'})
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 

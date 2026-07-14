@@ -7,6 +7,7 @@ import UserProfile from './components/profile/UserProfile';
 import ExploreContainer from './components/explore/ExploreContainer';
 import Home from './components/landingPage/Home';
 import Dashboard from './components/dashboard/Dashboard';
+import AdminDashboard from './components/admin/AdminDashboard';
 import MapSidebar from './components/map/desktop/MapSidebar';
 
 import { db } from './firebase';
@@ -78,6 +79,16 @@ function App() {
     checkSession();
   }, []); 
 
+  // RBAC enforcement: redirect non-admin users away from #admin on load
+  useEffect(() => {
+    if (!loading && currentPage === 'admin') {
+      if (!currentUser || !currentUser.is_admin) {
+        setCurrentPage('map');
+        window.location.hash = 'map';
+      }
+    }
+  }, [loading, currentUser, currentPage]);
+
   const handleLogin = (user) => {
     localStorage.setItem('travel_user', JSON.stringify(user));
     setCurrentUser(user);
@@ -110,6 +121,14 @@ function App() {
 
 
   const handleNavigate = (page) => {
+    // RBAC guard: redirect non-admin users away from admin page
+    if (page === 'admin') {
+      if (!currentUser || !currentUser.is_admin) {
+        setCurrentPage('map');
+        window.location.hash = 'map';
+        return;
+      }
+    }
     setCurrentPage(page);
     window.location.hash = page;
   };
@@ -239,6 +258,12 @@ function App() {
               targetLocationId={dashboardTargetId} 
               clearTargetLocation={() => setDashboardTargetId(null)}
             />
+          </div>
+        )}
+
+        {currentPage === 'admin' && currentUser?.is_admin && (
+          <div className="page admin-page">
+            <AdminDashboard onNavigate={handleNavigate} />
           </div>
         )}
       </div>

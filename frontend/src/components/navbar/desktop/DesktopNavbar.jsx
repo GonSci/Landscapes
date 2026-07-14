@@ -1,6 +1,6 @@
 import React from 'react';
 import LoginButton from '../../profile/LoginButton';
-import { Map, Compass, LayoutDashboard } from 'lucide-react';
+import { Map, Compass, LayoutDashboard, Settings } from 'lucide-react';
 
 const DesktopNavbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
   const menuItems = [
@@ -50,8 +50,21 @@ const DesktopNavbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
               ))}
             </div>
           </div>
-          {/* Desktop login button */}
-          <div className="flex items-center justify-end">
+          {/* Desktop login button + admin gear */}
+          <div className="flex items-center justify-end gap-2">
+            {currentUser?.is_admin && (
+              <button
+                onClick={() => onNavigate('admin')}
+                className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-300 ${
+                  currentPage === 'admin'
+                    ? 'border-indigo-500/50 bg-indigo-500/20 text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.3)]'
+                    : 'border-white/10 bg-white/5 text-slate-400 hover:border-indigo-500/30 hover:bg-indigo-500/10 hover:text-indigo-300'
+                }`}
+                title="Admin Dashboard"
+              >
+                <Settings size={16} strokeWidth={2.5} />
+              </button>
+            )}
             <LoginButton currentUser={currentUser} onNavigate={onNavigate} onLogin={onLogin} currentPage={currentPage} />
           </div>
         </div>

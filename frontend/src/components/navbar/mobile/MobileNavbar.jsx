@@ -1,6 +1,6 @@
 import React from 'react';
 import LoginButton from '../../profile/LoginButton';
-import { Map, Compass, LayoutDashboard } from 'lucide-react';
+import { Map, Compass, LayoutDashboard, Settings } from 'lucide-react';
 
 const MobileNavbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
   const menuItems = [
@@ -22,7 +22,20 @@ const MobileNavbar = ({ currentPage, onNavigate, currentUser, onLogin }) => {
               Landscapes
             </h1>
           </div>
-          <div>
+          <div className="flex items-center gap-2">
+            {currentUser?.is_admin && (
+              <button
+                onClick={() => onNavigate('admin')}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-300 ${
+                  currentPage === 'admin'
+                    ? 'border-indigo-500/50 bg-indigo-500/20 text-indigo-300'
+                    : 'border-white/10 bg-white/5 text-slate-400 hover:text-indigo-300'
+                }`}
+                title="Admin Dashboard"
+              >
+                <Settings size={15} strokeWidth={2.5} />
+              </button>
+            )}
             <LoginButton currentUser={currentUser} onNavigate={onNavigate} onLogin={onLogin} currentPage={currentPage} />
           </div>
         </div>

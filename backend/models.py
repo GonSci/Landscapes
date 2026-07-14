@@ -7,12 +7,14 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     def to_dict(self):
         return {
             'id': self.id,
             'email': self.email,
+            'is_admin': self.is_admin or False,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
@@ -40,12 +42,17 @@ class Location(db.Model):
         project_root = os.path.dirname(os.path.abspath(__file__))
         video_exists = False
         if self.video_filename:
-            candidates = [
-                os.path.join(project_root, '..', 'frontend', 'public', 'assets', self.video_filename),
-                os.path.join(project_root, '..', 'public', 'assets', self.video_filename),
-                os.path.join(project_root, self.video_filename),
-            ]
-            video_exists = any(os.path.exists(c) for c in candidates)
+            vf = str(self.video_filename).strip()
+            # Live sources: webcam device index or network stream
+            if vf.isdigit() or vf.startswith(('rtsp://', 'http://', 'https://')):
+                video_exists = True
+            else:
+                candidates = [
+                    os.path.join(project_root, '..', 'frontend', 'public', 'assets', self.video_filename),
+                    os.path.join(project_root, '..', 'public', 'assets', self.video_filename),
+                    os.path.join(project_root, self.video_filename),
+                ]
+                video_exists = any(os.path.exists(c) for c in candidates)
 
         return {
             'id': self.id, 

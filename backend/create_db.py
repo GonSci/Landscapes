@@ -2,6 +2,7 @@ import psycopg2
 import getpass
 import os
 import sys
+from werkzeug.security import generate_password_hash
 
 # Add current directory to path so we can import from backend modules
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -155,6 +156,15 @@ def update_existing_schema():
                 print("  -> Existing schema check complete.")
             else:
                 print("  -> Locations table not found (this is normal for fresh installs).")
+
+            # ── Users table: add is_admin column if missing ──
+            if inspector.has_table('users'):
+                user_columns = [col['name'] for col in inspector.get_columns('users')]
+                with engine.connect() as conn:
+                    if 'is_admin' not in user_columns:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE;"))
+                        print("  -> Added 'is_admin' column to existing users table.")
+                    conn.commit()
                 
     except Exception as e:
         print(f"  -> Error updating existing schema: {e}")
@@ -204,6 +214,38 @@ def seed_database():
         
     return True
 
+def seed_admin_user():
+    print("Step 5: Seeding Default Admin Account...")
+    try:
+        from api_server import app, db
+        from models import User
+        
+        with app.app_context():
+            existing_admin = User.query.filter_by(email='admin@landscapes.com').first()
+            if not existing_admin:
+                admin_user = User(
+                    email='admin@landscapes.com',
+                    password_hash=generate_password_hash('admin123'),
+                    is_admin=True
+                )
+                db.session.add(admin_user)
+                db.session.commit()
+                print("  -> Default admin account created (admin@landscapes.com).")
+            else:
+                # Ensure existing admin has is_admin = True
+                if not existing_admin.is_admin:
+                    existing_admin.is_admin = True
+                    db.session.commit()
+                    print("  -> Existing admin account updated with is_admin = True.")
+                else:
+                    print("  -> Default admin account already exists.")
+                    
+    except Exception as e:
+        print(f"  -> Error seeding admin user: {e}")
+        return False
+        
+    return True
+
 if __name__ == "__main__":
     print("==================================================")
     print("      Landscapes Database Setup & Integration     ")
@@ -214,10 +256,14 @@ if __name__ == "__main__":
             if create_tables():
                 update_existing_schema()
                 if seed_database():
-                    print("==================================================")
-                    print("SUCCESS: Database and tables are fully set up!")
-                    print("You can now run the backend services.")
-                    print("==================================================")
+                    if seed_admin_user():
+                        print("==================================================")
+                        print("SUCCESS: Database and tables are fully set up!")
+                        print("Admin login: admin@landscapes.com / admin123")
+                        print("You can now run the backend services.")
+                        print("==================================================")
+                    else:
+                        print("FAILED at Step 5: Admin seeding.")
                 else:
                     print("FAILED at Step 4: Database seeding.")
             else:

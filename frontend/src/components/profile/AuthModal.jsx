@@ -34,6 +34,7 @@ const AuthModal = ({ onClose, onLoginSuccess }) => {
       onLoginSuccess({
         uid: data.user.id,
         email: data.user.email,
+        is_admin: data.user.is_admin || false,
         photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + data.user.email
       });
       

@@ -271,6 +271,14 @@ def run_inference(model, frame_proc: np.ndarray, device_info: dict, loc_config: 
         return get_prediction(frame_proc, model, verbose=False)
 
 def resolve_video_path(video_name):
+    # Live source: webcam device index (e.g., "0" or "1")
+    if str(video_name).strip().isdigit():
+        return int(video_name)
+
+    # Live source: network stream (RTSP, HTTP, HTTPS)
+    if str(video_name).strip().startswith(('rtsp://', 'http://', 'https://')):
+        return str(video_name).strip()
+
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if os.path.isabs(video_name):
         return video_name if os.path.exists(video_name) else None
@@ -515,9 +523,14 @@ def camera_thread(app_context, location_id, video_name, location_name):
     global THREAD_FRAMES, THREAD_COUNTS, THREAD_MAX_COUNTS
     
     video_path = resolve_video_path(video_name)
-    if not video_path:
+    if video_path is None:
         print(f"[VISION] Video {video_name} not found for {location_name}")
         return
+
+    # Detect if this is a live source (webcam index or network stream)
+    is_live_source = isinstance(video_path, int) or (
+        isinstance(video_path, str) and video_path.startswith(('rtsp://', 'http://', 'https://'))
+    )
         
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -525,7 +538,7 @@ def camera_thread(app_context, location_id, video_name, location_name):
         return
 
     fps_video = cap.get(cv2.CAP_PROP_FPS) or 30
-    print(f"[VISION] Thread started for {location_name}")
+    print(f"[VISION] Thread started for {location_name} ({'LIVE' if is_live_source else 'FILE'})")
     
     with STREAM_LOCK:
         THREAD_COUNTS[location_id] = 0
@@ -570,18 +583,29 @@ def camera_thread(app_context, location_id, video_name, location_name):
                     last_gpu_result_time = 0.0
             was_active = is_active
                 
-            target_fps = 30.0 
-            elapsed = time.time() - playback_start_time
-            target_frame = int(elapsed * fps_video)
-            current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+            target_fps = 30.0
 
-            frames_to_skip = target_frame - current_frame
-            if frames_to_skip > 0:
-                skip_count = min(frames_to_skip, int(fps_video))
-                for _ in range(skip_count): cap.grab()
+            # Frame sync: only for file-based sources (skip for live)
+            if not is_live_source:
+                elapsed = time.time() - playback_start_time
+                target_frame = int(elapsed * fps_video)
+                current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+
+                frames_to_skip = target_frame - current_frame
+                if frames_to_skip > 0:
+                    skip_count = min(frames_to_skip, int(fps_video))
+                    for _ in range(skip_count): cap.grab()
 
             ret, frame = cap.read()
             if not ret:
+                if is_live_source:
+                    # Live source dropped — attempt reconnection
+                    print(f"[VISION] Live feed lost for {location_name}, reconnecting...")
+                    cap.release()
+                    time.sleep(2)
+                    cap = cv2.VideoCapture(video_path)
+                    continue
+                # File source: loop back to beginning
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
                 playback_start_time = time.time()
                 last_log_time = time.time() - 61
