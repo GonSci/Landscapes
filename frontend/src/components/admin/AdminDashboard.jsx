@@ -191,6 +191,8 @@ const LocationFormModal = ({ location, onSave, onClose, saving }) => {
 const AdminDashboard = ({ onNavigate }) => {
   const [locations, setLocations] = useState([]);
   const [liveData, setLiveData] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('All');
   const [loading, setLoading] = useState(true);
   const [editingLocation, setEditingLocation] = useState(null); // null = closed, {} = add, {id:...} = edit
   const [deletingLocation, setDeletingLocation] = useState(null);
@@ -306,13 +308,28 @@ const AdminDashboard = ({ onNavigate }) => {
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             <div className="relative w-full sm:w-auto">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="text" placeholder="Search locations..." className="w-full sm:w-auto bg-[#1c1f2e] border border-white/5 rounded-lg pl-9 pr-4 py-2 text-sm text-white outline-none focus:border-indigo-500/50" />
+              <input 
+                type="text" 
+                placeholder="Search locations..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full sm:w-auto bg-[#1c1f2e] border border-white/5 rounded-lg pl-9 pr-4 py-2 text-sm text-white outline-none focus:border-indigo-500/50" 
+              />
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-              <button className="flex items-center gap-2 px-4 py-2 bg-transparent text-slate-300 hover:text-white transition-colors">
+              <div className="flex items-center gap-2 px-2 py-2 bg-transparent text-slate-300 hover:text-white transition-colors relative">
                 <Filter size={16} />
-                <span className="text-sm font-medium">Filter</span>
-              </button>
+                <select 
+                  value={filterType} 
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="bg-transparent text-sm font-medium outline-none cursor-pointer appearance-none"
+                >
+                  <option value="All" className="bg-[#1c1f2e]">All Locations</option>
+                  <option value="Operational" className="bg-[#1c1f2e]">Operational</option>
+                  <option value="Offline" className="bg-[#1c1f2e]">Offline</option>
+                  <option value="With Camera" className="bg-[#1c1f2e]">With Camera</option>
+                </select>
+              </div>
               <button
                 onClick={() => setEditingLocation({})}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-medium transition-colors whitespace-nowrap"
@@ -415,8 +432,41 @@ const AdminDashboard = ({ onNavigate }) => {
           )}
 
           {/* Location Rows */}
-          {!loading && locations.map((loc, idx) => {
-            const live = isLiveSource(loc.video_filename);
+          {!loading && (() => {
+            const now = new Date();
+            const filteredLocations = locations.filter(loc => {
+              const searchLower = searchQuery.toLowerCase();
+              const matchesSearch = loc.name.toLowerCase().includes(searchLower) || (loc.district && loc.district.toLowerCase().includes(searchLower));
+              
+              let matchesFilter = true;
+              if (filterType === 'Operational') {
+                const status = liveData[loc.id];
+                const isOp = status && status.timestamp && (now - new Date(status.timestamp) < 5 * 60 * 1000);
+                matchesFilter = isOp;
+              } else if (filterType === 'Offline') {
+                const status = liveData[loc.id];
+                const isOp = status && status.timestamp && (now - new Date(status.timestamp) < 5 * 60 * 1000);
+                matchesFilter = !isOp && loc.has_video;
+              } else if (filterType === 'With Camera') {
+                matchesFilter = loc.has_video;
+              }
+              
+              return matchesSearch && matchesFilter;
+            });
+
+            if (filteredLocations.length === 0 && locations.length > 0) {
+              return (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                  <p className="text-sm font-bold">No matching locations</p>
+                  <p className="text-xs text-slate-600 mt-1">Try adjusting your search or filter</p>
+                </div>
+              );
+            }
+
+            return (
+              <>
+                {filteredLocations.map((loc, idx) => {
+                  const live = isLiveSource(loc.video_filename);
             
             // Calculate real crowd metrics based on live status
             const getCrowdMetrics = (loc) => {
@@ -550,13 +600,16 @@ const AdminDashboard = ({ onNavigate }) => {
           
           <div className="px-6 py-4 flex items-center justify-between border-t border-white/5 bg-[#1c1f2e]">
             <div className="text-xs text-slate-500">
-              Showing 1 to {Math.min(locations.length, 10)} of {locations.length} locations
+              Showing {filteredLocations.length > 0 ? 1 : 0} to {filteredLocations.length} of {locations.length} total locations
             </div>
             <div className="flex gap-4 text-slate-500">
               <button className="hover:text-white transition-colors">&lt;</button>
               <button className="hover:text-white transition-colors">&gt;</button>
             </div>
           </div>
+          </>
+          );
+         })()}
         </div>
 
       </div>

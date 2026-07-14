@@ -228,7 +228,9 @@ export const useLiveLocations = () => {
         
         // Build initial merged array with 0 people_count
         const initialMerged = data.map(dbLoc => {
-          const staticData = STATIC_LOCATION_ASSETS[dbLoc.id] || {};
+          // Find static data by matching the name instead of relying on exact database ID
+          const staticData = Object.values(STATIC_LOCATION_ASSETS).find(asset => asset.name === dbLoc.name) || {};
+          
           return {
             id: dbLoc.id,
             name: dbLoc.name,
@@ -236,6 +238,8 @@ export const useLiveLocations = () => {
             lng: dbLoc.longitude,
             category: "Place", // Default for UI tabs
             ...staticData,
+            // Allow backend description to override static description if it exists
+            description: dbLoc.description || staticData.description,
             fov_area_m2: dbLoc.fov_area_m2,
             // Dynamic defaults
             detectedPeople: 0,

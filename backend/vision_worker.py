@@ -58,7 +58,7 @@ DETECTION_CONFIG = {
     'use_gpu': True,
     'enable_blur': True,
     'min_bbox_area': 400,         
-    'min_person_ratio': 0.3,      
+    'min_person_ratio': 0.15,     # Relaxed for top-down CCTV angles
     'max_person_ratio': 6.0,      
 }
 
@@ -531,8 +531,15 @@ def camera_thread(app_context, location_id, video_name, location_name):
     is_live_source = isinstance(video_path, int) or (
         isinstance(video_path, str) and video_path.startswith(('rtsp://', 'http://', 'https://'))
     )
-        
-    cap = cv2.VideoCapture(video_path)
+
+    # Force TCP transport for RTSP streams to prevent h264 frame corruption
+    if isinstance(video_path, str) and video_path.startswith('rtsp://'):
+        os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp'
+        cap = cv2.VideoCapture(video_path, cv2.CAP_FFMPEG)
+        print(f"[VISION] Opening RTSP stream with TCP transport for {location_name}")
+    else:
+        cap = cv2.VideoCapture(video_path)
+
     if not cap.isOpened():
         print(f"[VISION] Failed to open {video_path}")
         return

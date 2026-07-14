@@ -6,6 +6,12 @@ import { BarChart, DonutChart } from '../Dashboard';
 const API_URL = `${import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:5001`}/api`;
 const VISION_URL = import.meta.env.VITE_VISION_BASE_URL || `http://${window.location.hostname}:5002`;
 
+const isLiveSource = (filename) => {
+  if (!filename) return false;
+  const f = String(filename).trim();
+  return f.startsWith('rtsp://') || f.startsWith('http://') || f.startsWith('https://') || !isNaN(f);
+};
+
 const getLocalDateString = (d = new Date()) => {
   const local = new Date(d);
   local.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -169,6 +175,14 @@ const LiveViewDesktop = ({ targetLocationId, clearTargetLocation, onSwitchToRedi
         setActiveLocationId(location.id);
         setActiveLocationName(location.name);
         setVideoInitialized(true);
+        setVideoError(null);
+        
+        if (isLiveSource(location.video_filename)) {
+          setVideoLoaded(true); // Automatically treat as loaded so detection starts immediately
+        } else {
+          setVideoLoaded(false);
+        }
+        
         addSystemEventLog(`LOCATION SWITCHED TO ${location.name.toUpperCase()}`);
         console.log(`Switched to ${location.name}`);
         
@@ -616,7 +630,7 @@ const LiveViewDesktop = ({ targetLocationId, clearTargetLocation, onSwitchToRedi
             </div>
             <div className="relative aspect-video overflow-hidden rounded-3xl border-4 border-white/5 bg-black shadow-[0_0_40px_rgba(0,0,0,0.5)] group">
               <div className="absolute inset-0 pointer-events-none border border-white/10 rounded-3xl z-10"></div>
-              {videoError ? (
+              {videoError && !annotatedFrame ? (
                 <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-8 text-white">
                   <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
                     <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -634,29 +648,40 @@ const LiveViewDesktop = ({ targetLocationId, clearTargetLocation, onSwitchToRedi
                       alt="YOLOv8 Detection Feed"
                       className="h-full w-full object-cover"
                     />
-                  ) : (
-                    <video
-                      key={activeLocationId}
-                      ref={videoRef}
-                      className="h-full w-full object-cover"
-                      src={`/assets/${locations.find(l => l.id === activeLocationId)?.video_filename || 'night_market.mp4'}`}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      onError={(e) => {
-                        console.error('Video error:', e);
-                        setVideoError(`Failed to load video. Please check if the video file exists in public/assets folder.`);
-                      }}
-                      onLoadedData={() => {
-                        console.log('Video loaded successfully');
-                        setVideoLoaded(true);
-                        if (videoRef.current) {
-                          videoRef.current.play().catch(err => console.log('Video play prevented:', err));
-                        }
-                      }}
-                    />
-                  )}
+                  ) : (() => {
+                    const activeLoc = locations.find(l => l.id === activeLocationId);
+                    if (activeLoc && isLiveSource(activeLoc.video_filename)) {
+                      return (
+                        <div className="flex h-full flex-col items-center justify-center bg-black text-white">
+                           <div className="animate-spin h-8 w-8 border-4 border-[#667eea] border-t-transparent rounded-full mb-4"></div>
+                           <p className="text-[10px] font-black tracking-[3px] text-slate-400 uppercase">Connecting to Camera...</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <video
+                        key={activeLocationId}
+                        ref={videoRef}
+                        className="h-full w-full object-cover"
+                        src={`/assets/${activeLoc?.video_filename || 'night_market.mp4'}`}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        onError={(e) => {
+                          console.error('Video error:', e);
+                          setVideoError(`Failed to load video. Please check if the video file exists in public/assets folder.`);
+                        }}
+                        onLoadedData={() => {
+                          console.log('Video loaded successfully');
+                          setVideoLoaded(true);
+                          if (videoRef.current) {
+                            videoRef.current.play().catch(err => console.log('Video play prevented:', err));
+                          }
+                        }}
+                      />
+                    );
+                  })()}
                   {/* Subtle overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                   <div className="absolute bottom-6 left-6 flex items-center gap-3">
