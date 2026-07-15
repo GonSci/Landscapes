@@ -154,8 +154,11 @@ const MobilePhilippinesMap = ({ userProfile, currentUser, focusLocation, isSideb
     
     // Add markers for each database location
     locations.forEach((loc) => {
-      const bgColor = '#8b5cf6'; // Default Purple
-      const label = 'Place';
+      // Dynamic color based on crowd level (matches live feed bounding box colors)
+      const crowdLevelLower = (loc.crowdLevel || '').toLowerCase();
+      const bgColor = (crowdLevelLower === 'high') ? '#ef4444'
+                    : (crowdLevelLower === 'moderate') ? '#f59e0b'
+                    : '#10b981'; // Sparse / Low / default = green
       
       const featureIcon = window.L.divIcon({
         className: 'feature-marker',

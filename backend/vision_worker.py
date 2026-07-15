@@ -62,19 +62,40 @@ DETECTION_CONFIG = {
     'max_person_ratio': 6.0,      
 }
 
-LOCATION_PIPELINE_CONFIG = {
-    1: {'conf': 0.25, 'slice_size': 256, 'use_clahe': False, 'use_sahi': False, 'overlap': 0.15}, # NO SAHI
-    2: {'conf': 0.40, 'slice_size': 512, 'use_clahe': True,  'use_sahi': False, 'overlap': 0.15}, # 512 SAHI
-    3: {'conf': 0.35, 'slice_size': 384, 'use_clahe': True,  'use_sahi': False, 'overlap': 0.15}, # 384 SAHI
-    4: {'conf': 0.45, 'slice_size': 384, 'use_clahe': True,  'use_sahi': False, 'overlap': 0.15}, # 384 SAHI
-    5: {'conf': 0.20, 'slice_size': 512, 'use_clahe': False, 'use_sahi': False, 'overlap': 0.15}, # 512 SAHI
+LOCATION_PIPELINE_CONFIG_BY_NAME = {
+    "Baguio Night Market": {'conf': 0.25, 'slice_size': 256, 'use_clahe': False, 'use_sahi': False, 'overlap': 0.15}, # NO SAHI
+    "Wright Park": {'conf': 0.40, 'slice_size': 512, 'use_clahe': True,  'use_sahi': False, 'overlap': 0.15}, # 512 SAHI
+    "The Mansion": {'conf': 0.35, 'slice_size': 384, 'use_clahe': True,  'use_sahi': False, 'overlap': 0.15}, # 384 SAHI
+    "Baguio Cathedral": {'conf': 0.25, 'slice_size': 384, 'use_clahe': True,  'use_sahi': False, 'overlap': 0.15}, # 384 SAHI
+    "Melvin Jones Burnham Park": {'conf': 0.20, 'slice_size': 512, 'use_clahe': False, 'use_sahi': False, 'overlap': 0.15}, # 512 SAHI
 }
 
 DEFAULT_PIPELINE_CONFIG = {
     'conf': 0.35, 'slice_size': 448, 'use_clahe': True, 'use_sahi': False, 'overlap': 0.15,
 }
 
-LOCATION_HIGH_THRESHOLDS = {1: 15, 2: 38, 3: 14, 4: 15, 5: 66}
+LOCATION_HIGH_THRESHOLDS_BY_NAME = {
+    "Baguio Night Market": 15,
+    "Wright Park": 38,
+    "The Mansion": 14,
+    "Baguio Cathedral": 15,
+    "Melvin Jones Burnham Park": 66
+}
+
+# Crowd-level thresholds for bounding box color coding (matches frontend LiveView meter)
+# Keys: location name -> { sparse, low, moderate } upper bounds
+LOCATION_CROWD_THRESHOLDS_BY_NAME = {
+    "Baguio Night Market":       { 'sparse': 2,  'low': 8,  'moderate': 14 },
+    "Wright Park":               { 'sparse': 6,  'low': 22, 'moderate': 37 },
+    "The Mansion":               { 'sparse': 2,  'low': 7,  'moderate': 13 },
+    "Baguio Cathedral":          { 'sparse': 2,  'low': 8,  'moderate': 14 },
+    "Melvin Jones Burnham Park": { 'sparse': 12, 'low': 39, 'moderate': 65 },
+}
+DEFAULT_CROWD_THRESHOLDS = { 'sparse': 2, 'low': 8, 'moderate': 14 }
+LOCATION_CROWD_THRESHOLDS = {}   # Populated at startup (keyed by location_id)
+
+LOCATION_PIPELINE_CONFIG = {}
+LOCATION_HIGH_THRESHOLDS = {}
 
 YOLO_MODEL = None
 
@@ -313,12 +334,24 @@ def apply_gaussian_blur(frame, detections_pixel, ksize=(51, 51)):
     mask3 = mask[:, :, np.newaxis]
     return np.where(mask3 == 255, blurred_full, frame)
 
-def draw_detections_on_frame(frame, detections_pixel):
+def get_crowd_box_color(people_count, location_id):
+    """Return a BGR color tuple based on crowd density level.
+    Green = Sparse/Low, Orange = Moderate, Red = High.
+    """
+    thresholds = LOCATION_CROWD_THRESHOLDS.get(location_id, DEFAULT_CROWD_THRESHOLDS)
+    if people_count > thresholds['moderate']:
+        return (0, 0, 255)       # Red  (BGR)
+    elif people_count > thresholds['low']:
+        return (0, 165, 255)     # Orange (BGR)
+    else:
+        return (0, 255, 0)       # Green (BGR)
+
+def draw_detections_on_frame(frame, detections_pixel, box_color=(0, 255, 0)):
     annotated = frame.copy()
     for det in detections_pixel:
         x1, y1, x2, y2 = det['bbox']
         track_id = det.get('id', 'Wait...')
-        color = (0, 255, 0)
+        color = box_color
         cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
         label = f"ID: {track_id}"
         label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
@@ -665,7 +698,8 @@ def camera_thread(app_context, location_id, video_name, location_name):
                     if DETECTION_CONFIG['enable_blur'] and render_dets:
                         output_frame = apply_gaussian_blur(output_frame, render_dets)
                     if render_dets:
-                        output_frame = draw_detections_on_frame(output_frame, render_dets)
+                        bbox_color = get_crowd_box_color(current_count, location_id)
+                        output_frame = draw_detections_on_frame(output_frame, render_dets, box_color=bbox_color)
 
                 ret, buffer = cv2.imencode('.jpg', output_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 if ret:
@@ -754,7 +788,8 @@ def camera_thread(app_context, location_id, video_name, location_name):
                 if DETECTION_CONFIG['enable_blur'] and confirmed_detections:
                     output_frame = apply_gaussian_blur(output_frame, confirmed_detections)
                 if confirmed_detections:
-                    output_frame = draw_detections_on_frame(output_frame, confirmed_detections)
+                    bbox_color = get_crowd_box_color(current_count, location_id)
+                    output_frame = draw_detections_on_frame(output_frame, confirmed_detections, box_color=bbox_color)
                 
                 last_pipeline_run = now
                 output_frame = draw_cctv_overlay(output_frame, current_count, display_fps)
@@ -950,6 +985,15 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         locations = Location.query.all()
+        
+        # Dynamically map the correct database IDs to the configurations based on location names
+        for loc in locations:
+            if loc.name in LOCATION_PIPELINE_CONFIG_BY_NAME:
+                LOCATION_PIPELINE_CONFIG[loc.id] = dict(LOCATION_PIPELINE_CONFIG_BY_NAME[loc.name])
+            if loc.name in LOCATION_HIGH_THRESHOLDS_BY_NAME:
+                LOCATION_HIGH_THRESHOLDS[loc.id] = LOCATION_HIGH_THRESHOLDS_BY_NAME[loc.name]
+            if loc.name in LOCATION_CROWD_THRESHOLDS_BY_NAME:
+                LOCATION_CROWD_THRESHOLDS[loc.id] = dict(LOCATION_CROWD_THRESHOLDS_BY_NAME[loc.name])
         
         threading.Thread(target=db_polling_thread, args=(app.app_context,), daemon=True).start()
 
